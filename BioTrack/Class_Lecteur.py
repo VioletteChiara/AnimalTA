@@ -1,4 +1,5 @@
 from tkinter import *
+from tkinter import messagebox
 import numpy as np
 import cv2
 from BioTrack import Class_Scroll_crop, UserMessages
@@ -7,14 +8,22 @@ import math
 import PIL.Image, PIL.ImageTk
 import decord
 
+import psutil
+
 
 class Lecteur(Frame):
+    """
+    A class inherited from TkFrame that will contain the video reader.
+    It allows to visualize the video, zoom in/out, move in the video time space (with a time-bar) and interact with its
+    containers (higher level classes) through bindings on the image canvas.
+    """
+
     def __init__(self, parent, Vid, ecart=0, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
         self.parent=parent
         self.Vid=Vid
         self.ecart=ecart
-
+        self.first=True
 
         self.Language = StringVar()
         f = open("Files/Language", "r")
@@ -23,40 +32,26 @@ class Lecteur(Frame):
         self.Messages = UserMessages.Mess[self.Language.get()]
         f.close()
 
+        self.bind("<Configure>", self.update_ratio)
+
 
 
         #Relative to the video:
-        self.capture = decord.VideoReader(self.Vid.File_name, ctx=decord.cpu(0))
         self.one_every = int(round(round(self.Vid.Frame_rate[0], 2) / self.Vid.Frame_rate[1]))
         self.current_part = 0
         self.fr_rate = self.Vid.Frame_rate[1]
         self.wait = (1 / (self.fr_rate))
-        if self.Vid.Cropped[0]:
-            self.to_sub = round(((self.Vid.Cropped[1][0]) / self.one_every))
-        else:
-            self.to_sub = 0
+
+        self.to_sub = round(((self.Vid.Cropped[1][0]) / self.one_every))
         self.Size=self.Vid.shape
 
-        if self.Vid.Cropped[0]:
-            self.update_image(self.Vid.Cropped[1][0]/self.one_every, first=True)
-        else:
-            self.update_image(0, first=True)
-
-
-        #Pour le zoom:
-        self.final_width = 250
-        self.zoom_strength = 0.3
-        self.zoom_sq = [0, 0, self.Vid.shape[1], self.Vid.shape[0]]
-        self.ratio = self.Size[1] / self.final_width
-
+        self.update_image(self.Vid.Cropped[1][0]/self.one_every, first=True)
         self.playing=False
 
         self.canvas_video = Canvas(self, bd=2, highlightthickness=1, relief='ridge')
         self.canvas_video.grid(row=1, column=0, sticky="nsew")
         Grid.columnconfigure(self, 0, weight=1)  ########NEW
         Grid.rowconfigure(self, 1, weight=1)  ########NEW
-
-
 
         self.Frame_scrollbar = Frame(self)
         self.Frame_scrollbar.grid(row=2, column=0, sticky="swe")
@@ -88,6 +83,28 @@ class Lecteur(Frame):
         self.canvas_buttons.columnconfigure(5, minsize=50)
 
         self.canvas_video.focus_set()  ###########
+        self.check_memory_overload()
+
+        #For zoom:
+        self.final_width = 250
+        self.zoom_strength = 0.3
+        self.zoom_sq = [0, 0, self.Vid.shape[1], self.Vid.shape[0]]
+        self.ratio = self.Size[1] / self.final_width
+
+
+    def update_ratio(self, *args):
+        best_ratio = max(self.Size[1] / (self.canvas_video.winfo_width() - 5),
+                         self.Size[0] / (self.canvas_video.winfo_height() - 5))
+        prev_final_width = self.final_width
+
+        self.final_width = int(math.floor(self.Size[1] / best_ratio))
+        self.ratio = self.ratio * (prev_final_width / self.final_width)
+
+    def check_memory_overload(self):
+        self.parent.after(1000, self.check_memory_overload)
+        if psutil.virtual_memory()._asdict()["percent"]>99.8:
+            self.parent.End_of_window()
+            messagebox.showinfo(self.Messages["TError_memory"], self.Messages["Error_memory"])
 
 
     def change_speed(self, *args):
@@ -114,10 +131,7 @@ class Lecteur(Frame):
 
 
     def GotoEnd(self):
-        if not self.Vid.Cropped[0]:
-            new_frame = int((self.Vid.Frame_nb[1])/self.one_every)-1
-        else:
-            new_frame = int(self.Vid.Cropped[1][1]/self.one_every)
+        new_frame = int(self.Vid.Cropped[1][1]/self.one_every)
 
         self.Scrollbar.active_pos = new_frame  ####NEW
         self.Scrollbar.refresh()
@@ -140,11 +154,12 @@ class Lecteur(Frame):
                 self.current_part-=1
                 self.capture = decord.VideoReader(self.Vid.Fusion[self.current_part][1], ctx=decord.cpu(0))
 
-            self.TMP_image_to_show = self.capture[int(self.Scrollbar.active_pos*self.one_every)-self.Vid.Fusion[self.current_part][0]].asnumpy()
-            self.parent.modif_image(self.TMP_image_to_show)
+
+            TMP_image_to_show = self.capture[int(self.Scrollbar.active_pos*self.one_every)-self.Vid.Fusion[self.current_part][0]].asnumpy()
+            self.parent.modif_image(TMP_image_to_show)
 
 
-    def move1(self, event=None, nb_fr=1, *arg):
+    def move1(self, event=None, nb_fr=1, aff=True, *arg):
         if self.Scrollbar.active_pos<(self.Vid.Frame_nb[1]-nb_fr) and ((self.ecart > 0 and self.Scrollbar.active_pos<(self.Vid.Cropped[1][1]/self.one_every) + self.ecart -nb_fr) or self.ecart == 0):
             self.Scrollbar.active_pos+=nb_fr
             self.Scrollbar.refresh()
@@ -157,7 +172,7 @@ class Lecteur(Frame):
                 self.capture = decord.VideoReader(self.Vid.Fusion[self.current_part][1], ctx=decord.cpu(0))
                 TMP_image_to_show = self.capture[int(self.Scrollbar.active_pos * self.one_every) - self.Vid.Fusion[self.current_part][0]].asnumpy()
 
-            self.parent.modif_image(TMP_image_to_show)
+            return(self.parent.modif_image(TMP_image_to_show, aff=aff))
 
 
 
@@ -173,15 +188,6 @@ class Lecteur(Frame):
 
             self.move1(nb_fr=self.jump_image)
 
-            duration=0####NEW
-            while duration < (self.wait*(self.jump_image)):####NEW
-                duration=time.time()-duration_beg####NEW
-
-            if duration>(self.wait*(self.jump_image)*1.1):
-                self.jump_image += int((duration/(self.wait*(self.jump_image))-1))
-            elif duration<(self.wait*(self.jump_image)*1.1) and self.jump_image>1:
-                self.jump_image -= max(1,int(((self.wait*(self.jump_image)/duration)-1)))
-
             #Only for view and correct tracks
             self.update()
 
@@ -193,24 +199,47 @@ class Lecteur(Frame):
                         self.parent.tree.selection_remove(item)
                     self.parent.tree.selection_add(self.parent.tree.get_children("")[begin:((self.Scrollbar.active_pos + 1) - self.to_sub)])
 
+
+            duration=0
+            while duration <= (self.wait*(self.jump_image)-0.00001):#To ensure that we keep the good frame rate
+                duration=time.time()-duration_beg
+
+            if duration>(self.wait*(self.jump_image)*1.1):
+                self.jump_image += int((duration/(self.wait*(self.jump_image))-1))
+            elif duration<(self.wait*(self.jump_image)*1.1) and self.jump_image>1:
+                self.jump_image -= max(1,int(((self.wait*(self.jump_image)/duration)-1)))
+
+
     def stop(self):
         self.playing = False
 
     def update_image(self, frame, first=False):
         frame=int(frame)
-        if len(self.Vid.Fusion)>1:#Si on a plus d'une video
+        Which_part=0
+        if len(self.Vid.Fusion)>1:#If videos were concatenated
             Which_part = [index for index, Fu_inf in enumerate(self.Vid.Fusion) if Fu_inf[0] <= (frame * self.one_every)][-1]
-            if Which_part!=self.current_part:#si on veut aller à un endroit différent
-                self.capture = decord.VideoReader(self.Vid.Fusion[Which_part][1], ctx=decord.cpu(0))
-                self.current_part=Which_part
 
         if first:
+            self.capture = decord.VideoReader(self.Vid.Fusion[Which_part][1], ctx=decord.cpu(0))
+
             self.Prem_image_to_show = self.capture[int(frame * self.one_every) - self.Vid.Fusion[self.current_part][0]].asnumpy()
             TMP_image_to_show = np.copy(self.Prem_image_to_show)
             self.last_img=TMP_image_to_show
+
+            self.Vid.Frame_nb[0]=len(self.capture)
+            self.Vid.Frame_nb[1] = self.Vid.Frame_nb[0]/self.one_every
+            if not self.Vid.Cropped[0]:
+                self.Vid.Cropped[1][1]=self.Vid.Frame_nb[0]-1
+
         else:
+            if Which_part!=self.current_part:#If we are changing from one video segment to another (concatenated videos)
+                self.capture = decord.VideoReader(self.Vid.Fusion[Which_part][1], ctx=decord.cpu(0))
+
+
             TMP_image_to_show = self.capture[int(frame * self.one_every) - self.Vid.Fusion[self.current_part][0]].asnumpy()
             self.parent.modif_image(TMP_image_to_show)
+
+        self.current_part = Which_part
 
 
     def Zoom_in(self, event):
@@ -233,7 +262,7 @@ class Lecteur(Frame):
             self.ratio = ZWX / self.final_width
             self.zoom_sq = self.new_zoom_sq
             self.zooming = True
-            self.afficher_img(self.last_img)
+            self.parent.modif_image(self.parent.last_empty)
 
     def Zoom_out(self, event):
         self.new_zoom_sq = [0, 0, 0, 0]
@@ -276,7 +305,7 @@ class Lecteur(Frame):
 
         self.zoom_sq = self.new_zoom_sq
         self.zooming = False
-        self.afficher_img(self.last_img)
+        self.parent.modif_image(self.parent.last_empty)
 
 
     def bindings(self):
@@ -285,6 +314,7 @@ class Lecteur(Frame):
         self.bind_all("<space>", self.playbacks)
         self.canvas_video.bind("<Control-1>", self.Zoom_in)
         self.canvas_video.bind("<Control-3>", self.Zoom_out)
+        self.canvas_video.bind("<Shift-1>", lambda x: self.callback(event=x,Shift=True))
         self.canvas_video.bind("<Configure>", self.resize)
         self.Frame_scrollbar.bind("<Configure>", self.Scrollbar.refresh)
 
@@ -292,10 +322,24 @@ class Lecteur(Frame):
         self.canvas_video.bind("<B1-Motion>", self.callback_move)
         self.canvas_video.bind("<ButtonRelease>", self.release)
 
-    def callback(self, event):
+    def unbindings(self):
+        self.unbind_all("<Right>")
+        self.unbind_all("<Left>")
+        self.unbind_all("<space>")
+        self.canvas_video.unbind("<Control-1>")
+        self.canvas_video.unbind("<Control-3>")
+        self.canvas_video.unbind("<Shift-1>")
+        self.canvas_video.unbind("<Configure>")
+        self.Frame_scrollbar.unbind("<Configure>")
+
+        self.canvas_video.unbind("<Button-1>")
+        self.canvas_video.unbind("<B1-Motion>")
+        self.canvas_video.unbind("<ButtonRelease>")
+
+    def callback(self, event, Shift=False):
         event.x = int( self.ratio * (event.x - (self.canvas_video.winfo_width()-self.shape[1])/2)) + self.zoom_sq[0]
         event.y = int( self.ratio * (event.y - (self.canvas_video.winfo_height()-self.shape[0])/2)) + self.zoom_sq[1]
-        self.parent.pressed_can((event.x,event.y))
+        self.parent.pressed_can((event.x,event.y), Shift)
 
     def callback_move(self, event):
         event.x = int( self.ratio * (event.x - (self.canvas_video.winfo_width()-self.shape[1])/2)) + self.zoom_sq[0]
@@ -310,12 +354,16 @@ class Lecteur(Frame):
 
     def afficher_img(self, img):
         self.last_img=img
+        if self.first:
+            self.first=False
+            self.Size=img.shape
+            self.ratio=self.Size[1]/self.final_width
+
         best_ratio = max(self.Size[1] / (self.canvas_video.winfo_width()-5), self.Size[0] / (self.canvas_video.winfo_height()-5))
         prev_final_width = self.final_width
 
         self.final_width = int(math.floor(self.Size[1] / best_ratio))
         self.ratio = self.ratio * (prev_final_width / self.final_width)
-
 
         image_to_show2 = img[self.zoom_sq[1]:self.zoom_sq[3], self.zoom_sq[0]:self.zoom_sq[2]]
         TMP_image_to_show2 = cv2.resize(image_to_show2,(self.final_width, int(self.final_width * (self.Size[0] / self.Size[1]))))
@@ -335,5 +383,8 @@ class Lecteur(Frame):
         self.update_idletasks()
 
     def proper_close(self):
+        self.unbindings()
+        del self.capture
         self.stop()
+        self.Scrollbar.close_N_destroy()
         self.Scrollbar.destroy()

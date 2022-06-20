@@ -9,8 +9,12 @@ class Assign(Frame):
         Frame.__init__(self, parent, bd=5, **kwargs)
         self.parent=parent
         self.boss=boss
-        self.grid()
+        self.grid(sticky="nsew")
+        self.config()
         self.grab_set()
+
+        Grid.columnconfigure(self.parent,0,weight=1)
+        Grid.rowconfigure(self.parent, 0, weight=1)
 
         self.max_windows=1001
 
@@ -29,34 +33,57 @@ class Assign(Frame):
         self.Arenas = Dr.Organise_Ars(self.Arenas)
 
 
-        self.Img_Fr=Frame(self)
-        self.Img_Fr.grid(row=0, column=0)
+        Grid.columnconfigure(self,0,weight=1)
+        Grid.rowconfigure(self, 0, weight=1)
+
+
+        self.canvas_video=Canvas(self)
+        self.canvas_video.grid(row=0, column=0, sticky="nsew")
 
         self.Opn_Fr = Frame(self)
-        self.Opn_Fr.grid(row=0, column=1)
-
-        self.canvas_video=Canvas(self.Img_Fr)
-        self.canvas_video.grid()
-
-        self.TMP_image_to_show=np.copy(self.boss.TMP_image_to_show)
-        self.TMP_image_to_show=cv2.drawContours(self.TMP_image_to_show,self.Arenas,-1,(255,0,0),8)
-        for Ar in range(len(self.Arenas)):
-            self.TMP_image_to_show=cv2.putText(self.TMP_image_to_show,str(Ar),(self.Arenas[Ar][0][0][0],self.Arenas[Ar][0][0][1]+50),cv2.FONT_HERSHEY_DUPLEX, 2, (255, 0, 0), 3)
-
-
-        self.TMP_image_to_show=cv2.resize(self.TMP_image_to_show,(int(self.boss.Vid.shape[1]/3),int(self.boss.Vid.shape[0]/3)))
-        self.image_to_show2 = PIL.ImageTk.PhotoImage(image=PIL.Image.fromarray(self.TMP_image_to_show))
-        self.can_import = self.canvas_video.create_image(0, 0, image=self.image_to_show2, anchor=NW)
-        self.canvas_video.config(height=self.TMP_image_to_show.shape[0], width=self.TMP_image_to_show.shape[1])
-        self.canvas_video.itemconfig(self.can_import, image=self.image_to_show2)
-
+        self.Opn_Fr.grid(row=0, column=1, sticky="nsew")
         self.all_vals_var=[IntVar(self,x) for x in self.boss.liste_ind_per_ar]
         for row in range(len(self.Arenas)):
             Label(self.Opn_Fr, text=self.Messages["Arena"] + " " + str(row)).grid(row=row, column=0)
             Scale(self.Opn_Fr,from_=1, to=20, variable=self.all_vals_var[row], orient=HORIZONTAL).grid(row=row, column=1)
 
-        self.B_validate = Button(self.Opn_Fr, text=self.Messages["Validate"], command=self.validate)
-        self.B_validate.grid()
+        self.B_validate = Button(self.Opn_Fr, text=self.Messages["Validate"], command=self.validate, background="green")
+        self.B_validate.grid(columnspan=2)
+
+
+        self.TMP_image_to_show=np.copy(self.boss.last_empty)
+        self.TMP_image_to_show=cv2.drawContours(self.TMP_image_to_show,self.Arenas,-1,(255,0,0),8)
+
+        self.final_width = 700
+
+        self.canvas_video.update()
+        self.final_width = self.canvas_video.winfo_width()
+        self.Size=self.boss.Vid.shape
+        self.ratio = self.Size[1] / self.final_width
+
+        self.bind("<Configure>", self.show_img)
+        self.show_img()
+
+
+
+    def show_img(self, *args):
+        best_ratio = max(self.Size[1] / (self.canvas_video.winfo_width()),self.Size[0] / (self.canvas_video.winfo_height()))
+        prev_final_width = self.final_width
+        self.final_width = int(self.Size[1] / best_ratio)
+        self.ratio = self.ratio * (prev_final_width / self.final_width)
+        self.TMP_image_to_show_Cop=np.copy(self.TMP_image_to_show)
+
+        if self.final_width>0.001:
+            for Ar in range(len(self.Arenas)):
+                x,y,w,h =cv2.boundingRect(self.Arenas[Ar])
+                (w, h), _ = cv2.getTextSize(str(Ar), fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=1, thickness=1)
+                self.TMP_image_to_show_Cop = cv2.putText(self.TMP_image_to_show_Cop, str(Ar), (x+ max(int(5*self.ratio),1), y + h + max(int(5*self.ratio),1)),cv2.FONT_HERSHEY_DUPLEX,  max(0.8*self.ratio,1), (255, 0, 0), max(int(2*self.ratio),1))
+
+            self.TMP_image_to_show2 = cv2.resize(self.TMP_image_to_show_Cop,(self.final_width, int(self.final_width * (self.Size[0] / self.Size[1]))))
+            self.image_to_show3 = PIL.ImageTk.PhotoImage(image=PIL.Image.fromarray(self.TMP_image_to_show2))
+            self.canvas_video.create_image(0, 0, image=self.image_to_show3, anchor=NW)
+            self.canvas_video.config(width=self.final_width, height=int(self.final_width * (self.Size[0] / self.Size[1])))
+
 
     def validate(self):
         self.boss.liste_ind_per_ar = [x.get() for x in self.all_vals_var]

@@ -3,14 +3,15 @@ import cv2
 import PIL.Image, PIL.ImageTk
 from functools import partial
 from tkinter import messagebox
+
+import decord
+
 from BioTrack import Interface_masking, Interface_scaling, UserMessages, Interface_extend, \
     Interface_stabilis, Interface_back, Function_draw_mask as Dr, Interface_cropping
 from tkinter import font
 import time
 import os
 import math
-
-
 
 
 class Row_Can(Canvas):
@@ -52,7 +53,7 @@ class Row_Can(Canvas):
 
             #Video name and representation:
             self.subcanvas_First = Canvas(self, bd=0, highlightthickness=0, relief='flat')
-            self.subcanvas_First.grid(row=0,column=0, sticky="we")
+            self.subcanvas_First.grid(row=0,column=0, sticky="snwe")
 
             self.isselected=Canvas(self.subcanvas_First,heigh=75, width=15, bg="red")
             self.isselected.grid(row=0,column=0, rowspan=2, sticky="ns")
@@ -60,8 +61,8 @@ class Row_Can(Canvas):
             self.font= font.Font(self.master, family='Arial', size=12, weight='bold')
             self.File_name_lab=Label(self.subcanvas_First, textvariable=self.File_name_txt, wraplengt=175, font=self.font)
             self.File_name_lab.grid(row=0,column=1)
-            self.File_name_lab.bind("<Enter>", partial(self.change_msg, self.Messages["Row9"]))
-            self.File_name_lab.bind("<Leave>", self.remove_msg)
+            self.File_name_lab.bind("<Enter>", partial(self.main_frame.HW.change_tmp_message, self.Messages["Row9"]))
+            self.File_name_lab.bind("<Leave>", self.main_frame.HW.remove_tmp_message)
 
 
 
@@ -79,7 +80,7 @@ class Row_Can(Canvas):
 
 
             #Options of pretracking:
-            self.canvas_main = Canvas(self, heigh = 125, bd=2, highlightthickness=1, relief='ridge')
+            self.canvas_main = Canvas(self, heigh = 150, relief='ridge')
             self.canvas_main.grid(row=0, column=1, sticky="ew")
             self.canvas_main.bind("<Button-1>", self.select_vid)
 
@@ -106,13 +107,13 @@ class Row_Can(Canvas):
             self.bouton_Fr_rate = OptionMenu(self.subcanvas_Fr_rate, self.holder, *self.List_poss_FrRate, command=self.change_fps)
             self.bouton_Fr_rate.grid(row=1, column=0, sticky="we")
             self.bouton_Fr_rate.bind("<Button-1>",self.ask_clear_data)
-            self.bouton_Fr_rate.bind("<Enter>", partial(self.change_msg, self.Messages["Row0"].format(round(self.Video.Frame_rate[1],2))))
-            self.bouton_Fr_rate.bind("<Leave>", self.remove_msg)
+            self.bouton_Fr_rate.bind("<Enter>", partial(self.main_frame.HW.change_tmp_message, self.Messages["Row0"].format(round(self.Video.Frame_rate[1],2))))
+            self.bouton_Fr_rate.bind("<Leave>", self.main_frame.HW.remove_tmp_message)
 
             self.bouton_extend_Fr_rate=Button(self.subcanvas_Fr_rate, text=self.Messages["Row0_ExB"], command=self.extend_change_fps)
             self.bouton_extend_Fr_rate.grid(row=2, column=0)
-            self.bouton_extend_Fr_rate.bind("<Enter>", partial(self.change_msg, self.Messages["Row0_Ex"]))
-            self.bouton_extend_Fr_rate.bind("<Leave>", self.remove_msg)
+            self.bouton_extend_Fr_rate.bind("<Enter>", partial(self.main_frame.HW.change_tmp_message, self.Messages["Row0_Ex"]))
+            self.bouton_extend_Fr_rate.bind("<Leave>", self.main_frame.HW.remove_tmp_message)
 
             Pos_col+=2
 
@@ -127,8 +128,8 @@ class Row_Can(Canvas):
             self.cropped_status.grid(row=0,column=0, sticky="we")
             self.cropping_button=Button(self.subcanvas_Cropping, textvariable=self.crop_it, command=self.crop_vid)
             self.cropping_button.grid(row=1, column=0, sticky="we")
-            self.cropping_button.bind("<Enter>", partial(self.change_msg, self.Messages["Row1"]))
-            self.cropping_button.bind("<Leave>", self.remove_msg)
+            self.cropping_button.bind("<Enter>", partial(self.main_frame.HW.change_tmp_message, self.Messages["Row1"]))
+            self.cropping_button.bind("<Leave>", self.main_frame.HW.remove_tmp_message)
             Pos_col+=2
 
 
@@ -144,15 +145,15 @@ class Row_Can(Canvas):
             self.stab_status.grid(row=0,column=0,columnspan=2, sticky="we")
             self.stab_button=Button(self.subcanvas_Stab, textvariable=self.stab_it, command=self.stab_vid)
             self.stab_button.grid(row=1, column=0, sticky="we")
-            self.stab_button.bind("<Enter>", partial(self.change_msg, self.Messages["Row2"]))
-            self.stab_button.bind("<Leave>", self.remove_msg)
+            self.stab_button.bind("<Enter>", partial(self.main_frame.HW.change_tmp_message, self.Messages["Row2"]))
+            self.stab_button.bind("<Leave>", self.main_frame.HW.remove_tmp_message)
             self.check_stab_button=Button(self.subcanvas_Stab, text=self.Messages["RowB1"], command=self.check_stab)
             self.check_stab_button.grid(row=1, column=1, sticky="we")
-            self.check_stab_button.bind("<Enter>", partial(self.change_msg, self.Messages["Row3"]))
-            self.check_stab_button.bind("<Leave>", self.remove_msg)
+            self.check_stab_button.bind("<Enter>", partial(self.main_frame.HW.change_tmp_message, self.Messages["Row3"]))
+            self.check_stab_button.bind("<Leave>", self.main_frame.HW.remove_tmp_message)
             self.extend_stab_button=Button(self.subcanvas_Stab, text=self.Messages["RowB17"], command=self.extend_stab)
             self.extend_stab_button.grid(row=2, columnspan=2, sticky="we")
-            if self.Video.Stab:
+            if self.Video.Stab[0]:
                 self.extend_stab_button.config(text=self.Messages["RowB18"])
 
             Pos_col+=2
@@ -167,8 +168,8 @@ class Row_Can(Canvas):
             self.back_status.grid(row=0,column=0,columnspan=2, sticky="we")
             self.back_button=Button(self.subcanvas_Back, textvariable=self.back_it, command=self.back_vid)
             self.back_button.grid(row=1, column=0, sticky="we")
-            self.back_button.bind("<Enter>", partial(self.change_msg, self.Messages["Row4"]))
-            self.back_button.bind("<Leave>", self.remove_msg)
+            self.back_button.bind("<Enter>", partial(self.main_frame.HW.change_tmp_message, self.Messages["Row4"]))
+            self.back_button.bind("<Leave>", self.main_frame.HW.remove_tmp_message)
             self.back_supress_button=Button(self.subcanvas_Back, text=self.Messages["RowB2"], command=self.supress_back)
             self.back_supress_button.grid(row=1, column=1, sticky="we")
             self.view_back=Canvas(self.subcanvas_Back)
@@ -191,8 +192,8 @@ class Row_Can(Canvas):
             self.mask_status.grid(row=0, column=0, columnspan=2, sticky="we")
             self.mask_button = Button(self.subcanvas_Mask, textvariable=self.mask_it, command=self.mask_vid)
             self.mask_button.grid(row=1, column=0, sticky="we")
-            self.mask_button.bind("<Enter>", partial(self.change_msg, self.Messages["Row5"]))
-            self.mask_button.bind("<Leave>", self.remove_msg)
+            self.mask_button.bind("<Enter>", partial(self.main_frame.HW.change_tmp_message, self.Messages["Row5"]))
+            self.mask_button.bind("<Leave>", self.main_frame.HW.remove_tmp_message)
 
             self.mask_supress_button=Button(self.subcanvas_Mask, text=self.Messages["RowB3"], command=self.supress_mask)
             self.mask_supress_button.grid(row=1, column=1, sticky="we")
@@ -204,8 +205,8 @@ class Row_Can(Canvas):
 
             self.mask_extend_button = Button(self.subcanvas_Mask, text=self.Messages["RowB4"], command=self.extend_mask)
             self.mask_extend_button.grid(row=3, column=0,columnspan=2, sticky="we")
-            self.mask_extend_button.bind("<Enter>", partial(self.change_msg,self.Messages["Row6"]))
-            self.mask_extend_button.bind("<Leave>", self.remove_msg)
+            self.mask_extend_button.bind("<Enter>", partial(self.main_frame.HW.change_tmp_message,self.Messages["Row6"]))
+            self.mask_extend_button.bind("<Leave>", self.main_frame.HW.remove_tmp_message)
             Pos_col+=2
 
 
@@ -219,15 +220,15 @@ class Row_Can(Canvas):
             self.scale_button = Button(self.subcanvas_Scale, textvariable=self.scale_it, command=self.scale_vid)
             self.scale_button.grid(row=1, column=0, sticky="we")
 
-            self.scale_button.bind("<Enter>", partial(self.change_msg,self.Messages["Row7"]))
-            self.scale_button.bind("<Leave>", self.remove_msg)
+            self.scale_button.bind("<Enter>", partial(self.main_frame.HW.change_tmp_message,self.Messages["Row7"]))
+            self.scale_button.bind("<Leave>", self.main_frame.HW.remove_tmp_message)
             self.scale_supress_button = Button(self.subcanvas_Scale, text=self.Messages["RowB5"], command=self.supress_scale)
             self.scale_supress_button.grid(row=1, column=1, sticky="we")
 
             self.scale_extend_button = Button(self.subcanvas_Scale, text=self.Messages["RowB6"], command=self.extend_scale)
             self.scale_extend_button.grid(row=2, column=0,columnspan=2, sticky="we")
-            self.scale_extend_button.bind("<Enter>", partial(self.change_msg,self.Messages["Row8"]))
-            self.scale_extend_button.bind("<Leave>", self.remove_msg)
+            self.scale_extend_button.bind("<Enter>", partial(self.main_frame.HW.change_tmp_message,self.Messages["Row8"]))
+            self.scale_extend_button.bind("<Leave>", self.main_frame.HW.remove_tmp_message)
             Pos_col+=2
 
 
@@ -280,40 +281,42 @@ class Row_Can(Canvas):
         '''Reset the scroll region to encompass the inner frame'''
         self.canvas_main.configure(scrollregion=self.canvas_main.bbox("all"))
 
-    #For user help:
-    def change_msg(self,new_message,*arg):
-        self.main_frame.user_message.set(new_message)
-
-    def remove_msg(self,*arg):
-        self.main_frame.user_message.set(self.main_frame.default_message)
-
     # Representation
     def update_repre(self):
         self.File_name_txt.set(self.Messages["Video"] + ": " + self.Video.Name)
 
     def show_first(self, *arg):
-        self.change_msg(self.Messages["Row9"])
-        cv2.namedWindow(self.Messages["RowW"])  # Create a named window
-        cv2.moveWindow(self.Messages["RowW"], int( int(350)), int(50))
-        capture = cv2.VideoCapture(self.Video.File_name)
-        if self.Video.Cropped[0]:
-            capture.set(cv2.CAP_PROP_POS_AVI_RATIO, int(self.Video.Cropped[1][0]/self.Video.Frame_nb[0]))
-        ret, Represent = capture.read()
-
+        self.main_frame.HW.change_tmp_message(self.Messages["Row9"])
+        cv2.namedWindow(" ")  # Create a named window
         ratio = self.width_show / self.Video.shape[1]
-        cv2.imshow(self.Messages["RowW"],cv2.resize(Represent,(int(self.Video.shape[1]*ratio),int(self.Video.shape[0]*ratio))))
+        X_Cur=self.master.winfo_pointerx()
+        Y_Cur = self.master.winfo_pointery()
+        if X_Cur<50+self.width_show+100 and Y_Cur<50+self.Video.shape[0]*ratio:
+            X_Pos=X_Cur+100
+        else:
+            X_Pos=50
+        cv2.moveWindow(" ", X_Pos, 50)
+        capture = cv2.VideoCapture(self.Video.File_name)#Faster with opencv
+        _, Represent = capture.read()
+        capture.release()
+        cv2.imshow(" ",cv2.resize(Represent,(int(self.Video.shape[1]*ratio),int(self.Video.shape[0]*ratio))))
         cv2.waitKey(1)
 
+
+
     def stop_show_first(self, *arg):
-        self.remove_msg()
+        self.main_frame.HW.remove_tmp_message()
         cv2.destroyAllWindows()
 
     def select_vid(self,*args):
         if not self.main_frame.wait_for_vid:
+            Xpos = self.main_frame.vsh.get()[0]
             self.main_frame.selected_vid=self.Video
             self.main_frame.update_selections()
+            self.main_frame.moveX(Xpos)
         else:
             self.main_frame.fusion_two_Vids(self.Video)
+
 
     def clear_data(self):
         # On supprime les fichiers associés
@@ -324,15 +327,16 @@ class Row_Can(Canvas):
     def update_fps(self):
         self.holder.set(round(self.Video.Frame_rate[1],2))
 
-    def change_fps(self, choice):########################NEW
-        self.Video.Cropped=[0,[0,self.Video.Frame_nb[0]]]
-        if choice==self.List_poss_FrRate[0]:########################NEW
-            self.Video.Frame_rate[1]=self.Video.Frame_rate[0]########################NEW
-        else:########################NEW
-            self.Video.Frame_rate[1] = choice########################NEW
-        self.Video.Frame_nb[1] = math.floor(self.Video.Frame_nb[0] / round(self.Video.Frame_rate[0] / self.Video.Frame_rate[1]))  ######NEW
+    def change_fps(self, choice):
+        if choice==self.List_poss_FrRate[0]:
+            self.Video.Frame_rate[1]=self.Video.Frame_rate[0]
+        else:
+            self.Video.Frame_rate[1] = choice
+
+        self.Video.Frame_nb[1] = int(self.Video.Frame_nb[0] / round(self.Video.Frame_rate[0] / self.Video.Frame_rate[1]))
+
         self.update()
-        self.bouton_Fr_rate.bind("<Enter>", partial(self.change_msg, self.Messages["Row0"].format(round(self.Video.Frame_rate[1], 2))))
+        self.bouton_Fr_rate.bind("<Enter>", partial(self.main_frame.HW.change_tmp_message, self.Messages["Row0"].format(round(self.Video.Frame_rate[1], 2))))
 
     def extend_change_fps(self):
         ratio=round(self.Video.Frame_rate[0] / self.Video.Frame_rate[1])
@@ -345,9 +349,11 @@ class Row_Can(Canvas):
         if self.Video.Cropped[0]:
             self.cropping_button.config(bg="#3aa6ff")
             one_every = int(round(round(self.Video.Frame_rate[0], 2) / self.Video.Frame_rate[1]))
-            self.text_crop.set(self.Messages["RowL1"].format(self.Video.Cropped[1][0]/one_every, round((self.Video.Cropped[1][0]/one_every) / self.Video.Frame_rate[1],2),self.Video.Cropped[1][1]/one_every, round((self.Video.Cropped[1][1]/one_every)/ self.Video.Frame_rate[1],2), \
-                        self.Video.Cropped[1][1]/one_every - self.Video.Cropped[1][0]/one_every,
-                        round((self.Video.Cropped[1][1] - self.Video.Cropped[1][0]) / self.Video.Frame_rate[0]),2))
+            self.text_crop.set(self.Messages["RowL1"].format(int(self.Video.Cropped[1][0]/one_every), round((self.Video.Cropped[1][0]/one_every) / self.Video.Frame_rate[1],2), \
+                                                             int((self.Video.Cropped[1][1]/one_every)), round((int(self.Video.Cropped[1][1]/one_every)+1)/ self.Video.Frame_rate[1],2), \
+                                                            int(self.Video.Cropped[1][1]/one_every) - int(self.Video.Cropped[1][0]/one_every) + 1, \
+                                                             round((int(self.Video.Cropped[1][1]/one_every) - int(self.Video.Cropped[1][0]/one_every) +1) / self.Video.Frame_rate[1],2)))
+
             self.crop_it.set(self.Messages["RowB7"])
             self.update_repre()
             self.update_back()
@@ -388,13 +394,15 @@ class Row_Can(Canvas):
     def update_selection(self):
         if self.main_frame.selected_vid==self.Video:
             self.isselected.config(bg="green")
+            self.config(bd=10, relief="ridge", highlightthickness=3)
         else:
             self.isselected.config(bg="red")
+            self.config(bd=1, relief="ridge", highlightthickness=1)
 
 
     #Stabilise
     def update_stab(self):
-        if self.Video.Stab:
+        if self.Video.Stab[0]:
             self.stab_button.config(bg="#3aa6ff")
             self.text_stab.set(self.Messages["RowL3"])
             self.stab_it.set(self.Messages["RowB9"])
@@ -415,15 +423,15 @@ class Row_Can(Canvas):
             response=messagebox.askyesno(message=self.Messages["GWarn1"])
             if response:
                 self.clear_data()
-                if self.Video.Stab:
-                    self.Video.Stab=False
+                if self.Video.Stab[0]:
+                    self.Video.Stab[0]=False
                 else:
-                    self.Video.Stab=True
+                    self.Video.Stab[0]=True
         else:
-            if self.Video.Stab:
-                self.Video.Stab = False
+            if self.Video.Stab[0]:
+                self.Video.Stab[0] = False
             else:
-                self.Video.Stab = True
+                self.Video.Stab[0] = True
         self.update()
 
     def check_stab(self):
@@ -432,7 +440,7 @@ class Row_Can(Canvas):
 
     def extend_stab(self):
         newWindow = Toplevel(self.parent.master)
-        interface = Interface_extend.Extend(parent=newWindow, value=self.Video.Stab, boss=self.main_frame, Video_file=self.Video, do_self=True, type="stab")
+        interface = Interface_extend.Extend(parent=newWindow, value=self.Video.Stab[0], boss=self.main_frame, Video_file=self.Video, do_self=True, type="stab")
 
 
     #Background
@@ -495,22 +503,28 @@ class Row_Can(Canvas):
 
     def show_back(self, *arg):
         if self.Video.Back[0]:
-            self.change_msg(self.Messages["Row14"])
-            cv2.namedWindow(self.Messages["Names7"])  # Create a named window
-            cv2.moveWindow(self.Messages["Names7"], int( int(50)), int(50))
-
-            ratio=self.width_show/self.Video.shape[1]
-            cv2.imshow(self.Messages["Names7"],cv2.resize(self.Video.Back[1],(int(self.Video.shape[1]*ratio),int(self.Video.shape[0]*ratio))))
+            self.main_frame.HW.change_tmp_message(self.Messages["Row14"])
+            cv2.namedWindow(" ")  # Create a named window
+            cv2.namedWindow(" ")  # Create a named window
+            ratio = self.width_show / self.Video.shape[1]
+            X_Cur = self.master.winfo_pointerx()
+            Y_Cur = self.master.winfo_pointery()
+            if X_Cur < 50 + self.width_show + 100 and Y_Cur < 50 + self.Video.shape[0] * ratio:
+                X_Pos = X_Cur + 100
+            else:
+                X_Pos = 50
+            cv2.moveWindow(" ", X_Pos, 50)
+            cv2.imshow(" ",cv2.resize(self.Video.Back[1],(int(self.Video.shape[1]*ratio),int(self.Video.shape[0]*ratio))))
             cv2.waitKey(1)
 
     def stop_show_back(self, *arg):
-        self.remove_msg()
+        self.main_frame.HW.remove_tmp_message()
         if self.Video.Back[0]:
             cv2.destroyAllWindows()
 
     def extend_back(self):
         newWindow = Toplevel(self.parent.master)
-        interface = Interface_extend.Extend(parent=newWindow, value=self.Video.Stab, boss=self.main_frame, Video_file=self.Video, do_self=True, type="back")
+        interface = Interface_extend.Extend(parent=newWindow, value=None, boss=self.main_frame, Video_file=self.Video, do_self=True, type="back")
 
     # Mask
     def update_mask(self):
@@ -563,22 +577,27 @@ class Row_Can(Canvas):
 
     def show_mask(self, *arg):
         if self.Video.Mask[0]:
-            self.capture = cv2.VideoCapture(self.Video.File_name)
             Which_part = 0
             if self.Video.Cropped[0]:
                 if len(self.Video.Fusion) > 1:  # Si on a plus d'une video
                     Which_part = [index for index, Fu_inf in enumerate(self.Video.Fusion) if Fu_inf[0] <= self.Video.Cropped[1][0]][-1]
-                    if Which_part != 0:  # si on est pas dans la première partie de la vidéo
-                        self.capture.release()
-                        self.capture = cv2.VideoCapture(self.Video.Fusion[Which_part][1])
-            self.capture.set(cv2.CAP_PROP_POS_FRAMES, self.Video.Cropped[1][0] - self.Video.Fusion[Which_part][0])
 
-            self.ret, self.Represent = self.capture.read()
-            self.Represent=cv2.cvtColor(self.Represent,cv2.COLOR_BGR2GRAY)
+            capture = cv2.VideoCapture(self.Video.Fusion[Which_part][1])  # Faster with opencv
+            capture.set(cv2.CAP_PROP_POS_FRAMES, self.Video.Cropped[1][0] - self.Video.Fusion[Which_part][0])
+            _, self.Represent = capture.read()
+            capture.release()
 
-            self.change_msg(self.Messages["Row15"])
-            cv2.namedWindow(self.Messages["Names8"])  # Create a named window
-            cv2.moveWindow(self.Messages["Names8"], int( int(50)), int(50))
+            self.main_frame.HW.change_tmp_message(self.Messages["Row15"])
+            cv2.namedWindow(" ")  # Create a named window
+            cv2.namedWindow(" ")  # Create a named window
+            ratio = self.width_show / self.Video.shape[1]
+            X_Cur = self.master.winfo_pointerx()
+            Y_Cur = self.master.winfo_pointery()
+            if X_Cur < 50 + self.width_show + 100 and Y_Cur < 50 + self.Video.shape[0] * ratio:
+                X_Pos = X_Cur + 100
+            else:
+                X_Pos = 50
+            cv2.moveWindow(" ", X_Pos, 50)
             mask = Dr.draw_mask(self.Video)
 
             if self.Video.Back[0]:
@@ -586,12 +605,11 @@ class Row_Can(Canvas):
             else:
                 mask_to_show=cv2.bitwise_and(self.Represent,self.Represent,mask=mask)
 
-            ratio = self.width_show / self.Video.shape[1]
-            cv2.imshow(self.Messages["Names8"],cv2.resize(mask_to_show,(int(self.Video.shape[1]*ratio),int(self.Video.shape[0]*ratio))))
+            cv2.imshow(" ",cv2.resize(mask_to_show,(int(self.Video.shape[1]*ratio),int(self.Video.shape[0]*ratio))))
             cv2.waitKey(1)
 
     def stop_show_mask(self, *arg):
-        self.remove_msg()
+        self.main_frame.HW.remove_tmp_message()
         if self.Video.Mask[0]:
             cv2.destroyAllWindows()
 

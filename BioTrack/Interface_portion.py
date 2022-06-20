@@ -50,7 +50,7 @@ class Show(Frame):
         self.bouton_change_col.grid(row=0,column=0, columnspan=2, sticky="ew")
 
         self.text_stab=StringVar()
-        if self.Vid.Stab:
+        if self.Vid.Stab[0]:
             self.text_stab.set(self.Messages["Portion2"])
         else:
             self.text_stab.set(self.Messages["Portion3"])
@@ -67,7 +67,7 @@ class Show(Frame):
         self.B_change_params = Button(self.User_buttons, text=self.Messages["Portion6"], command=self.change_params)
         self.B_change_params.grid(row=4,column=0, columnspan=2, sticky="ew")
 
-        self.B_redo_track = Button(self.User_buttons, text=self.Messages["Portion7"], command=self.redo_track)
+        self.B_redo_track = Button(self.User_buttons, text=self.Messages["Portion0"], command=self.redo_track)
         self.B_redo_track.grid(row=5,column=0, columnspan=2, sticky="ew")
 
         self.loading_lab = Label(self.User_buttons, text="", height=10)
@@ -83,23 +83,25 @@ class Show(Frame):
         self.parent.protocol("WM_DELETE_WINDOW", self.leave)
 
     def leave(self):
+        self.Vid_Lecteur.proper_close()
         self.boss.PortionWin.grab_release()
         self.boss.PortionWin.destroy()
+        self.boss.redo_Lecteur()
         self.destroy()
-        self.Vid_Lecteur.proper_close()
-        self.boss.Vid_Lecteur.bindings()
+
 
     def validate_correction(self):
+        self.Vid_Lecteur.proper_close()
         self.boss.PortionWin.grab_release()
         self.boss.PortionWin.destroy()
-        self.destroy()
-        self.Vid_Lecteur.proper_close()
-        self.boss.Vid_Lecteur.bindings()
         self.boss.change_for_corrected()
+        self.boss.redo_Lecteur()
+        self.destroy()
+
 
     def change_stab(self):
-        self.Vid.Stab=1-self.Vid.Stab
-        if self.Vid.Stab:
+        self.Vid.Stab[0]=1-self.Vid.Stab
+        if self.Vid.Stab[0]:
             self.text_stab.set(self.Messages["Portion2"])
         else:
             self.text_stab.set(self.Messages["Portion3"])
@@ -208,7 +210,7 @@ class Show(Frame):
         self.Vid_Lecteur.proper_close()
 
 
-    def modif_image(self, img=[], *args):
+    def modif_image(self, img=[], aff=False, *args):
         if len(img)==0:
             new_img=np.copy(self.last_empty)
         else:
@@ -220,8 +222,8 @@ class Show(Frame):
         else:
             to_remove=0
 
-        if self.Vid.Stab:
-            new_img = (Class_stabilise.find_best_position(Prem_Im=self.Vid_Lecteur.Prem_image_to_show, frame=new_img, show=False))
+        if self.Vid.Stab[0]:
+            new_img = (Class_stabilise.find_best_position(Vid=self.Vid, Prem_Im=self.Vid_Lecteur.Prem_image_to_show, frame=new_img, show=False))
 
 
         for ind in range(self.NB_ind):
@@ -235,20 +237,15 @@ class Show(Frame):
                         TMP_tail_2 = (int(self.Coos["Ind"+str(ind)][int(self.Scrollbar.active_pos - prev - to_remove)][0]),
                                       int(self.Coos["Ind"+str(ind)][int(self.Scrollbar.active_pos - prev - to_remove)][1]))
 
-                        new_img = cv2.line(new_img, TMP_tail_1, TMP_tail_2, color, 2)
+                        new_img = cv2.line(new_img, TMP_tail_1, TMP_tail_2, color, max(int(3*self.Vid_Lecteur.ratio),1))
 
             if self.Scrollbar.active_pos >= round(((self.Vid.Cropped[1][0]-1)/self.Vid_Lecteur.one_every)) and self.Scrollbar.active_pos <= int(((self.Vid.Cropped[1][1]-1)/self.Vid_Lecteur.one_every)+1):
                 center=self.Coos["Ind"+str(ind)][self.Scrollbar.active_pos - to_remove]
                 if center[0]!="NA":
-                    new_img=cv2.circle(new_img,(int(center[0]),int(center[1])),radius=5,color=color,thickness=-1)
                     if self.CheckVar.get()==int(ind):
-                        new_img = cv2.circle(new_img, (int(center[0]), int(center[1])), radius=7, color=(255,255,255),thickness=3)
-                        new_img = cv2.circle(new_img, (int(center[0]), int(center[1])), radius=7, color=(0,0,0), thickness=2)
-
-        new_img = cv2.putText(new_img, self.Vid.Name, (10, self.Vid.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 2,
-                          (255, 255, 255), 5)
-        new_img = cv2.putText(new_img, self.Vid.Name, (10, self.Vid.shape[0]-10), cv2.FONT_HERSHEY_SIMPLEX, 2,
-                          (0, 0, 0), 3)
+                        new_img = cv2.circle(new_img, (int(center[0]), int(center[1])), radius=max(int(5*self.Vid_Lecteur.ratio),5), color=(255,255,255),thickness=-1)
+                        new_img = cv2.circle(new_img, (int(center[0]), int(center[1])), radius=max(int(6*self.Vid_Lecteur.ratio),3), color=(0,0,0), thickness=-1)
+                    new_img=cv2.circle(new_img,(int(center[0]),int(center[1])),radius=max(int(4*self.Vid_Lecteur.ratio),1),color=color,thickness=-1)
 
         self.Vid_Lecteur.afficher_img(new_img)
 

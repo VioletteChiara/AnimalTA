@@ -5,7 +5,7 @@ from tkinter import messagebox
 import pickle
 import shutil
 import cv2
-from BioTrack import Interface_Check, UserMessages, Interface_extend, Interface_Analyses3, Class_Video, Class_Row_Videos, Interface_Vids_for_track, Interface_parameters_track, Interface_Vids_for_convert, Interface_Save_Vids
+from BioTrack import Interface_Check, UserMessages, Interface_extend, Interface_Analyses3, Class_Video, Class_Row_Videos, Interface_Vids_for_track, Interface_parameters_track, Interface_Vids_for_convert, Interface_Save_Vids, User_help
 import os
 from functools import partial
 from win32api import GetMonitorInfo, MonitorFromPoint
@@ -58,22 +58,19 @@ class Interface(Frame):
         self.canvas_title_bar.columnconfigure(4, weight=1)
         self.canvas_title_bar.bind("<Button-1>", self.press_fenetre)
         self.canvas_title_bar.bind("<B1-Motion>", self.move_fenetre)
-        self.default_message=self.Messages["Welcome"]
-        Grid.columnconfigure(self, 0, weight=1)########NEW
+
 
         # Visualisation de la video et barre de temps
         self.canvas_main = Frame(self,  bd=2, highlightthickness=1, relief='ridge')
         self.canvas_main.grid(row=1, column=0, sticky="nsew")
-        Grid.rowconfigure(self, 1, weight=1)########NEW
+        Grid.rowconfigure(self, 1, weight=1)
+        Grid.columnconfigure(self, 0, weight=1)
 
         self.canvas_show=Frame(self.canvas_main,  bd=2, highlightthickness=1, relief='ridge')
         self.canvas_show.grid(row=0, column=0, rowspan=2, sticky="nsew")
+
         self.rows_optns=Frame(self.canvas_show, bd=2, highlightthickness=1, relief='ridge')
-        Grid.columnconfigure(self.canvas_main, 0, weight=1)  ########NEW
-        Grid.rowconfigure(self.canvas_main, 0, weight=1)  ########NEW
-
         Grid.rowconfigure(self.rows_optns, 0, weight=1)  ########NEW
-
         Grid.columnconfigure(self.rows_optns, 1, weight=1)  ########NEW
         Grid.columnconfigure(self.rows_optns, 2, weight=1)  ########NEW
         Grid.columnconfigure(self.rows_optns, 3, weight=1)  ########NEW
@@ -82,6 +79,18 @@ class Interface(Frame):
         Grid.columnconfigure(self.rows_optns, 6, weight=100)  ########NEW
         Grid.columnconfigure(self.rows_optns, 7, weight=1)  ########NEW
 
+        #Aide à l'utilisateur:
+        self.HW=User_help.Help_win(self.canvas_main, default_message=self.Messages["Welcome"], width=250)
+        self.HW.grid(row=0,column=1, sticky="nsew")
+
+        self.canvas_next_step=Frame(self.canvas_main)
+        self.canvas_next_step.grid(row=1, column=1, sticky="nsew")
+        Grid.columnconfigure(self.canvas_next_step, 0, weight=1)  ########NEW
+
+        Grid.columnconfigure(self.canvas_main, 0, weight=1000)  ########NEW
+        Grid.columnconfigure(self.canvas_main, 1, weight=1)  ########NEW
+        Grid.rowconfigure(self.canvas_main, 0, weight=1000)  ########NEW
+        Grid.rowconfigure(self.canvas_main, 1, weight=1)  ########NEW
 
         #Widget row options:
         self.Optns_Lab=Entry(self.rows_optns, textvar=self.project_name, bg="darkgrey", relief="ridge", font=("Arial", 14))
@@ -94,25 +103,25 @@ class Interface(Frame):
         self.bouton_Fus = Button(self.rows_optns, text=self.Messages["GButton16"], command=self.fus_video)
         self.bouton_Fus.grid(row=0, column=3, sticky="nswe")
         self.bouton_Fus.config(state="disable")
-        self.bouton_Fus.bind("<Enter>", partial(self.change_msg, self.Messages["General15"]))
-        self.bouton_Fus.bind("<Leave>", self.remove_msg)
+        self.bouton_Fus.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["General15"]))
+        self.bouton_Fus.bind("<Leave>", self.HW.remove_tmp_message)
 
 
         self.bouton_make_track = Button(self.rows_optns, text=self.Messages["GButton10"], command=self.begin_track)
         self.bouton_make_track.grid(row=0, column=4, sticky="nswe")
-        self.bouton_make_track.bind("<Enter>", partial(self.change_msg, self.Messages["General19"]))
-        self.bouton_make_track.bind("<Leave>", self.remove_msg)
+        self.bouton_make_track.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["General19"]))
+        self.bouton_make_track.bind("<Leave>", self.HW.remove_tmp_message)
 
         self.bouton_make_analyses = Button(self.rows_optns, text=self.Messages["GButton15"], command=self.run_analyses)
         self.bouton_make_analyses.grid(row=0, column=5, sticky="nswe")
-        self.bouton_make_analyses.bind("<Enter>", partial(self.change_msg, self.Messages["General20"]))
-        self.bouton_make_analyses.bind("<Leave>", self.remove_msg)
+        self.bouton_make_analyses.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["General20"]))
+        self.bouton_make_analyses.bind("<Leave>", self.HW.remove_tmp_message)
 
         self.bouton_save_TVid = Button(self.rows_optns, text=self.Messages["GButton18"], command=self.export_vid)
         self.bouton_save_TVid.grid(row=0, column=7, sticky="nse")
         self.bouton_save_TVid.config(state="disable")
-        self.bouton_save_TVid.bind("<Enter>", partial(self.change_msg, self.Messages["GButton19"]))
-        self.bouton_save_TVid.bind("<Leave>", self.remove_msg)
+        self.bouton_save_TVid.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["GButton19"]))
+        self.bouton_save_TVid.bind("<Leave>", self.HW.remove_tmp_message)
 
 
         self.canvas_rows = Canvas(self.canvas_show, bd=2, highlightthickness=1, relief='ridge')
@@ -139,15 +148,6 @@ class Interface(Frame):
         self.bind_all("<MouseWheel>", self.on_mousewheel)
         self.parent.bind_all("<Button-1>", self.remove_Fus)
         self.bind_all("<Button-1>", self.remove_Fus)
-
-
-        #Aide à l'utilisateur:
-        self.canvas_help = Frame(self.canvas_main, height=100,  highlightthickness=4, relief='flat', highlightbackground="RoyalBlue3")
-        self.canvas_help.grid(row=0,column=1, sticky="nsew")
-        Info_title=Label(self.canvas_help, text=self.Messages["Info"],  justify=CENTER, background="RoyalBlue3", fg="white", font=("Helvetica", 16, "bold"))
-        Info_title.grid(row=0, sticky="new")
-        Grid.columnconfigure(self.canvas_help, 0, weight=1)
-
 
 
         # Widgets:
@@ -186,48 +186,32 @@ class Interface(Frame):
         self.bouton_fullscreen = Button(self.canvas_title_bar, text=u'\u2B1C', command=self.fullscreen)
         self.bouton_fullscreen.grid(row=0, column=10, sticky="e")
 
-
         self.bouton_Fermer = Button(self.canvas_title_bar, text="X", fg="white", bg="red", command=self.fermer)
         self.bouton_Fermer.grid(row=0, column=11, sticky="e")
 
-        # Aide à l'utilisateur
-        self.user_message=StringVar()
-        self.user_message.set(self.default_message)
-        self.User_help=Label(self.canvas_help, textvariable=self.user_message, width=35, wraplengt=200,  justify=LEFT)
-        self.User_help.grid(row=1, sticky="new")
-
-
-        self.canvas_help.rowconfigure(1,min=50)
-
-        self.canvas_next_step=Frame(self.canvas_main)
-        self.canvas_next_step.grid(row=1, column=1)
-        Grid.rowconfigure(self.canvas_help, 0, weight=1)  ########NEW
-        Grid.rowconfigure(self.canvas_help, 1, weight=100)
-
         self.Beginn_track=Button(self.canvas_next_step, text=self.Messages["GButton4"], command=self.Beg_track)
         self.Beginn_track.config(state="disable")
-        self.Beginn_track.bind("<Enter>", partial(self.change_msg, self.Messages["General11"]))
-        self.Beginn_track.bind("<Leave>", self.remove_msg)
+        self.Beginn_track.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["General11"]))
+        self.Beginn_track.bind("<Leave>", self.HW.remove_tmp_message)
 
         self.Show_T_infos=Label(self.canvas_next_step, textvariable=self.Infos_track, wraplength=200)
 
         self.BExtend_track=Button(self.canvas_next_step, text=self.Messages["GButton5"], command=self.extend_track)
         self.BExtend_track.config(state="disable")
-        self.BExtend_track.bind("<Enter>", partial(self.change_msg, self.Messages["General12"]))
-        self.BExtend_track.bind("<Leave>", self.remove_msg)
+        self.BExtend_track.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["General12"]))
+        self.BExtend_track.bind("<Leave>", self.HW.remove_tmp_message)
 
         self.bouton_check_track = Button(self.canvas_next_step, text=self.Messages["GButton13"], command=self.check_track)
         self.bouton_check_track.config(state="disable")
-        self.bouton_check_track.bind("<Enter>", partial(self.change_msg, self.Messages["General13"]))
-        self.bouton_check_track.bind("<Leave>", self.remove_msg)
+        self.bouton_check_track.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["General13"]))
+        self.bouton_check_track.bind("<Leave>", self.HW.remove_tmp_message)
 
         self.bouton_analyse_track = Button(self.canvas_next_step, text=self.Messages["GButton14"], command=self.analyse_track)
         self.bouton_analyse_track.config(state="disable")
-        self.bouton_analyse_track.bind("<Enter>", partial(self.change_msg, self.Messages["General14"]))
-        self.bouton_analyse_track.bind("<Leave>", self.remove_msg)
+        self.bouton_analyse_track.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["General14"]))
+        self.bouton_analyse_track.bind("<Leave>", self.HW.remove_tmp_message)
 
-        self.get_attention(0)
-
+        self.HW.get_attention(0)
 
 
 
@@ -254,21 +238,7 @@ class Interface(Frame):
         self.Show_T_infos.grid(row=1, sticky="sew")
         self.Beginn_track.grid(row=0,sticky="sew")
 
-    def get_attention(self, count):
-        curcol=self.User_help.cget("bg")
-        if curcol=="red":
-            self.User_help.config(bg="SystemButtonFace")
-        else:
-            self.User_help.config(bg="red")
-        if (count)<5:
-            count+=1
-            self.User_help.after(250, self.get_attention,count)
 
-    def change_msg(self,new_message,*arg):
-        self.user_message.set(new_message)
-
-    def remove_msg(self,*arg):
-        self.user_message.set(self.default_message)
 
     def first_action(self, *arg):
         self.first=False
@@ -357,8 +327,9 @@ class Interface(Frame):
         self.changing=False
 
 
-    def moveX(self, *arg):
-        self.canvas_rows.xview_moveto('0.0')
+    def moveX(self, pos=0.0):
+        self.canvas_rows.xview_moveto(str(pos))
+
 
     def on_mousewheel(self, event):
         self.vsv.set(self.vsv.get() + int(-1*(event.delta/120)))
@@ -429,7 +400,7 @@ class Interface(Frame):
         #We remove the actual canvas
         self.canvas_show.grid_forget()
         self.canvas_next_step.grid_forget()
-        self.canvas_help.grid_forget()
+        self.HW.grid_forget()
         self.bouton_Lang.config(state="disable")
         self.bouton_New.config(state="disable")
         self.bouton_Save.config(state="disable")
@@ -446,7 +417,7 @@ class Interface(Frame):
     def return_main(self):
         # We add the actual canvas
         self.canvas_show.grid(row=0, column=0, rowspan=2, sticky="nsew")
-        self.canvas_help.grid(row=0, column=1, sticky="nsew")
+        self.HW.grid(row=0, column=1, sticky="nsew")
         self.canvas_next_step.grid(row=1, column=1, sticky="nsew")
         self.update_selections()
         self.bouton_Lang.config(state="active")
@@ -465,9 +436,13 @@ class Interface(Frame):
 
     def onFrameConfigure(self, event):
         '''Reset the scroll region to encompass the inner frame'''
+        Xpos = self.vsh.get()[0]  # Save the Xscrollbar position
         self.canvas_rows.configure(scrollregion=self.canvas_rows.bbox("all"))
         if self.first:
             self.moveX()
+        else:
+            self.moveX(Xpos)  # Keep the Xscrollbar position
+
 
     def new_project(self):
         if not self.folder == None:
@@ -495,8 +470,8 @@ class Interface(Frame):
                     shutil.rmtree(self.folder)
                     os.makedirs(self.folder)
                 self.project_name.set(file_name[:-4])
-                self.default_message=self.Messages["General0"]
-                self.user_message.set(self.default_message)
+                self.HW.default_message=self.Messages["General0"]
+                self.HW.remove_tmp_message()
                 self.liste_of_videos=[]
                 self.load_projects()
                 self.rows_optns.grid(row=0, column=0, sticky="sewn")
@@ -504,33 +479,28 @@ class Interface(Frame):
                     data_to_save = dict(Project_name=self.project_name.get(), Folder=self.folder, Videos=self.liste_of_videos)
                     pickle.dump(data_to_save, fp)
                 self.bouton_Save.config(state="active")
-        except:
-            pass
+        except Exception as e:
+            print(e)
 
     def add_video(self):
-        try:
-            videos_to_add = filedialog.askopenfilenames()
-            self.list_to_convert = []
-            for file in videos_to_add:
-                point_pos = file.rfind(".")
-                if file[point_pos:].lower() != ".avi":
-                    self.list_to_convert.append(file)
-                elif file not in [Vid.File_name for Vid in self.liste_of_videos]:
-                    self.liste_of_videos.append(Class_Video.Video(File_name=file, Folder=self.folder))
+        videos_to_add = filedialog.askopenfilenames()
+        self.list_to_convert = []
+        for file in videos_to_add:
+            point_pos = file.rfind(".")
 
-            if len(self.list_to_convert)>0:
-                newWindow = Toplevel(self.parent.master)
-                interface = Interface_Vids_for_convert.Convert(parent=newWindow, boss=self)
+            if file[point_pos:].lower() != ".avi":
+                self.list_to_convert.append(file)
+            elif file not in [Vid.File_name for Vid in self.liste_of_videos]:
+                self.liste_of_videos.append(Class_Video.Video(File_name=file, Folder=self.folder))
 
-            self.load_projects()
-            self.default_message = self.Messages["General1"]
-            self.user_message.set(self.default_message)
-            self.grid_param_track()
+        if len(self.list_to_convert)>0:
+            newWindow = Toplevel(self.parent.master)
+            interface = Interface_Vids_for_convert.Convert(parent=newWindow, boss=self)
 
-        except:
-            self.get_attention(0)
-            self.user_message.set(self.Messages["General3"])
-
+        self.load_projects()
+        self.HW.default_message = self.Messages["General1"]
+        self.HW.remove_tmp_message()
+        self.grid_param_track()
         self.update_selections()
 
     def supr_video(self, Vid="NA"):
@@ -551,18 +521,19 @@ class Interface(Frame):
                 self.update_selections()
                 self.save()
 
+
     def fus_video(self):
         if self.wait_for_vid:
             self.wait_for_vid=False
-            self.default_message=self.Messages["General1"]
-            self.change_msg(self.Messages["General1"])
-            self.bouton_Fus.bind("<Enter>", partial(self.change_msg, self.Messages["General15"]))
+            self.HW.change_default_message(self.Messages["General1"])
+            self.HW.change_tmp_message(self.Messages["General1"])
+            self.bouton_Fus.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["General15"]))
             self.bouton_Fus.config(bg="SystemButtonFace", activebackground="SystemButtonFace")
         else:
             self.wait_for_vid=True
-            self.default_message=self.Messages["General16"]
-            self.change_msg(self.Messages["General16"])
-            self.bouton_Fus.bind("<Enter>", partial(self.change_msg, self.Messages["General16"]))
+            self.HW.change_default_message(self.Messages["General16"])
+            self.HW.change_tmp_message(self.Messages["General16"])
+            self.bouton_Fus.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["General16"]))
             self.bouton_Fus.config(bg="red", activebackground="red", state="active")
 
     def remove_Fus(self, event):
@@ -588,42 +559,44 @@ class Interface(Frame):
 
 
     def load_projects(self):
-        Ypos=1
         self.list_projects = []
-        for Vid in self.liste_of_videos:
-            self.list_projects.append(
-                Class_Row_Videos.Row_Can(parent=self.Visualise_vids, main_boss=self, Video_file=Vid, proj_pos=Ypos - 1, bd=2, highlightthickness=1, relief='ridge'))
-            Ypos+=1
         self.afficher_projects()
 
 
     def afficher_projects(self, *arg):
+        Xpos=self.vsh.get()[0]#Save the Xscrollbar position
 
         try:
             for label in self.Visualise_vids.grid_slaves():
                     label.grid_forget()
 
-        except Exception:
-            pass
+        except Exception as e:
+            print(e)
 
-        Ypos = 0
         try:
-            if len(self.list_projects)>0:
+            if len(self.liste_of_videos)>0:
+                Ypos = 0
                 central=int(self.vsv.get())
                 nb_visibles = self.canvas_show.winfo_height() / (130)
                 self.vsv.config(to=len(self.liste_of_videos) - 1)
+                self.list_projects=[]
+                for who in range(central,min(len(self.liste_of_videos),int(central+round(nb_visibles))+1)):
+                    self.list_projects.append(Class_Row_Videos.Row_Can(parent=self.Visualise_vids, main_boss=self, Video_file=self.liste_of_videos[who],
+                                             proj_pos=Ypos - 1, bd=2, highlightthickness=1, relief='ridge'))
+                    self.list_projects[len(self.list_projects)-1].grid(row=Ypos, column=0, sticky="we")
+                    self.list_projects[len(self.list_projects) - 1].update_selection()
 
-                for who in range(central,min(len(self.list_projects),int(central+round(nb_visibles))+1)):
-                    self.list_projects[who].grid(row=Ypos, column=0, sticky="we")
                     Ypos+=1
+                self.canvas_show.update()
 
-        except:
-            pass
+        except Exception as e:
+            print(e)
+
+        self.moveX(Xpos)#Keep the Xscrollbar position
 
     def update_projects(self):
         for Row in self.list_projects:
             Row.update()
-
 
     def update_selections(self):
         if self.selected_vid==None:
@@ -715,6 +688,7 @@ class Interface(Frame):
             messagebox.showinfo(message=self.Messages["GWarn3"], title=self.Messages["GWarnT3"])
 
 
+
     def close_file(self):
         if not self.folder == None:
             answer = messagebox.askyesnocancel(self.Messages["General17"], self.Messages["General18"])
@@ -773,16 +747,36 @@ class Interface(Frame):
                 self.project_name.set(data_to_load["Project_name"])
                 self.folder = data_to_load["Folder"]
                 self.liste_of_videos = data_to_load["Videos"]
+
+            to_suppr=[]
+            #On verifie que les vidéos sont toujours trouvables:
+            for V in range(len(self.liste_of_videos)):
+                if not os.path.isfile(self.liste_of_videos[V].File_name):
+                    resp=messagebox.askyesno(self.Messages["GWarnT5"], self.Messages["GWarn5"].format(self.liste_of_videos[V].File_name))
+                    if resp:
+                        self.liste_of_videos[V].clear_files()
+                        to_suppr.append(V)
+                    else:
+                        if len(to_suppr) > 0:
+                            self.liste_of_videos.pop(to_suppr)
+                        self.close()
+                        return
+
+            if len(to_suppr)>0:
+                for elem in sorted(to_suppr, reverse=True):
+                    del self.liste_of_videos[elem]
+
+
             #On vérifie si on a bien les coordonnées:
             for V in self.liste_of_videos:
                 V.check_coos()
             self.load_projects()
             self.rows_optns.grid(row=0, column=0, sticky="sewn")
             if len(self.liste_of_videos)>0:
-                self.default_message = self.Messages["General1"]
+                self.HW.default_message = self.Messages["General1"]
             else :
-                self.default_message = self.Messages["General0"]
-            self.user_message.set(self.default_message)
+                self.HW.default_message = self.Messages["General0"]
+            self.HW.remove_tmp_message()
             self.file_to_save=self.file_to_open
             self.bouton_Save.config(state="active")
             if len(self.liste_of_videos)>0:
@@ -790,16 +784,15 @@ class Interface(Frame):
 
             self.bouton_Close.config(state="active")
 
-        except:
-            self.default_message = self.Messages["General10"]
-            self.user_message.set(self.default_message)
+        except Exception as e:
+            print(e)
+            self.HW.default_message = self.Messages["General10"]
+            self.HW.remove_tmp_message()
 
     def stab_all(self):
         for Vid in self.liste_of_videos:
-            Vid.Stab=True
-            if Vid.Back[0]:
-                Vid.Back[0]=False
-                Vid.Back[1]=[]
+            Vid.Stab[0]=True
+
         self.update_projects()
 
     def update_lan(self,*args):

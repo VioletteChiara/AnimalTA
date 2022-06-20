@@ -1,7 +1,6 @@
 from tkinter import *
-from BioTrack import Interface_pretracking, Interface_First_Time
+from BioTrack import Interface_pretracking, Interface_First_Time, UserMessages
 from ctypes import windll
-from PIL import Image, ImageTk
 
 class Mainframe(Tk):
     def __init__(self):
@@ -10,15 +9,11 @@ class Mainframe(Tk):
         f = open("Files/Language", "r")
         Language=(f.read())
 
-        if Language == "Undefined":
-            newWindow = Toplevel(self)
-            interface = Interface_First_Time.First_params(parent=newWindow, boss=self)
-            interface.grid()
-        else:
-            self.open_BioTrack()
+        self.open_BioTrack()
 
 
     def open_BioTrack(self):
+        print("B")
         self.frame = Interface_pretracking.Interface(self)
         self.frame.grid(sticky="nsew")
 

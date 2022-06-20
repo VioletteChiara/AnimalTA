@@ -1,6 +1,6 @@
 import time
 from tkinter import *
-from BioTrack import UserMessages, Class_Shapes_rows,Interface_border_portion, Function_draw_mask, Function_extend_analyses, Interface_extend_analyses
+from BioTrack import UserMessages, Class_Shapes_rows,Interface_border_portion, Function_draw_mask, Interface_extend_analyses, User_help
 import numpy as np
 import PIL
 import math
@@ -14,10 +14,16 @@ class Details_basics(Frame):
         Frame.__init__(self, parent, bd=5, **kwargs)
         self.parent=parent
         self.main=main
-        self.grid()
+        self.grid(sticky="nsew")
         self.ready=False
         self.parent.attributes('-toolwindow', True)
 
+        Grid.columnconfigure(self.parent, 0, weight=1)  ########NEW
+        Grid.rowconfigure(self.parent, 0, weight=1)  ########NEW
+
+        Grid.columnconfigure(self, 0, weight=1)  ########NEW
+        Grid.rowconfigure(self, 0, weight=1)  ########NEW
+        Grid.rowconfigure(self, 1, weight=100)  ########NEW
 
         self.Language = StringVar()
         f = open("Files/Language", "r")
@@ -30,54 +36,59 @@ class Details_basics(Frame):
         self.moving =False
 
         self.List_inds_names=dict()
-        compteur=0
-        for Ar in range(len(self.main.Vid.Track[1][6])):
-            for Ind in range(self.main.Vid.Track[1][6][Ar]):
-                self.List_inds_names["Ind"+str(compteur)]=self.Messages["Arena_short"]+ "{}, ".format(Ar)+ self.Messages["Individual_short"] +" {}".format(Ind)
-                compteur+=1
+
+        for ind in range(len(self.main.Vid.Identities)):
+            self.List_inds_names["Ind"+str(ind)]=self.Messages["Arena_short"]+ "{}, ".format(self.main.Vid.Identities[ind][0])+ self.Messages["Individual_short"] +" {}".format(self.main.Vid.Identities[ind][1])
 
         self.Ind_name=StringVar()
-        self.Ind_name.set(self.Messages["Arena_short"]+ "{}, ".format(0)+ self.Messages["Individual_short"] +" {}".format(0))
+        self.Ind_name.set(self.Messages["Arena_short"]+ "{}, ".format(self.main.Vid.Identities[0][0])+ self.Messages["Individual_short"] +" {}".format(self.main.Vid.Identities[0][1]))
         self.Which_ind = OptionMenu(self, self.Ind_name, *self.List_inds_names.values(), command=self.change_ind)
-        self.Which_ind.grid(row=0, column=0,)
+        self.Which_ind.grid(row=0, column=0,sticky="n")
 
         Frame_for_Graph=Frame(self)
-        Frame_for_Graph.grid(row=1, column=0)
+        Frame_for_Graph.grid(row=1, column=0, stick="nsew")
+        Grid.columnconfigure(Frame_for_Graph, 0, weight=1)  ########NEW
+        Grid.columnconfigure(Frame_for_Graph, 1, weight=1)  ########NEW
+        Grid.columnconfigure(Frame_for_Graph, 2, weight=100)  ########NEW
 
+        Grid.rowconfigure(Frame_for_Graph, 0, weight=100)  ########NEW
+        Grid.rowconfigure(Frame_for_Graph, 1, weight=1)  ########NEW
+        Grid.rowconfigure(Frame_for_Graph, 2, weight=1)  ########NEW
 
         self.Ylab_can = Canvas(Frame_for_Graph, width=20, height=300)
-        self.Ylab_can.grid(row=1,column=0, sticky="nsew")
+        self.Ylab_can.grid(row=0,column=0, sticky="nsew")
 
         self.Yaxe_can = Canvas(Frame_for_Graph, width=50, height=300)
-        self.Yaxe_can.grid(row=1,column=1, sticky="nsew")
+        self.Yaxe_can.grid(row=0,column=1, sticky="nsew")
 
         self.Graph=Canvas(Frame_for_Graph, width=300, height=300, scrollregion=(0,0,0,0))
-        self.Graph.grid(row=1,column=2,sticky="nsew")
+        self.Graph.grid(row=0,column=2,sticky="nsew")
         self.Graph.bind("<Configure>", self.show_graph)
         self.Graph.bind("<Button-1>", self.callback)
         self.Graph.bind("<B1-Motion>", self.move_seuil)
 
         self.Xaxe_can = Canvas(Frame_for_Graph, height=15)
-        self.Xaxe_can.grid(row=2,column=2, sticky="nsew")
+        self.Xaxe_can.grid(row=1,column=2, sticky="nsew")
         self.Xaxe_can.create_text(210, 7, text=self.Messages["Analyses_details_graph_X"])
 
         hsb=Scrollbar(Frame_for_Graph, orient=HORIZONTAL, command=self.Graph.xview)
-        hsb.grid(row=3,column=2,sticky="ew")
+        hsb.grid(row=2,column=2,sticky="ew")
         self.Graph.config(xscrollcommand=hsb.set)
         self.stay_on_top()
 
-
         User_Frame=Frame(self)
         User_Frame.grid(row=1, column=1, sticky="nsew")
-        self.default_mess=self.Messages["Analyses_details0"].format(round(self.main.Calc_speed.seuil_movement,3), self.main.Vid.Scale[1])
-        self.displayed_mess=StringVar(value=self.default_mess)
-        User_help=Label(User_Frame,textvariable=self.displayed_mess, wraplength=250, height=20, width=40)
-        User_help.grid(sticky="nsew")
+        Grid.rowconfigure(User_Frame, 0, weight=100)
+        Grid.rowconfigure(User_Frame, 1, weight=1)
 
-        User_Frame.rowconfigure(1, minsize=50)
+
+        #Help user and parameters
+        self.HW=User_help.Help_win(User_Frame, default_message=self.Messages["Analyses_details0"].format(round(self.main.Calc_speed.seuil_movement,3),self.main.Vid.Scale[1]))
+        self.HW.grid(row=0, column=0,sticky="nsew")
+        self.HW.grid_propagate(False)
 
         Frame_for_results=Frame(User_Frame)
-        Frame_for_results.grid(row=2, column=0)
+        Frame_for_results.grid(row=1, column=0)
 
 
         # Prop time lost
@@ -88,8 +99,8 @@ class Details_basics(Frame):
         self.Show_Prop_lost=Label(Frame_for_results, textvariable=self.Prop_lost)
         self.Show_Prop_lost.grid(row=0, column=1, sticky="w")
         self.Show_Prop_lost.grid()
-        self.Label_Prop_lost.bind("<Enter>", lambda a:self.displayed_mess.set(self.Messages["Analyses_details1"]))
-        self.Label_Prop_lost.bind("<Leave>", lambda a: self.displayed_mess.set(self.default_mess))
+        self.Label_Prop_lost.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Analyses_details1"]))
+        self.Label_Prop_lost.bind("<Leave>", self.HW.remove_tmp_message)
 
         #Mean speed
         self.Mean_Speed=StringVar()
@@ -98,8 +109,8 @@ class Details_basics(Frame):
         self.Label_mean.grid(row=1, column=0, sticky="e")
         self.Show_mean=Label(Frame_for_results, textvariable=self.Mean_Speed)
         self.Show_mean.grid(row=1, column=1, sticky="w")
-        self.Label_mean.bind("<Enter>", lambda a:self.displayed_mess.set(self.Messages["Analyses_details2"]))
-        self.Label_mean.bind("<Leave>", lambda a: self.displayed_mess.set(self.default_mess))
+        self.Label_mean.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Analyses_details2"]))
+        self.Label_mean.bind("<Leave>", self.HW.remove_tmp_message)
 
         # Mean speed in move
         self.Mean_Speed_Move=StringVar()
@@ -109,8 +120,8 @@ class Details_basics(Frame):
         self.Show_mean_move=Label(Frame_for_results, textvariable=self.Mean_Speed_Move)
         self.Show_mean_move.grid(row=2, column=1, sticky="w")
         self.Show_mean_move.grid()
-        self.Label_mean_move.bind("<Enter>", lambda a:self.displayed_mess.set(self.Messages["Analyses_details3"]))
-        self.Label_mean_move.bind("<Leave>", lambda a: self.displayed_mess.set(self.default_mess))
+        self.Label_mean_move.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Analyses_details3"]))
+        self.Label_mean_move.bind("<Leave>", self.HW.remove_tmp_message)
 
         # Prop time move
         self.Prop_move=StringVar()
@@ -120,8 +131,8 @@ class Details_basics(Frame):
         self.Show_Prop_move=Label(Frame_for_results, textvariable=self.Prop_move)
         self.Show_Prop_move.grid(row=3, column=1, sticky="w")
         self.Show_Prop_move.grid()
-        self.Label_Prop_move.bind("<Enter>", lambda a:self.displayed_mess.set(self.Messages["Analyses_details4"]))
-        self.Label_Prop_move.bind("<Leave>", lambda a: self.displayed_mess.set(self.default_mess))
+        self.Label_Prop_move.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Analyses_details4"]))
+        self.Label_Prop_move.bind("<Leave>", self.HW.remove_tmp_message)
 
         # Calculate dist
         self.Dist_total=StringVar()
@@ -131,8 +142,8 @@ class Details_basics(Frame):
         self.Show_Dist_total=Label(Frame_for_results, textvariable=self.Dist_total)
         self.Show_Dist_total.grid(row=4, column=1, sticky="w")
         self.Show_Dist_total.grid()
-        self.Label_Dist_total.bind("<Enter>", lambda a:self.displayed_mess.set(self.Messages["Analyses_details5"]))
-        self.Label_Dist_total.bind("<Leave>", lambda a: self.displayed_mess.set(self.default_mess))
+        self.Label_Dist_total.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Analyses_details5"]))
+        self.Label_Dist_total.bind("<Leave>", self.HW.remove_tmp_message)
 
 
         # Calculate dist move
@@ -143,8 +154,8 @@ class Details_basics(Frame):
         self.Show_Dist_total_move=Label(Frame_for_results, textvariable=self.Dist_total_move)
         self.Show_Dist_total_move.grid(row=5, column=1, sticky="w")
         self.Show_Dist_total_move.grid()
-        self.Label_Dist_total_move.bind("<Enter>", lambda a:self.displayed_mess.set(self.Messages["Analyses_details6"]))
-        self.Label_Dist_total_move.bind("<Leave>", lambda a: self.displayed_mess.set(self.default_mess))
+        self.Label_Dist_total_move.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Analyses_details6"]))
+        self.Label_Dist_total_move.bind("<Leave>", self.HW.remove_tmp_message)
 
 
         self.Quit_button=Button(self, text=self.Messages["Analyses_details_B1"], command=self.parent.destroy, background="green")
@@ -236,9 +247,9 @@ class Details_basics(Frame):
         self.add_seuil()
 
     def draw_graph(self,Xs,Ys):
-
         self.Graph.delete("all")
         self.Yaxe_can.delete("all")
+        self.Ylab_can.delete("all")
 
         self.ecart=50
         self.Graph.update()
@@ -255,7 +266,6 @@ class Details_basics(Frame):
 
         self.Ratio_Xs = (self.Width) / max(Xs)
         Corr_Xs = [self.Ratio_Xs * val for val in Xs]
-
 
         #Axes labels
         self.Ylab_can.create_text(10,self.Height/2,text=self.Messages["Analyses_details_graph_Y"].format(self.main.Vid.Scale[1]),angle=90)
@@ -320,11 +330,10 @@ class Details_basics(Frame):
                     self.main.Calc_speed.seuil_movement=((self.Height-event.widget.canvasy(event.y)-self.ecart)/self.Ratio_Ys)
                 self.add_seuil()
                 self.update_vals_flex()
-                self.default_mess = self.Messages["Analyses_details0"].format(round(self.main.Calc_speed.seuil_movement,3),self.main.Vid.Scale[1])
-                self.displayed_mess.set(self.default_mess)
+                self.HW.change_default_message(self.Messages["Analyses_details0"].format(round(self.main.Calc_speed.seuil_movement,3),self.main.Vid.Scale[1]))
+
         except:
             print("Overflow")
-
 
 class Details_spatial(Frame):
     def __init__(self, parent, main, **kwargs):
@@ -353,9 +362,6 @@ class Details_spatial(Frame):
         self.Messages = UserMessages.Mess[self.Language.get()]
         self.winfo_toplevel().title(self.Messages["Analyses_details_sp_T"])
 
-
-        #Option_shape=dict(Border="Border",Ellipse="Ellipse",Rectangle="Rectangle",Polygon="Polygon", Line="Line", Point="Point")
-
         self.menubar = Menu(self.parent)
         self.parent.config(menu=self.menubar)
         file_menu = Menu(self.menubar, tearoff=False)
@@ -365,7 +371,7 @@ class Details_spatial(Frame):
         file_menu.add_cascade(label=self.Messages["Analyses_details_sp_Menu1"],menu=Type_Point)
 
         Type_Line=Menu(file_menu, tearoff=0)
-        Type_Line.add_command(label=self.Messages["Analyses_details_sp_Menu2_1"], command=self.add_line)
+        Type_Line.add_command(label=self.Messages["Analyses_details_sp_Menu1_1"], command=self.add_line)
         Type_Line.add_command(label=self.Messages["Analyses_details_sp_Menu2_2"], command=self.add_line_border)
         file_menu.add_cascade(label=self.Messages["Analyses_details_sp_Menu2"],menu=Type_Line)
 
@@ -382,23 +388,20 @@ class Details_spatial(Frame):
 
         self.menubar.add_cascade(label=self.Messages["Analyses_details_sp_Menu0"], menu=file_menu)
 
-
-        self.List_inds_names=dict()
-        compteur=0
-        for Ar in range(len(self.main.Vid.Track[1][6])):
-            for Ind in range(self.main.Vid.Track[1][6][Ar]):
-                self.List_inds_names["Ind"+str(compteur)]=self.Messages["Arena_short"]+" {}, ".format(Ar) + self.Messages["Individual_short"]+ " {}".format(Ind)
-                compteur+=1
+        self.List_inds_names = dict()
+        for ind in range(len(self.main.Vid.Identities)):
+            self.List_inds_names["Ind"+str(ind)]=self.Messages["Arena_short"]+ "{}, ".format(self.main.Vid.Identities[ind][0])+ self.Messages["Individual_short"] +" {}".format(self.main.Vid.Identities[ind][1])
 
         self.Ind_name=StringVar()
-        self.Ind_name.set(self.Messages["Arena_short"]+" {}, ".format(0) + self.Messages["Individual_short"]+ " {}".format(0))
+        self.Ind_name.set(self.Messages["Arena_short"]+ "{}, ".format(self.main.Vid.Identities[0][0])+ self.Messages["Individual_short"] +" {}".format(self.main.Vid.Identities[0][1]))
+
         self.Which_ind = OptionMenu(self, self.Ind_name, *self.List_inds_names.values(), command=self.change_ind)
         self.Which_ind.grid(row=0, column=0,)
 
 
         self.Canvas_for_video=Canvas(self, width=700, height=500, bd=0, highlightthickness=0)
         self.Canvas_for_video.grid(row=1, column=0, sticky="nsew")
-        Grid.columnconfigure(self, 0, weight=1)  ########NEW
+        Grid.columnconfigure(self, 0, weight=5)  ########NEW
         Grid.columnconfigure(self, 1, weight=1)  ########NEW
         Grid.rowconfigure(self, 1, weight=1)  ########NEW
         self.Canvas_for_video.update()
@@ -414,24 +417,25 @@ class Details_spatial(Frame):
         self.Frame_user=Frame(self, width=150)
         self.Frame_user.grid(row=0, column=1, rowspan=2, sticky="nsew")
         Grid.columnconfigure(self.Frame_user, 0, weight=1)  ########NEW
+        Grid.columnconfigure(self.Frame_user, 1, weight=1)  ########NEW
         Grid.rowconfigure(self.Frame_user, 0, weight=1)  ########NEW
         Grid.rowconfigure(self.Frame_user, 1, weight=1)  ########NEW
         Grid.rowconfigure(self.Frame_user, 2, weight=100)  ########NEW
 
-        self.default_mess=self.Messages["Analyses_details_sp0"]
-        self.displayed_mess=StringVar(value=self.default_mess)
-        User_help=Label(self.Frame_user, wraplength=500, height=15, textvariable=self.displayed_mess, justify=LEFT)
-        User_help.grid(row=0,column=0, columnspan=2)
+        #Help user and parameters
+        self.HW=User_help.Help_win(self.Frame_user, default_message=self.Messages["Analyses_details_sp0"])
+        self.HW.grid(row=0, column=0, columnspan=3,sticky="nsew")
+
 
         self.Button_expend=Button(self.Frame_user, text=self.Messages["Analyses_details_sp_B1"], command=self.expend, width=37)
         self.Button_expend.grid(row=1, column=0, sticky="new")
-        self.Button_expend.bind("<Enter>", lambda a:self.displayed_mess.set(self.Messages["Analyses_details_sp1"]))
-        self.Button_expend.bind("<Leave>", lambda a: self.displayed_mess.set(self.default_mess))
+        self.Button_expend.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Analyses_details_sp1"]))
+        self.Button_expend.bind("<Leave>", self.HW.remove_tmp_message)
 
         self.Supress_This=Button(self.Frame_user, text=self.Messages["Analyses_details_sp_B2"], command=self.supr_this, width=37)
         self.Supress_This.grid(row=1, column=1, sticky="new")
-        self.Supress_This.bind("<Enter>", lambda a:self.displayed_mess.set(self.Messages["Analyses_details_sp2"]))
-        self.Supress_This.bind("<Leave>", lambda a: self.displayed_mess.set(self.default_mess))
+        self.Supress_This.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Analyses_details_sp2"]))
+        self.Supress_This.bind("<Leave>", self.HW.remove_tmp_message)
 
         Frame_Ana=Frame(self.Frame_user)
         Frame_Ana.grid(row=2, column=0, columnspan=2, sticky="nsew")
@@ -574,9 +578,6 @@ class Details_spatial(Frame):
             self.load_img()
         self.last_cur_pos=cur_pos
 
-    def change_default_mess(self, new_mess):
-        self.default_mess=new_mess
-        self.displayed_mess.set(self.default_mess)
 
     def validate_borders(self, *args):
         if self.add_pt[0]=="Borders" or self.add_pt[0]==self.Messages["List_elem_Ell"] or self.add_pt[0]==self.Messages["List_elem_Rect"] or self.add_pt[0]==self.Messages["List_elem_Poly"]:
@@ -584,13 +585,13 @@ class Details_spatial(Frame):
             self.show_mask = False
             self.show_img()
             self.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="active")
-            self.change_default_mess(self.Messages["Analyses_details_sp00"])
+            self.HW.change_default_message(self.Messages["Analyses_details_sp00"])
             self.show_results()
 
     def add_point(self):
         self.add_pt=["Point"]
         self.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="disabled")
-        self.change_default_mess(self.Messages["Analyses_details_sp4"])
+        self.HW.change_default_message(self.Messages["Analyses_details_sp4"])
 
     def add_point_center(self):
         M = cv2.moments(self.Arena_pts)
@@ -604,14 +605,14 @@ class Details_spatial(Frame):
     def add_line(self):
         self.add_pt=["Line",1]
         self.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="disabled")
-        self.change_default_mess(self.Messages["Analyses_details_sp3"])
+        self.HW.change_default_message(self.Messages["Analyses_details_sp3"])
 
     def add_line_border(self):
         self.add_pt = ["Line_border", 1]
         self.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="disabled")
         self.show_mask=True
         self.show_img()
-        self.change_default_mess(self.Messages["Analyses_details_sp7"])
+        self.HW.change_default_message(self.Messages["Analyses_details_sp7"])
 
     def add_border(self):
         self.add_pt = ["Borders", 1]
@@ -619,7 +620,7 @@ class Details_spatial(Frame):
         self.show_mask = True
         self.show_img()
         self.show_results()
-        self.change_default_mess(self.Messages["Analyses_details_sp5"])
+        self.HW.change_default_message(self.Messages["Analyses_details_sp5"])
 
 
     def add_all_borders(self):
@@ -632,14 +633,14 @@ class Details_spatial(Frame):
         self.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="disabled")
         self.show_img()
         self.show_results()
-        self.change_default_mess(self.Messages["Analyses_details_sp6"])
+        self.HW.change_default_message(self.Messages["Analyses_details_sp6"])
 
     def add_rectangle(self):
         self.add_pt = [self.Messages["List_elem_Rect"], 1]
         self.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="disabled")
         self.show_img()
         self.show_results()
-        self.change_default_mess(self.Messages["Analyses_details_sp6"])
+        self.HW.change_default_message(self.Messages["Analyses_details_sp6"])
 
 
     def add_poly(self):
@@ -647,7 +648,7 @@ class Details_spatial(Frame):
         self.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="disabled")
         self.show_img()
         self.show_results()
-        self.change_default_mess(self.Messages["Analyses_details_sp6"])
+        self.HW.change_default_message(self.Messages["Analyses_details_sp6"])
 
     def callback(self, event):
         PtX=int(event.widget.canvasx(event.x) * self.ratio + self.zoom_sq[0])
@@ -669,7 +670,7 @@ class Details_spatial(Frame):
             self.show_results()
             self.add_pt = [None,-1]
             self.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="active")
-            self.change_default_mess(self.Messages["Analyses_details_sp00"])
+            self.HW.change_default_message(self.Messages["Analyses_details_sp00"])
 
         elif self.under_mouse==None and self.add_pt[0]=="Line":
             if self.add_pt[1]==1:
@@ -680,7 +681,7 @@ class Details_spatial(Frame):
                 self.main.Calc_speed.Areas[self.Area][len(self.main.Calc_speed.Areas[self.Area])-1][1].append((PtX,PtY))
                 self.add_pt = [None,-1]
                 self.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="active")
-                self.change_default_mess(self.Messages["Analyses_details_sp00"])
+                self.HW.change_default_message(self.Messages["Analyses_details_sp00"])
                 self.show_results()
             self.show_img()
 
@@ -719,7 +720,7 @@ class Details_spatial(Frame):
                         self.main.Calc_speed.Areas[self.Area][len(self.main.Calc_speed.Areas[self.Area]) - 1][1].append(pt)
                         self.add_pt = [None,-1]
                         self.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="active")
-                        self.change_default_mess(self.Messages["Analyses_details_sp00"])
+                        self.HW.change_default_message(self.Messages["Analyses_details_sp00"])
                         self.show_mask = False
                         break
 
@@ -729,7 +730,7 @@ class Details_spatial(Frame):
                             self.main.Calc_speed.Areas[self.Area][len(self.main.Calc_speed.Areas[self.Area]) - 1][1].append((int(round(last_pt[0] * self.ratio_border + pt[0] * (1 - self.ratio_border))), int(round(last_pt[1] * (self.ratio_border) + pt[1] * (1 - self.ratio_border)))))
                             self.add_pt = [None,-1]
                             self.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="active")
-                            self.change_default_mess(self.Messages["Analyses_details_sp00"])
+                            self.HW.change_default_message(self.Messages["Analyses_details_sp00"])
                             self.show_mask = False
                             break
                     last_pt=pt
@@ -741,7 +742,7 @@ class Details_spatial(Frame):
                     self.main.Calc_speed.Areas[self.Area][len(self.main.Calc_speed.Areas[self.Area]) - 1][1].append((int(round(last_pt[0] * self.ratio_border + pt[0] * (1 - self.ratio_border))), int(round(last_pt[1] * (self.ratio_border) + pt[1] * (1 - self.ratio_border)))))
                     self.add_pt = [None]
                     self.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="active")
-                    self.change_default_mess(self.Messages["Analyses_details_sp00"])
+                    self.HW.change_default_message(self.Messages["Analyses_details_sp00"])
                     self.show_mask = False
 
                 self.show_img()
@@ -932,11 +933,11 @@ class Details_spatial(Frame):
         if len(self.main.Calc_speed.Areas[self.Area])>0:
             self.Button_expend.config(state="active")
             self.Supress_This.config(state="active")
-            self.change_default_mess(self.Messages["Analyses_details_sp00"])
+            self.HW.change_default_message(self.Messages["Analyses_details_sp00"])
         else:
             self.Button_expend.config(state="disable")
             self.Supress_This.config(state="disable")
-            self.change_default_mess(self.Messages["Analyses_details_sp0"])
+            self.HW.change_default_message(self.Messages["Analyses_details_sp0"])
 
         ID=0
         for shape in self.main.Calc_speed.Areas[self.Area]:
@@ -1052,7 +1053,6 @@ class Details_spatial(Frame):
         self.main.modif_image()
         self.parent.destroy()
 
-
 class Details_explo(Frame):
     def __init__(self, parent, main, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
@@ -1079,16 +1079,13 @@ class Details_explo(Frame):
 
         # Option_shape=dict(Border="Border",Ellipse="Ellipse",Rectangle="Rectangle",Polygon="Polygon", Line="Line", Point="Point")
         self.List_inds_names = dict()
-        compteur = 0
-        for Ar in range(len(self.main.Vid.Track[1][6])):
-            for Ind in range(self.main.Vid.Track[1][6][Ar]):
-                self.List_inds_names["Ind" + str(compteur)] = self.Messages["Arena_short"] + " {}, ".format(Ar) + \
-                                                              self.Messages["Individual_short"] + " {}".format(Ind)
-                compteur += 1
 
-        self.Ind_name = StringVar()
-        self.Ind_name.set(
-            self.Messages["Arena_short"] + " {}, ".format(0) + self.Messages["Individual_short"] + " {}".format(0))
+        for ind in range(len(self.main.Vid.Identities)):
+            self.List_inds_names["Ind"+str(ind)]=self.Messages["Arena_short"]+ "{}, ".format(self.main.Vid.Identities[ind][0])+ self.Messages["Individual_short"] +" {}".format(self.main.Vid.Identities[ind][1])
+
+        self.Ind_name=StringVar()
+        self.Ind_name.set(self.Messages["Arena_short"]+ "{}, ".format(self.main.Vid.Identities[0][0])+ self.Messages["Individual_short"] +" {}".format(self.main.Vid.Identities[0][1]))
+
         self.Which_ind = OptionMenu(self, self.Ind_name, *self.List_inds_names.values(), command=self.change_ind)
         self.Which_ind.grid(row=0, column=0, )
 
@@ -1105,18 +1102,17 @@ class Details_explo(Frame):
         self.Canvas_for_video.bind("<Control-3>", self.Zoom_out)
         self.Canvas_for_video.bind("<Configure>", self.show_img)
 
-
         self.Frame_user = Frame(self, width=150)
         self.Frame_user.grid(row=0, column=1, rowspan=2, sticky="nsew")
         Grid.columnconfigure(self.Frame_user, 0, weight=1)  ########NEW
+        Grid.columnconfigure(self.Frame_user, 1, weight=1)  ########NEW
         Grid.rowconfigure(self.Frame_user, 0, weight=1)  ########NEW
         Grid.rowconfigure(self.Frame_user, 1, weight=1)  ########NEW
         Grid.rowconfigure(self.Frame_user, 2, weight=100)  ########NEW
 
-        self.default_mess = self.Messages["Analyses_details_exp0"]
-        self.displayed_mess = StringVar(value=self.default_mess)
-        User_help = Label(self.Frame_user, wraplength=500, height=15, textvariable=self.displayed_mess, justify=LEFT)
-        User_help.grid(row=0, column=0, columnspan=2)
+        # Help user and parameters
+        self.HW = User_help.Help_win(self.Frame_user, default_message=self.Messages["Analyses_details_exp0"])
+        self.HW.grid(row=0, column=0, columnspan=2, sticky="nsew")
 
         Frame_Ana = Frame(self.Frame_user)
         Frame_Ana.grid(row=2, column=0, columnspan=2, sticky="nsew")
@@ -1159,7 +1155,8 @@ class Details_explo(Frame):
         Squares_explo.grid(row=1, column=0, sticky="se")
 
         self.Explo_size_squares=StringVar(value=self.main.Infos_explo[1])
-        Squares_explo=Scale(Frame_Ana, from_=0.05, variable=self.Explo_size_squares, to=((max(cv2.minAreaRect(self.Arena_pts)[1])/float(self.main.Vid.Scale[0]))**2)/4, resolution=0.05, orient=HORIZONTAL)
+        self.min_explo_area=(cv2.contourArea(self.Arena_pts)/float(self.main.Vid.Scale[0]))/500
+        Squares_explo=Scale(Frame_Ana, from_=self.min_explo_area, variable=self.Explo_size_squares, to=(cv2.contourArea(self.Arena_pts)/float(self.main.Vid.Scale[0]))/2, resolution=0.05, orient=HORIZONTAL)
         Squares_explo.grid(row=1, column=1, sticky="nsew")
 
         verif_E_float = (self.register(self.update_area_val), '%P', '%V')
@@ -1187,7 +1184,7 @@ class Details_explo(Frame):
 
 
         self.Quit_button = Button(self.Frame_user, text=self.Messages["Analyses_details_sp_B3"], command=self.close, background="green")
-        self.Quit_button.grid(row=5, column=0, sticky="sew")
+        self.Quit_button.grid(row=5, column=0, columnspan=2, sticky="sew")
 
         self.ready = True
         self.stay_on_top()
@@ -1197,7 +1194,7 @@ class Details_explo(Frame):
 
 
     def show_explored(self, *arg):
-        if self.Explo_size_squares.get()!="":
+        if self.Explo_size_squares.get()!="" and (float(self.Explo_size_squares.get())*float(self.main.Vid.Scale[0]))>=(self.min_explo_area*float(self.main.Vid.Scale[0])-1):
             if self.shape_mesh.get() == 0:
                 self.draw_mod()
             elif self.shape_mesh.get() == 1:
@@ -1216,7 +1213,7 @@ class Details_explo(Frame):
 
         for pt in self.main.Coos[self.Ind]:
             if pt[0]!="NA":
-                cv2.circle(empty,(int(pt[0]),int(pt[1])),int(radius*float(self.main.Vid.Scale[0])),(1),-1)
+                cv2.circle(empty,(int(float(pt[0])),int(float(pt[1]))),int(radius*float(self.main.Vid.Scale[0])),(1),-1)
 
         mask = np.zeros([self.image.shape[0], self.image.shape[1], 1], np.uint8)
         mask=cv2.drawContours(mask, [self.Arena_pts], -1,(255),-1)
@@ -1276,7 +1273,7 @@ class Details_explo(Frame):
         self.image = np.copy(self.image_clean)
         No_NA_Coos = np.array(self.main.Coos[self.Ind])
         No_NA_Coos = No_NA_Coos[np.all(No_NA_Coos != "NA", axis=1)]
-        No_NA_Coos = No_NA_Coos.astype('int32')
+        No_NA_Coos = No_NA_Coos.astype('float')
 
         largeur = math.sqrt(float(self.Explo_size_squares.get()) * float(self.main.Vid.Scale[0]) ** 2)
         nb_squares_v = math.ceil((max(self.Arena_pts[:, :, 0]) - min(self.Arena_pts[:, :, 0])) / largeur)
@@ -1335,9 +1332,9 @@ class Details_explo(Frame):
         self.type_res.set(self.Messages["Analyses_details_exp_Lab2"])
 
         self.image = np.copy(self.image_clean)
-        No_NA_Coos = np.array(self.main.Coos[self.Ind])
+        No_NA_Coos = np.asarray(self.main.Coos[self.Ind])
         No_NA_Coos = No_NA_Coos[np.all(No_NA_Coos != "NA", axis=1)]
-        No_NA_Coos = No_NA_Coos.astype('int32')
+        No_NA_Coos = No_NA_Coos.astype('float')
 
         M=cv2.moments(self.Arena_pts)
         cX = int(M["m10"] / M["m00"])
@@ -1475,7 +1472,6 @@ class Details_explo(Frame):
 
 
     def show_img(self, *args):
-        self.Canvas_for_video.update()
         best_ratio = max(self.Size[1] / (self.Canvas_for_video.winfo_width()),
                          self.Size[0] / (self.Canvas_for_video.winfo_height()))
         prev_final_width = self.final_width
@@ -1509,10 +1505,6 @@ class Details_explo(Frame):
             self.show_explored()
         self.last_cur_pos=cur_pos
 
-
-    def change_default_mess(self, new_mess):
-        self.default_mess=new_mess
-        self.displayed_mess.set(self.default_mess)
 
     def Organise_Ars(self, Arenas):
         heights=[]
@@ -1612,3 +1604,337 @@ class Details_explo(Frame):
 
         else:
             return False
+
+class Details_inter(Frame):
+    def __init__(self, parent, main, **kwargs):
+        Frame.__init__(self, parent, bd=5, **kwargs)
+        self.parent=parent
+        self.main=main
+        self.grid(sticky="nsew")
+        Grid.columnconfigure(self.parent, 0, weight=1)  ########NEW
+        Grid.rowconfigure(self.parent, 0, weight=1)  ########NEW
+        self.ready=False
+        self.parent.attributes('-toolwindow', True)
+
+        self.Language = StringVar()
+        f = open("Files/Language", "r")
+        self.Language.set(f.read())
+        self.LanguageO = self.Language.get()
+        f.close()
+        self.Messages = UserMessages.Mess[self.Language.get()]
+        self.winfo_toplevel().title(self.Messages["Analyses_details_T"])
+
+        self.final_width = 250
+        self.zoom_strength = 0.3
+        self.last_cur_pos = self.main.Scrollbar.active_pos - int(round((self.main.Vid.Cropped[1][0]) / self.main.one_every))
+
+        # Option_shape=dict(Border="Border",Ellipse="Ellipse",Rectangle="Rectangle",Polygon="Polygon", Line="Line", Point="Point")
+        self.List_inds_names = dict()
+
+        for ind in range(len(self.main.Vid.Identities)):
+            self.List_inds_names["Ind"+str(ind)]=self.Messages["Arena_short"]+ "{}, ".format(self.main.Vid.Identities[ind][0])+ self.Messages["Individual_short"] +" {}".format(self.main.Vid.Identities[ind][1])
+
+        self.Ind_name=StringVar()
+        self.Ind_name.set(self.Messages["Arena_short"]+ "{}, ".format(self.main.Vid.Identities[0][0])+ self.Messages["Individual_short"] +" {}".format(self.main.Vid.Identities[0][1]))
+
+        self.Which_ind = OptionMenu(self, self.Ind_name, *self.List_inds_names.values(), command=self.change_ind)
+        self.Which_ind.grid(row=0, column=0, )
+
+        self.Canvas_for_video = Canvas(self, width=700, height=500, bd=0, highlightthickness=0)
+        self.Canvas_for_video.grid(row=1, column=0, sticky="nsew")
+        Grid.columnconfigure(self, 0, weight=1)  ########NEW
+        Grid.columnconfigure(self, 1, weight=1)  ########NEW
+        Grid.rowconfigure(self, 1, weight=1)  ########NEW
+        self.Canvas_for_video.update()
+        self.Dist_soc = StringVar(value=self.main.Infos_inter)
+        self.load_img()
+
+        self.Canvas_for_video.bind("<Control-1>", self.Zoom_in)
+        self.Canvas_for_video.bind("<Control-3>", self.Zoom_out)
+        self.Canvas_for_video.bind("<Configure>", self.show_img)
+
+        self.Frame_user = Frame(self, width=150)
+        self.Frame_user.grid(row=0, column=1, rowspan=2, sticky="nsew")
+        Grid.columnconfigure(self.Frame_user, 0, weight=1)  ########NEW
+        Grid.rowconfigure(self.Frame_user, 0, weight=1)  ########NEW
+        Grid.rowconfigure(self.Frame_user, 1, weight=1)  ########NEW
+        Grid.rowconfigure(self.Frame_user, 2, weight=100)  ########NEW
+
+
+        # Help user and parameters
+        self.HW = User_help.Help_win(self.Frame_user, default_message=self.Messages["Analyses_details_inter0"])
+        self.HW.grid(row=0, column=0, sticky="nsew")
+
+
+        Frame_Ana = Frame(self.Frame_user)
+        Frame_Ana.grid(row=2, column=0, columnspan=2, sticky="nsew")
+        Grid.columnconfigure(Frame_Ana, 0, weight=1)  ########NEW
+        Grid.rowconfigure(Frame_Ana, 0, weight=1)  ########NEW
+
+        Squares_explo = Label(Frame_Ana, text=self.Messages["Analyses_details_inter_Lab1"])
+        Squares_explo.grid(row=1, column=0, sticky="se")
+
+        Squares_explo = Scale(Frame_Ana, from_=0.01, variable=self.Dist_soc,
+                              to=math.sqrt((((max(cv2.minAreaRect(self.Arena_pts)[1]) / float(self.main.Vid.Scale[0])) ** 2))/math.pi),
+                              resolution=0.05, orient=HORIZONTAL)
+        Squares_explo.grid(row=1, column=1, sticky="nsew")
+
+        verif_E_float = (self.register(self.update_area_val), '%P', '%V')
+        Squares_explo_entry = Entry(Frame_Ana, textvariable=self.Dist_soc, width=10, validate="all",
+                                    validatecommand=verif_E_float, background="grey80")
+        Squares_explo_entry.grid(row=1, column=2, sticky="se")
+        self.Dist_soc.trace("w", self.dist_soc_updated)
+
+        Squares_explo_units = Label(Frame_Ana, text=str(self.main.Vid.Scale[1]))
+        Squares_explo_units.grid(row=1, column=3, sticky="sw")
+
+        Frame_res = Frame(self.Frame_user)
+        Frame_res.grid(row=3, column=0, columnspan=2, sticky="nsew")
+
+
+        self.Nb_nei=StringVar()
+        self.Prop_time_nei=StringVar()
+        self.Min_dist_nei = StringVar()
+
+
+        Show_res_lab=Label(Frame_res, text=self.Messages["Analyses_details_inter_Lab2"])
+        Show_res_lab.grid(row=0, column=0, sticky="nsew")
+        Show_res=Label(Frame_res, textvariable=self.Nb_nei)
+        Show_res.grid(row=0, column=1, sticky="w")
+
+        Show_res2_lab = Label(Frame_res, text=self.Messages["Analyses_details_inter_Lab3"])
+        Show_res2_lab.grid(row=1, column=0, sticky="nsew")
+        Show_res2 = Label(Frame_res, textvariable=self.Prop_time_nei)
+        Show_res2.grid(row=1, column=1, sticky="w")
+
+        Show_res3_lab = Label(Frame_res, text=self.Messages["Analyses_details_inter_Lab4"])
+        Show_res3_lab.grid(row=2, column=0, sticky="nsew")
+        Show_res3 = Label(Frame_res, textvariable=self.Min_dist_nei)
+        Show_res3.grid(row=2, column=1, sticky="w")
+        Show_res_unit3 = Label(Frame_res, text=self.main.Vid.Scale[1])
+        Show_res_unit3.grid(row=2, column=2, sticky="w")
+
+
+        self.Quit_button = Button(self.Frame_user, text=self.Messages["Analyses_details_sp_B3"], command=self.close, background="green")
+        self.Quit_button.grid(row=5, column=0, sticky="sew")
+
+
+        self.ready = True
+        self.stay_on_top()
+        self.parent.protocol("WM_DELETE_WINDOW", self.close)
+
+        self.show_soc()
+
+
+    def dist_soc_updated(self, *args):
+        if not self.Dist_soc.get()=="":
+            self.show_soc()
+
+    def show_soc(self, *args):
+        Pts_coos = []
+        if self.Area>0:
+            nb_prev=sum([self.main.Vid.Track[1][6][Ar] for Ar in range(0,self.Area)])
+        else:
+            nb_prev=0
+
+        for fish in range(self.main.Vid.Track[1][6][self.Area]):
+            Pts_coos.append(self.main.Coos["Ind" + str(fish + nb_prev)])
+
+        avg_nb_nei, prop_with_nei, min_dist_nei, sum_dists=self.main.Calc_speed.calculate_nei(Pts_coos = Pts_coos, ind=int(self.Ind[3:])-nb_prev, dist=self.Dist_soc.get(), Scale = float(self.main.Vid.Scale[0]), Fr_rate=self.main.Vid.Frame_rate[1])
+
+        self.Nb_nei.set(round(avg_nb_nei,3))
+        self.Prop_time_nei.set(round(prop_with_nei,3))
+        self.Min_dist_nei.set(round(min_dist_nei/self.main.Vid.Scale[0],3))
+        self.show_img()
+
+    def close(self):
+        self.main.Infos_inter = self.Dist_soc.get()
+        self.unbind_all("<Return>")
+        self.main.modif_image()
+        self.parent.destroy()
+
+    def on_frame_conf(self, *arg):
+        self.Liste_analyses.configure(scrollregion=self.Liste_analyses.bbox("all"))
+
+    def update_area(self):
+        place = 0
+        self.Area = None
+        selected = list(self.List_inds_names.values()).index(self.Ind_name.get())
+        for Ar in range(len(self.main.Vid.Track[1][6])):
+            for Ind in range(self.main.Vid.Track[1][6][Ar]):
+                if selected == place:
+                    self.Area = Ar
+                place += 1
+
+        mask = Function_draw_mask.draw_mask(self.main.Vid)
+        Arenas, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        Arenas = Function_draw_mask.Organise_Ars(Arenas)
+        self.Arena_pts = Arenas[self.Area]
+
+    def load_img(self, *args):
+        self.Ind = list(self.List_inds_names.keys())[list(self.List_inds_names.values()).index(self.Ind_name.get())]
+        self.update_area()
+
+        self.image_clean1 = self.main.img_no_shapes
+        mask = np.zeros([self.image_clean1.shape[0], self.image_clean1.shape[1], 1], np.uint8)
+        mask = cv2.drawContours(mask, [self.Arena_pts], -1, (255, 255, 255), -1)
+
+        self.image_clean_trans = cv2.bitwise_and(self.image_clean1, self.image_clean1, mask=mask)
+        blend = 0.5
+        self.image_clean = cv2.addWeighted(self.image_clean1, blend, self.image_clean_trans, 1 - blend, 0)
+
+        self.image = np.copy(self.image_clean)
+        self.Size = self.image.shape
+        self.ratio = self.Size[1] / self.final_width
+        self.zoom_sq = [0, 0, self.image.shape[1], self.image.shape[0]]
+        self.show_img()
+
+    def show_img(self, *args):
+        try:
+            if self.main.Scrollbar.active_pos >= round(((self.main.Vid.Cropped[1][0]) / self.main.Vid_Lecteur.one_every)) and self.main.Scrollbar.active_pos <= int(round((self.main.Vid.Cropped[1][1]) / self.main.Vid_Lecteur.one_every)) and self.main.Coos[self.Ind][self.last_cur_pos][0]!="NA":
+                overlay = np.copy(self.image_clean)
+                cv2.circle(overlay, (int(float(self.main.Coos[self.Ind][self.last_cur_pos][0])), int(float(self.main.Coos[self.Ind][self.last_cur_pos][1]))),int(float(self.Dist_soc.get()) * float(self.main.Vid.Scale[0])), (255, 0, 0), -1)
+                self.image = cv2.addWeighted(self.image_clean, 0.5, overlay, 0.5, 0)
+            else:
+                self.image = np.copy(self.image_clean)
+
+            best_ratio = max(self.Size[1] / (self.Canvas_for_video.winfo_width()),
+                             self.Size[0] / (self.Canvas_for_video.winfo_height()))
+            prev_final_width = self.final_width
+            self.final_width = int(math.ceil(self.Size[1] / best_ratio))
+            self.ratio = self.ratio * (prev_final_width / self.final_width)
+            image_to_show = self.image[self.zoom_sq[1]:self.zoom_sq[3], self.zoom_sq[0]:self.zoom_sq[2]]
+            image_to_show1 = cv2.resize(image_to_show,
+                                        (self.final_width, int(self.final_width * (self.Size[0] / self.Size[1]))))
+            self.image_to_show2 = PIL.ImageTk.PhotoImage(image=PIL.Image.fromarray(image_to_show1))
+            self.Canvas_for_video.create_image(0, 0, image=self.image_to_show2, anchor=NW)
+            self.Canvas_for_video.config(width=self.final_width,height=int(self.final_width * (self.Size[0] / self.Size[1])))
+
+        except Exception as e:#Sometime changing the timebar too fast make bugs
+            pass
+
+    def change_ind(self, *arg):
+        self.main.highlight = list(self.List_inds_names.keys())[
+            list(self.List_inds_names.values()).index(self.Ind_name.get())]
+        self.Ind = list(self.List_inds_names.keys())[list(self.List_inds_names.values()).index(self.Ind_name.get())]
+        self.update_area()
+        self.main.modif_image()
+        self.load_img()
+        self.show_soc()
+
+
+    def stay_on_top(self):
+        if self.ready:
+            self.parent.lift()
+            self.change_image()
+        self.parent.after(50, self.stay_on_top)
+
+    def change_image(self):
+        cur_pos = self.main.Scrollbar.active_pos - int(round((self.main.Vid.Cropped[1][0]) / self.main.one_every))
+        if cur_pos != self.last_cur_pos:
+            self.last_cur_pos = cur_pos
+            self.load_img()
+
+
+    def Organise_Ars(self, Arenas):
+        heights = []
+        centers = []
+        ID = 0
+        for Ar in Arenas:
+            x, y, w, h = cv2.boundingRect(Ar)
+            heights.append(h)
+            centers.append([ID, y + (h / 2), x + (w / 2)])
+            ID += 1
+
+        rows = []
+        centers = np.array(centers, dtype=int)
+        while len(centers) > 0:
+            first_row = np.where(((min(centers[:, 1]) - max(heights) / 2) < np.array(centers[:, 1])) & (
+                        np.array(centers[:, 1]) < (min(centers[:, 1]) + max(heights) / 2)))
+            cur_row = centers[first_row]
+            cur_row = cur_row[cur_row[:, 2].argsort()][:, 0]
+            rows = rows + list(cur_row)
+            centers = np.delete(centers, first_row, axis=0)
+        return [Arenas[place] for place in rows]
+
+    def Zoom_in(self, event):
+        self.new_zoom_sq = [0, 0, 0, 0]
+        PX = event.x / ((self.zoom_sq[2] - self.zoom_sq[0]) / self.ratio)
+        PY = event.y / ((self.zoom_sq[3] - self.zoom_sq[1]) / self.ratio)
+
+        event.x = event.x * self.ratio + self.zoom_sq[0]
+        event.y = event.y * self.ratio + self.zoom_sq[1]
+        ZWX = (self.zoom_sq[2] - self.zoom_sq[0]) * (1 - self.zoom_strength)
+        ZWY = (self.zoom_sq[3] - self.zoom_sq[1]) * (1 - self.zoom_strength)
+
+        if ZWX > 100:
+            self.new_zoom_sq[0] = int(event.x - PX * ZWX)
+            self.new_zoom_sq[2] = int(event.x + (1 - PX) * ZWX)
+            self.new_zoom_sq[1] = int(event.y - PY * ZWY)
+            self.new_zoom_sq[3] = int(event.y + (1 - PY) * ZWY)
+
+            self.ratio = ZWX / self.final_width
+            self.zoom_sq = self.new_zoom_sq
+            self.zooming = True
+            self.show_img()
+
+    def Zoom_out(self, event):
+        self.new_zoom_sq = [0, 0, 0, 0]
+        PX = event.x / ((self.zoom_sq[2] - self.zoom_sq[0]) / self.ratio)
+        PY = event.y / ((self.zoom_sq[3] - self.zoom_sq[1]) / self.ratio)
+
+        event.x = event.x * self.ratio + self.zoom_sq[0]
+        event.y = event.y * self.ratio + self.zoom_sq[1]
+
+        ZWX = (self.zoom_sq[2] - self.zoom_sq[0]) * (1 + self.zoom_strength)
+        ZWY = (self.zoom_sq[3] - self.zoom_sq[1]) * (1 + self.zoom_strength)
+
+        if ZWX < self.Size[1] and ZWY < self.Size[0]:
+            if int(event.x - PX * ZWX) >= 0 and int(event.x + (1 - PX) * ZWX) <= self.Size[1]:
+                self.new_zoom_sq[0] = int(event.x - PX * ZWX)
+                self.new_zoom_sq[2] = int(event.x + (1 - PX) * ZWX)
+            elif int(event.x + (1 - PX) * ZWX) > self.Size[1]:
+                self.new_zoom_sq[0] = int(self.Size[1] - ZWX)
+                self.new_zoom_sq[2] = int(self.Size[1])
+            elif int(event.x - PX * ZWX) < 0:
+                self.new_zoom_sq[0] = 0
+                self.new_zoom_sq[2] = int(ZWX)
+
+            if int(event.y - PY * ZWY) >= 0 and int(event.y + (1 - PY) * ZWY) <= self.Size[0]:
+                self.new_zoom_sq[1] = int(event.y - PY * ZWY)
+                self.new_zoom_sq[3] = self.new_zoom_sq[1] + int(ZWY)
+
+            elif int(event.y + (1 - PY) * ZWY) > self.Size[0]:
+                self.new_zoom_sq[1] = int(self.Size[0] - ZWY)
+                self.new_zoom_sq[3] = int(self.Size[0])
+            elif int(event.y - PY * ZWY) < 0:
+                self.new_zoom_sq[1] = 0
+                self.new_zoom_sq[3] = int(ZWY)
+            self.ratio = ZWX / self.final_width
+
+
+        else:
+            self.new_zoom_sq = [0, 0, self.image.shape[1], self.image.shape[0]]
+            self.ratio = self.Size[1] / self.final_width
+
+        self.zoom_sq = self.new_zoom_sq
+        self.zooming = False
+        self.show_img()
+
+    def update_area_val(self, new_val, method):
+        if new_val == "" and method != "focusout":
+            return True
+        elif new_val != "":
+            try:
+                new_val = float(new_val)
+                return True
+            except Exception as e:
+                print(e)
+                return False
+
+
+        else:
+            return False
+
+
+

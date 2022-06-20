@@ -17,6 +17,7 @@ class Ask(Frame):
         self.UnitsB.set(round(self.length-(self.Ratio.get()*self.length),3))
         self.binding=self.bind_all("<Return>",self.validate, add=True)
         self.parent.attributes('-toolwindow', True)
+        self.grab_set()
 
 
         self.Language = StringVar()
@@ -93,6 +94,7 @@ class Ask(Frame):
         self.unbind_all("<Return>")
         self.boss.bind_all("<Return>", self.boss.validate_borders)
         self.boss.ready = True#On remet l'autre fenetre au premier plan
+        self.grab_release()
 
     def update_units(self, new_val, method):
         if new_val == "" and method != "focusout":

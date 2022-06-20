@@ -14,12 +14,9 @@ class Pers_Scroll(Canvas):
             self.ecart=ecart*self.one_every
 
 
-            if self.Video.Cropped[0]:
-                self.crop_beg = int(self.Video.Cropped[1][0] / self.one_every)  ####NEW
-                self.crop_end = int(self.Video.Cropped[1][1] / self.one_every)  #####NEW
-            else:
-                self.crop_beg = 0
-                self.crop_end = self.Video.Frame_nb[1] -1
+            self.crop_beg = int(self.Video.Cropped[1][0] / self.one_every)  ####NEW
+            self.crop_end = int(self.Video.Cropped[1][1] / self.one_every)  #####NEW
+
 
 
             if self.ecart!=0:
@@ -36,6 +33,12 @@ class Pers_Scroll(Canvas):
             self.bind("<Motion>", self.afficher_frame)
             self.bind("<Button-1>", self.activate_position)
             self.bind("<B1-Motion>", self.move_position)
+
+    def close_N_destroy(self):
+        self.delete("all")
+        self.unbind_all("<Motion>")
+        self.unbind_all("<Button-1>")
+        self.unbind_all("<B1-Motion>")
 
 
     def refresh(self, *args):

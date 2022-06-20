@@ -1,9 +1,10 @@
 from tkinter import *
 import cv2
 import PIL.Image, PIL.ImageTk
+import decord
 import numpy as np
 import math
-from BioTrack import UserMessages
+from BioTrack import UserMessages, User_help
 
 
 class Scale(Frame):
@@ -21,24 +22,18 @@ class Scale(Frame):
         f.close()
         self.Messages = UserMessages.Mess[self.Language.get()]
 
-
-        self.capture = cv2.VideoCapture(self.Vid.File_name)
         Which_part = 0
         if self.Vid.Cropped[0]:
             if len(self.Vid.Fusion) > 1:  # Si on a plus d'une video
                 Which_part = [index for index, Fu_inf in enumerate(self.Vid.Fusion) if Fu_inf[0] <= self.Vid.Cropped[1][0]][-1]
-                if Which_part != 0:  # si on est pas dans la première partie de la vidéo
-                    self.capture.release()
-                    self.capture = cv2.VideoCapture(self.Vid.Fusion[Which_part][1])
 
-        self.capture.set(cv2.CAP_PROP_POS_FRAMES, self.Vid.Cropped[1][0] - self.Vid.Fusion[Which_part][0])
-        ret, self.Represent = self.capture.read()
+        self.capture = decord.VideoReader(self.Vid.Fusion[Which_part][1], ctx=decord.cpu(0))
+        self.Represent = self.capture[self.Vid.Cropped[1][0] - self.Vid.Fusion[Which_part][0]].asnumpy()
+        del self.capture
 
-        self.shape=(self.Represent.shape[0],self.Represent.shape[1])
-
+        self.shape=(self.Represent[0].shape[0],self.Represent[0].shape[1])
 
         self.image_to_show=np.copy(self.Represent)
-        self.image_to_show=cv2.cvtColor(self.image_to_show,cv2.COLOR_BGR2RGB)
 
         self.zoom_sq=[0,0,self.Vid.shape[1],self.Vid.shape[0]]
         self.zoom_strength = 0.3
@@ -57,22 +52,12 @@ class Scale(Frame):
         Grid.columnconfigure(self, 0, weight=1)  ########NEW
         Grid.rowconfigure(self, 0, weight=1)  ########NEW
 
-        self.canvas_User_help = Frame(self.parent, width=150,  highlightthickness=4, relief='flat', highlightbackground="RoyalBlue3")
-        self.canvas_User_help.grid(row=0, column=1, sticky="new")
-        Info_title=Label(self.canvas_User_help, text=self.Messages["Info"],  justify=CENTER, background="RoyalBlue3", fg="white", font=("Helvetica", 16, "bold"))
-        Info_title.grid(row=0, sticky="new")
-        Grid.columnconfigure(self.canvas_User_help, 0, weight=1)
+        #Help user and parameters
+        self.HW=User_help.Help_win(self.parent, default_message=self.Messages["Scale2"], width=250)
+        self.HW.grid(row=0, column=1,sticky="nsew")
 
         self.canvas_bt_global=Canvas(self.parent, height=10, bd=0, highlightthickness=0, relief='ridge')
         self.canvas_bt_global.grid(row=1,column=1, sticky="nsew")
-
-        self.msg_user=StringVar()
-        self.canvas_User_help.update()
-        self.Message_user_lab = Label(self.canvas_User_help,textvariable=self.msg_user, wraplengt=self.canvas_User_help.winfo_width()-10, borderwidth=2, anchor="e")
-        self.Message_user_lab.grid(row=1,column=0, sticky="news")
-        self.Message_user_lab.grid_rowconfigure(1, weight=1)
-        self.Message_user_lab.grid_columnconfigure(1, weight=1)
-        self.msg_user.set(self.Messages["Scale2"])
 
         self.UI_Size_label = Label(self.canvas_bt_global,text=self.Messages["Scale3"])
         self.UI_Size_label.grid(row=2,column=0)
@@ -125,7 +110,6 @@ class Scale(Frame):
         self.final_width = self.canvas_img.winfo_width()
         self.ratio = self.Size[1] / self.final_width
 
-
         self.afficher()
 
     def update_ui(self,event):
@@ -162,23 +146,33 @@ class Scale(Frame):
         self.UI_Size_update(self.UI_Size.get())
         if self.Mem_size != "NA" and self.unit and self.dist>0:
             list_item = self.Check_units.curselection()
-            self.Vid.Scale[0] = self.ratio_val.get()
+            if self.Vid.Track[0]:
+                old_min=float(self.Vid.Track[1][3][0])* float(self.Vid.Scale[0]) ** 2
+                old_max=float(self.Vid.Track[1][3][1])* float(self.Vid.Scale[0]) ** 2
+                old_dist = float(self.Vid.Track[1][5] )* float(self.Vid.Scale[0])
+            self.Vid.Scale[0] = float(self.ratio_val.get())
             self.Vid.Scale[1] = ["m","cm","mm"][list_item[0]]
+
+            if self.Vid.Track[0]:
+                self.Vid.Track[1][3][0]=old_min/ float(self.Vid.Scale[0]) ** 2
+                self.Vid.Track[1][3][1]=old_max/ float(self.Vid.Scale[0]) ** 2
+                self.Vid.Track[1][5]=old_dist/ float(self.Vid.Scale[0])
+
             self.End_of_window()
         elif self.Mem_size == "NA":
-            self.msg_user.set(self.Messages["Scale4"])
+            self.HW.change_default_message(self.Messages["Scale4"])
         elif not self.unit:
-            self.msg_user.set(self.Messages["Scale5"])
+            self.HW.change_default_message(self.Messages["Scale5"])
         elif self.dist==0:
-            self.msg_user.set(self.Messages["Scale6"])
+            self.HW.change_default_message(self.Messages["Scale6"])
 
 
     def End_of_window(self):
         self.unbind_all("<Button-1>")
         self.boss.update()
         self.grab_release()
-        self.canvas_User_help.grid_forget()
-        self.canvas_User_help.destroy()
+        self.HW.grid_forget()
+        self.HW.destroy()
         self.canvas_bt_global.grid_forget()
         self.canvas_bt_global.destroy()
         self.main_frame.return_main()
@@ -222,8 +216,6 @@ class Scale(Frame):
 
 
     def afficher(self, *args):
-        self.Message_user_lab.config(wraplengt=self.canvas_User_help.winfo_width() - 10)
-
         self.TMP_image_to_show=np.copy(self.image_to_show)
 
         if len(self.liste_points)>0:
@@ -244,8 +236,7 @@ class Scale(Frame):
 
         self.image_to_show2=self.TMP_image_to_show[self.zoom_sq[1]:self.zoom_sq[3],self.zoom_sq[0]:self.zoom_sq[2]]
 
-        self.TMP_image_to_show2 = cv2.resize(self.image_to_show2,
-                                             (self.final_width, int(self.final_width * (self.Size[0] / self.Size[1]))))
+        self.TMP_image_to_show2 = cv2.resize(self.image_to_show2,(self.final_width, int(self.final_width * (self.Size[0] / self.Size[1]))))
         self.image_to_show3 = PIL.ImageTk.PhotoImage(image=PIL.Image.fromarray(self.TMP_image_to_show2))
         self.canvas_img.create_image(0, 0, image=self.image_to_show3, anchor=NW)
         self.canvas_img.config(width=self.final_width, height=int(self.final_width * (self.Size[0] / self.Size[1])))

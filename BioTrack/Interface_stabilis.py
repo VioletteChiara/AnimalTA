@@ -1,10 +1,8 @@
 from tkinter import *
 import cv2
-import PIL.Image, PIL.ImageTk
-import time
+from BioTrack import Class_stabilise, UserMessages, Class_Lecteur, User_help
+import math
 import numpy as np
-from BioTrack import Class_stabilise, UserMessages, Class_Lecteur
-
 
 class Stabilise(Frame):
     def __init__(self, parent, boss, main_frame, Video_file, **kwargs):
@@ -28,7 +26,7 @@ class Stabilise(Frame):
         self.canvas_video_name = Canvas(self, bd=2, highlightthickness=1, relief='flat')
         self.canvas_video_name.grid(row=0, column=0, sticky="ew")
 
-        self.dict_Names = {self.main_frame.list_projects[i].Video.Name: self.main_frame.list_projects[i] for i in range(0, len(self.main_frame.list_projects)) if self.main_frame.list_projects[i].Video.Stab}
+        self.dict_Names = {self.main_frame.list_projects[i].Video.Name: self.main_frame.list_projects[i] for i in range(0, len(self.main_frame.list_projects)) if self.main_frame.list_projects[i].Video.Stab[0]}
 
         self.liste_videos_name = [V.Name for V in self.main_frame.liste_of_videos]
         holder = StringVar()
@@ -50,27 +48,27 @@ class Stabilise(Frame):
 
         self.Vid_Lecteur.canvas_video.update()
         self.Vid_Lecteur.update_image(self.Vid_Lecteur.to_sub)
+        self.Vid_Lecteur.canvas_video.update()
+        self.Vid_Lecteur.update_image(self.Vid_Lecteur.to_sub)
         self.Vid_Lecteur.bindings()
         self.Vid_Lecteur.Scrollbar.refresh()
 
 
         #Pour l'utilisateur:
-        self.canvas_user = Frame(self.parent,  highlightthickness=4, relief='flat', highlightbackground="RoyalBlue3")
-        self.canvas_user.grid(row=0, column=1, sticky="new")
-        Info_title=Label(self.canvas_user, text=self.Messages["Info"],  justify=CENTER, background="RoyalBlue3", fg="white", font=("Helvetica", 16, "bold"))
-        Info_title.grid(row=0, sticky="new")
-        self.user_message = StringVar()
-        self.user_message.set(self.Messages["Stab1"])
-        self.User_help = Label(self.canvas_user, textvariable=self.user_message, width=35, wraplengt=200, borderwidth=2,
-                               justify=LEFT)
-        self.User_help.grid(sticky="nsew")
+        self.HW=User_help.Help_win(self.parent, default_message=self.Messages["Stab1"], width=250)
+        self.HW.grid(row=0, column=1,sticky="nsew")
+
 
         # Validate
         self.canvas_validate = Canvas(self.parent, bd=2, highlightthickness=1, relief='ridge', background="black")
         self.canvas_validate.grid(row=1, column=1, sticky="sew")
-        Grid.columnconfigure(self.canvas_validate, 0, weight=1)  ########NEW
-        self.B_Validate=Button(self.canvas_validate, text=self.Messages["Validate"],bg="green", command=self.End_of_window)#######NEW
-        self.B_Validate.grid(row=0,column=0, sticky="new")#######NEW
+        Grid.columnconfigure(self.canvas_validate, 0, weight=1)
+
+        self.B_redo_pts=Button(self.canvas_validate, text=self.Messages["Stab2"], command=self.redo_opt_pts)
+        self.B_redo_pts.grid(row=0,column=0, sticky="new")
+
+        self.B_Validate=Button(self.canvas_validate, text=self.Messages["Validate"],bg="green", command=self.End_of_window)
+        self.B_Validate.grid(row=1,column=0, sticky="new")
 
 
     def change_vid(self, vid):
@@ -78,8 +76,15 @@ class Stabilise(Frame):
         self.dict_Names[vid].check_stab()
 
 
-    def modif_image(self, img):
-        new_img = (Class_stabilise.find_best_position(Prem_Im=self.Vid_Lecteur.Prem_image_to_show, frame=img, show=True))
+    def modif_image(self, img=[], aff=False):
+        if len(img) <= 10:
+            new_img=np.copy(self.last_empty)
+        else:
+            self.last_empty = img
+            new_img = np.copy(img)
+
+        new_img = Class_stabilise.find_best_position(Vid=self.Vid, Prem_Im=self.Vid_Lecteur.Prem_image_to_show, frame=new_img, show=True, scale=self.Vid_Lecteur.ratio)
+
         if self.Scrollbar.active_pos>self.Scrollbar.crop_end or self.Scrollbar.active_pos<self.Scrollbar.crop_beg:
             new_img = cv2.addWeighted(new_img, 1, new_img, 0, 1)
 
@@ -97,13 +102,24 @@ class Stabilise(Frame):
         self.grab_release()
         self.canvas_validate.grid_forget()
         self.canvas_validate.destroy()
-        self.canvas_user.grid_forget()
-        self.canvas_user.destroy()
+        self.HW.grid_forget()
+        self.HW.destroy()
         self.main_frame.return_main()
 
+    def redo_opt_pts(self):
+        Class_stabilise.find_pts(self.Vid, self.Vid_Lecteur.Prem_image_to_show)
+        self.modif_image()
 
-    def pressed_can(self, Pt):
-        pass
+
+    def pressed_can(self, Pt, Shift):
+        for pt in range(len(self.Vid.Stab[1])):
+            dist=math.sqrt((self.Vid.Stab[1][pt][0][0]-Pt[0])**2 + (self.Vid.Stab[1][pt][0][1]-Pt[1])**2)
+            if dist<10:
+                self.Vid.Stab[1]=np.delete(self.Vid.Stab[1], pt, axis=0)
+                break
+        self.modif_image()
+
+
 
     def moved_can(self, Pt):
         pass

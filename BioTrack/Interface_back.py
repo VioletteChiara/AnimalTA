@@ -2,7 +2,7 @@ from tkinter import *
 import cv2
 import PIL.Image, PIL.ImageTk
 import decord
-from BioTrack import UserMessages
+from BioTrack import UserMessages, User_help
 import numpy as np
 
 
@@ -42,14 +42,9 @@ class Background(Frame):
         self.canvas_img.bind("<Configure>", self.afficher)
 
 
-
-        self.canvas_help = Frame(self.parent, width=50,  highlightthickness=4, relief='flat', highlightbackground="RoyalBlue3")
-        self.canvas_help.grid(row=0, column=1, sticky="new")
-        Info_title=Label(self.canvas_help, text=self.Messages["Info"],  justify=CENTER, background="RoyalBlue3", fg="white", font=("Helvetica", 16, "bold"))
-        Info_title.grid(row=0, sticky="new")
-        Grid.columnconfigure(self.canvas_help, 0, weight=1)
-        self.Label_user = Label(self.canvas_help, justify=LEFT,text=self.Messages["Back2"], wraplengt=250)
-        self.Label_user.grid(row=1,column=0,columnspan=2,sticky="nsew")
+        #Help user and parameters
+        self.HW=User_help.Help_win(self.parent, default_message=self.Messages["Stab1"], width=250)
+        self.HW.grid(row=0, column=1,sticky="nsew")
 
         self.canvas_user = Canvas(self.parent, width=10, height=10, bd=0, highlightthickness=0, relief='ridge')
         self.canvas_user.grid(row=1,column=1,sticky="ns")
@@ -67,7 +62,7 @@ class Background(Frame):
         self.B_1frame.grid(row=3,column=0,columnspan=2,sticky="nsew")
 
         if self.portion:
-            self.canvas_help.grid_columnconfigure(0,minsize=250)
+            self.HW.grid_columnconfigure(0,minsize=250)
 
 
 
@@ -106,16 +101,15 @@ class Background(Frame):
         self.afficher()
 
     def change_for_1(self):
-        self.capture = decord.VideoReader(self.Vid.File_name)
         self.liste_paints=[]
         Which_part=0
         if self.Vid.Cropped[0]:
             if len(self.Vid.Fusion) > 1:  # Si on a plus d'une video
                 Which_part = [index for index, Fu_inf in enumerate(self.Vid.Fusion) if Fu_inf[0] <= self.Vid.Cropped[1][0]][-1]
-                if Which_part!=0:#si on est pas dans la première partie de la vidéo
-                    self.capture = decord.VideoReader(self.Vid.Fusion[Which_part][1])
+        self.capture = decord.VideoReader(self.Vid.Fusion[Which_part][1])
+        self.Represent = self.capture[self.Vid.Cropped[1][0]-self.Vid.Fusion[Which_part][0]].asnumpy()
+        del self.capture
 
-        self.Represent = self.capture[self.Vid.Cropped[1][0]-self.Vid.Fusion[Which_part][0]-1].asnumpy()
         self.background=cv2.cvtColor(self.Represent,cv2.COLOR_BGR2GRAY)
         self.afficher()
 
@@ -286,8 +280,8 @@ class Background(Frame):
     def End_of_window(self):
         self.unbind_all("<Button-1>")
         self.grab_release()
-        self.canvas_help.grid_forget()
-        self.canvas_help.destroy()
+        self.HW.grid_forget()
+        self.HW.destroy()
         self.canvas_user.grid_forget()
         self.canvas_user.destroy()
         if not self.portion:

@@ -38,7 +38,7 @@ class Extend(Frame):
         self.yscrollbar = Scrollbar(self)
         self.yscrollbar.grid(row=1,column=1, sticky="ns")
 
-        self.Liste=Listbox(self, selectmode = "multiple", width=100, yscrollcommand=self.yscrollbar.set)
+        self.Liste=Listbox(self, selectmode = EXTENDED, width=100, yscrollcommand=self.yscrollbar.set)
 
         self.bouton=Button(self,text=self.Messages["Validate"],command=self.validate)
         self.bouton.grid(row=2, sticky="nsew")
@@ -57,7 +57,7 @@ class Extend(Frame):
         self.list_vid_minus=[]
         for i in range(len(self.list_vid)):
             if self.list_vid[i]!=self.Vid or self.do_self:
-                if not (type=="analyses_smooth" or type=="analyses_thresh" or type=="analyses_explo") or (self.list_vid[i].Tracked):
+                if not (type=="analyses_smooth" or type=="analyses_thresh" or type=="analyses_explo" or type=="analyses_inter") or (self.list_vid[i].Tracked):
                     self.list_vid_minus.append(self.list_vid[i])
                     self.Liste.insert(i, self.list_vid[i].File_name)
                     if self.list_vid[i].Tracked:
@@ -107,18 +107,16 @@ class Extend(Frame):
             elif self.type=="fps":
                 if self.list_vid_minus[V].Frame_rate[1]!=self.list_vid_minus[V].Frame_rate[0]/self.value:
                     self.list_vid_minus[V].Frame_rate[1]=self.list_vid_minus[V].Frame_rate[0]/self.value
-                    self.list_vid_minus[V].Frame_nb[1] = math.floor(self.list_vid_minus[V].Frame_nb[0] / round(self.list_vid_minus[V].Frame_rate[0] / self.list_vid_minus[V].Frame_rate[1]))  ######NEW
-                    self.list_vid_minus[V].Cropped=[False,[0,self.list_vid_minus[V].Frame_nb[0]]]
-                    self.list_vid_minus[V].Back = [False, []]
+                    self.list_vid_minus[V].Frame_nb[1] = math.floor(self.list_vid_minus[V].Frame_nb[0] / round(self.list_vid_minus[V].Frame_rate[0] / self.list_vid_minus[V].Frame_rate[1])) ######NEW
 
             elif self.type=="stab":
-                if self.list_vid_minus[V].Stab!=(1-self.value):
-                    self.list_vid_minus[V].Stab=(1-self.value)
-                    self.list_vid_minus[V].Back = [False, []]
+                if self.list_vid_minus[V].Stab[0]!=(1-self.value):
+                    self.list_vid_minus[V].Stab[0]=(1-self.value)
 
             elif self.type=="back":
                 self.loading_bar.delete('all')
                 heigh = self.loading_bar.cget("height")
+                self.bouton.config(state="disable")
                 self.loading_bar.create_rectangle(0, 0, 400, heigh, fill="red")
                 self.loading_bar.create_rectangle(0, 0, ((item+1)/nb_items) * 400, heigh, fill="blue")
                 self.loading_bar.update()
@@ -135,10 +133,15 @@ class Extend(Frame):
 
             elif self.type=="analyses_explo":
                 if self.list_vid_minus[V].Tracked:
-                    print(self.list_vid_minus[V].Analyses)
                     self.list_vid_minus[V].Analyses[2] = deepcopy(self.value)
 
-            if self.list_vid_minus[V].Tracked and self.type!="analyses_smooth" and self.type!="analyses_thresh" and self.type!="analyses_explo":
+            elif self.type=="analyses_inter":
+                if self.list_vid_minus[V].Tracked:
+                    if len(self.list_vid_minus[V].Analyses) < 4:
+                        self.list_vid_minus[V].Analyses.append(0)
+                    self.list_vid_minus[V].Analyses[3] = deepcopy(self.value)
+
+            if self.list_vid_minus[V].Tracked and self.type!="analyses_smooth" and self.type!="analyses_thresh" and self.type!="analyses_explo" and self.type!="analyses_inter":
                 self.list_vid_minus[V].clear_files()
                 self.list_vid_minus[V].Tracked=False
 

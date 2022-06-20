@@ -1,12 +1,11 @@
+import time
 from tkinter import *
 import cv2
 import PIL.Image, PIL.ImageTk
-import time
 import numpy as np
-from BioTrack import Class_stabilise, UserMessages, Class_Lecteur, Class_ow_analyses, Analyses_Speed, Interface_smooth_param, Function_draw_mask, Interface_extend
+from BioTrack import Class_stabilise, UserMessages, Class_Lecteur, Class_ow_analyses, Analyses_Speed, Interface_smooth_param, Function_draw_mask, Interface_extend, User_help
 import csv
 import math
-import random
 import os
 from scipy.signal import savgol_filter
 
@@ -31,7 +30,7 @@ class Analyse_track(Frame):
         #On crée des classe liées aux différents types d'analyses
         self.Calc_speed = Analyses_Speed.speed_calculations()
         self.Infos_explo = [0,1,2]
-
+        self.Infos_inter = 0
         self.final_width=250
         self.zoom_strength=0.3
         self.tool_size=5
@@ -64,16 +63,8 @@ class Analyse_track(Frame):
         self.bouton_change_vid.config(font=("Arial",15))
         self.bouton_change_vid.grid(row=0, column=0, sticky="we")
 
-        self.User_help = Frame(self.parent, width=150,  highlightthickness=4, relief='flat', highlightbackground="RoyalBlue3")
-        self.User_help.grid(row=0, column=1, sticky="snew")
-        Info_title=Label(self.User_help, text=self.Messages["Info"],  justify=CENTER, background="RoyalBlue3", fg="white", font=("Helvetica", 16, "bold"))
-        Info_title.grid(row=0, sticky="nsew")
-        Grid.columnconfigure(self.User_help, 0, weight=1)
-        self.default_mess=self.Messages["Analyses0"]
-        self.displayed_mess=StringVar(value=self.default_mess)
-        self.Lab_help=Label(self.User_help, textvariable=self.displayed_mess,justify=LEFT, wraplength=250, anchor="w")
-        self.Lab_help.grid(sticky="new")
-        #self.User_help.grid_propagate(False)
+        self.HW=User_help.Help_win(self.parent, default_message=self.Messages["Analyses0"])
+        self.HW.grid(row=0, column=1,sticky="nsew")
 
         self.User_params_cont=Frame(self.parent, width=150)
         self.User_params_cont.grid(row=1,column=1)
@@ -82,16 +73,17 @@ class Analyse_track(Frame):
 
         self.Scale_tail=Scale(self.User_params_cont, from_=0, to=600, variable=self.tail_size, orient="horizontal", label=self.Messages["Control4"], command=self.modif_image)
         self.Scale_tail.grid(row=0,column=0, columnspan=3, sticky="ew")
-        self.Scale_tail.bind("<Enter>", lambda a:self.displayed_mess.set(self.Messages["Analyses1"]))
-        self.Scale_tail.bind("<Leave>", lambda a: self.displayed_mess.set(self.default_mess))
+        self.Scale_tail.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Analyses1"]))
+        self.Scale_tail.bind("<Leave>", lambda a: self.HW.remove_tmp_message())
 
 
         Fr_smooth=Frame(self.User_params_cont)
         Fr_smooth.grid(row=1, column=0, columnspan=2, sticky="nsew")
         Fr_smooth.columnconfigure(0,weight=10)
         Fr_smooth.columnconfigure(1, weight=1)
-        Fr_smooth.bind("<Enter>", lambda a:self.displayed_mess.set(self.Messages["Analyses2"]))
-        Fr_smooth.bind("<Leave>", lambda a: self.displayed_mess.set(self.default_mess))
+        Fr_smooth.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Analyses2"]))
+        Fr_smooth.bind("<Leave>", lambda a: self.HW.remove_tmp_message())
+
         self.Check_Smoothed=BooleanVar()
         self.Button_Smoothed_track = Checkbutton(Fr_smooth, text=self.Messages["Analyses8"],
                                                  variable=self.Check_Smoothed, onvalue=1, offvalue=0,
@@ -106,8 +98,8 @@ class Analyse_track(Frame):
 
         bouton_extend_S=Button(Fr_smooth, text=self.Messages["Analyses_B1"],  command=self.extend_glob_smooth)
         bouton_extend_S.grid(row=1, column=0, columnspan=2, sticky="we")
-        bouton_extend_S.bind("<Enter>", lambda a:self.displayed_mess.set(self.Messages["Analyses3"]))
-        bouton_extend_S.bind("<Leave>", lambda a: self.displayed_mess.set(self.default_mess))
+        bouton_extend_S.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Analyses3"]))
+        bouton_extend_S.bind("<Leave>", lambda a: self.HW.remove_tmp_message())
 
         self.load_Vid(self.Vid)
 
@@ -121,35 +113,42 @@ class Analyse_track(Frame):
 
         self.liste_ana.append(Class_ow_analyses.Row_Ana(main=self, parent=Liste_analyses, checkvar=self.CheckVar, value="Basics", position=len(self.liste_ana)-1))
         self.liste_ana[len(self.liste_ana)-1].grid(sticky="nsew")
-        self.liste_ana[len(self.liste_ana)-1].bind("<Enter>", lambda a:self.displayed_mess.set(self.Messages["Analyses4"].format(self.Vid.Scale[1])))
-        self.liste_ana[len(self.liste_ana)-1].bind("<Leave>", lambda a: self.displayed_mess.set(self.default_mess))
+        self.liste_ana[len(self.liste_ana)-1].bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Analyses4"].format(self.Vid.Scale[1])))
+        self.liste_ana[len(self.liste_ana)-1].bind("<Leave>", self.HW.remove_tmp_message)
 
         bouton_extend_T = Button(Liste_analyses, text=self.Messages["Analyses_B2"],command=self.extend_glob_thresh)
         bouton_extend_T.grid(columnspan=2, sticky="nswe")
-        bouton_extend_T.bind("<Enter>", lambda a:self.displayed_mess.set(self.Messages["Analyses5"]))
-        bouton_extend_T.bind("<Leave>", lambda a: self.displayed_mess.set(self.default_mess))
+        bouton_extend_T.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Analyses5"]))
+        bouton_extend_T.bind("<Leave>", self.HW.remove_tmp_message)
+
 
         self.liste_ana.append(Class_ow_analyses.Row_Ana(main=self, parent=Liste_analyses, checkvar=self.CheckVar, value="Spatial", position=len(self.liste_ana)-1))
         self.liste_ana[len(self.liste_ana)-1].grid(sticky="nsew")
-        self.liste_ana[len(self.liste_ana)-1].bind("<Enter>", lambda a:self.displayed_mess.set(self.Messages["Analyses6"].format(self.Vid.Scale[1])))
-        self.liste_ana[len(self.liste_ana)-1].bind("<Leave>", lambda a: self.displayed_mess.set(self.default_mess))
+        self.liste_ana[len(self.liste_ana)-1].bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Analyses6"].format(self.Vid.Scale[1])))
+        self.liste_ana[len(self.liste_ana)-1].bind("<Leave>", self.HW.remove_tmp_message)
 
 
         self.liste_ana.append(Class_ow_analyses.Row_Ana(main=self, parent=Liste_analyses, checkvar=self.CheckVar, value="InterInd", position=len(self.liste_ana)-1))
         self.liste_ana[len(self.liste_ana)-1].grid(sticky="nsew")
-        self.liste_ana[len(self.liste_ana)-1].bind("<Enter>", lambda a:self.displayed_mess.set(self.Messages["Analyses7"].format(self.Vid.Scale[1])))
-        self.liste_ana[len(self.liste_ana)-1].bind("<Leave>", lambda a: self.displayed_mess.set(self.default_mess))
+        self.liste_ana[len(self.liste_ana)-1].bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Analyses7"].format(self.Vid.Scale[1])))
+        self.liste_ana[len(self.liste_ana)-1].bind("<Leave>", self.HW.remove_tmp_message)
+
+        bouton_extend_I=Button(Liste_analyses, text=self.Messages["Analyses_B4"],  command=self.extend_glob_inter)
+        bouton_extend_I.grid(columnspan=2, sticky="nswe")
+        bouton_extend_I.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Analyses11"]))
+        bouton_extend_I.bind("<Leave>", self.HW.remove_tmp_message)
+
+
 
         self.liste_ana.append(Class_ow_analyses.Row_Ana(main=self, parent=Liste_analyses, checkvar=self.CheckVar, value="Exploration", position=len(self.liste_ana)-1))
         self.liste_ana[len(self.liste_ana)-1].grid(sticky="nsew")
-        self.liste_ana[len(self.liste_ana)-1].bind("<Enter>", lambda a:self.displayed_mess.set(self.Messages["Analyses10"].format(self.Vid.Scale[1])))
-        self.liste_ana[len(self.liste_ana)-1].bind("<Leave>", lambda a: self.displayed_mess.set(self.default_mess))
+        self.liste_ana[len(self.liste_ana)-1].bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Analyses10"].format(self.Vid.Scale[1])))
+        self.liste_ana[len(self.liste_ana)-1].bind("<Leave>", self.HW.remove_tmp_message)
 
-        ######NEW
         bouton_extend_E=Button(Liste_analyses, text=self.Messages["Analyses_B3"],  command=self.extend_glob_explo)
         bouton_extend_E.grid(columnspan=2, sticky="nswe")
-        bouton_extend_E.bind("<Enter>", lambda a:self.displayed_mess.set(self.Messages["Analyses9"]))
-        bouton_extend_E.bind("<Leave>", lambda a: self.displayed_mess.set(self.default_mess))
+        bouton_extend_E.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Analyses9"]))
+        bouton_extend_E.bind("<Leave>", self.HW.remove_tmp_message)
 
 
 
@@ -162,7 +161,11 @@ class Analyse_track(Frame):
 
     def extend_glob_smooth(self):
         newWindow = Toplevel(self.parent.master)
-        interface = Interface_extend.Extend(parent=newWindow, value=self.Vid.Smoothed, boss=self.main_frame, Video_file=self.Vid, type="analyses_smooth")
+        if self.Check_Smoothed.get():
+            val=[self.window_length,self.polyorder]
+        else:
+            val=[0,0]
+        interface = Interface_extend.Extend(parent=newWindow, value=val, boss=self.main_frame, Video_file=self.Vid, type="analyses_smooth")
 
     def extend_glob_thresh(self):
         newWindow = Toplevel(self.parent.master)
@@ -171,6 +174,10 @@ class Analyse_track(Frame):
     def extend_glob_explo(self):
         newWindow = Toplevel(self.parent.master)
         interface = Interface_extend.Extend(parent=newWindow, value=self.Infos_explo, boss=self.main_frame, Video_file=self.Vid, type="analyses_explo")
+
+    def extend_glob_inter(self):
+        newWindow = Toplevel(self.parent.master)
+        interface = Interface_extend.Extend(parent=newWindow, value=self.Infos_inter, boss=self.main_frame, Video_file=self.Vid, type="analyses_inter")
 
     def on_frame_conf(self, *arg):
         self.Liste_analyses.configure(scrollregion=self.Liste_analyses.bbox("all"))
@@ -214,9 +221,9 @@ class Analyse_track(Frame):
                                                                        self.window_length,
                                                                        self.polyorder, deriv=0, delta=1.0, axis=- 1,
                                                                        mode='interp', cval=0.0)
-            ind_coo=ind_coo.astype(np.float)
+            ind_coo=ind_coo.astype(np.str)
+            ind_coo[np.where(ind_coo=="nan")]="NA"
             ind_coo=ind_coo.tolist()
-            ind_coo=[["NA" if np.isnan(val) else val for val in row] for row in ind_coo]
             self.Coos[ind]=ind_coo
 
 
@@ -248,9 +255,6 @@ class Analyse_track(Frame):
         self.main_frame.selected_vid = self.dict_Names[vid].Video
         self.main_frame.analyse_track(self.CheckVar.get())
 
-    def change_color_pts(self):
-        self.liste_colors=self.random_color(self.NB_ind)
-        self.modif_image()
 
     def save_And_quit(self,follow=False):
         self.save()
@@ -272,7 +276,14 @@ class Analyse_track(Frame):
 
         self.Vid.Analyses[2] = self.Infos_explo  # We save the movement threshold
 
-    def pressed_can(self, Pt):
+        if len(self.Vid.Analyses)<5:
+            self.Vid.Analyses.append(0)
+            if len(self.Vid.Analyses) < 5:
+                self.Vid.Analyses.append(0)
+
+        self.Vid.Analyses[3] = self.Infos_inter  # We save the movement threshold
+
+    def pressed_can(self, Pt, *args):
         pass
 
     def moved_can(self, Pt):
@@ -289,8 +300,8 @@ class Analyse_track(Frame):
         self.grab_release()
         self.User_params_cont.grid_forget()
         self.User_params_cont.destroy()
-        self.User_help.grid_forget()
-        self.User_help.destroy()
+        self.HW.grid_forget()
+        self.HW.destroy()
         self.main_frame.return_main()
 
 
@@ -315,6 +326,33 @@ class Analyse_track(Frame):
         Grid.rowconfigure(self, 0, weight=1)  ########NEW
         Grid.rowconfigure(self, 1, weight=100)  ########NEW
 
+
+        mask = Function_draw_mask.draw_mask(self.Vid)
+        Arenas, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        self.Arenas = Function_draw_mask.Organise_Ars(Arenas)
+
+        try:
+            self.Calc_speed.seuil_movement = self.Vid.Analyses[0]
+            if len(self.Vid.Analyses[1])>0:
+                self.Calc_speed.Areas=self.Vid.Analyses[1]
+                # Pickle does not accept tkinter DoubleVar:
+                for Ar in self.Calc_speed.Areas:
+                    for shape in Ar:
+                        shape[2] = DoubleVar(value=shape[2])
+        except Exception as e:
+            print(e)
+            pass
+
+        try:
+            self.Infos_explo = self.Vid.Analyses[2]
+        except:
+            pass
+
+        try:
+            self.Infos_inter = self.Vid.Analyses[3]
+        except:
+            pass
+
         self.Vid_Lecteur = Class_Lecteur.Lecteur(self, self.Vid)
         self.Vid_Lecteur.grid(row=1, column=0, sticky="nsew")
         self.Scrollbar=self.Vid_Lecteur.Scrollbar
@@ -334,30 +372,10 @@ class Analyse_track(Frame):
         self.Vid_Lecteur.Scrollbar.refresh()
 
         self.Check_Bs = []
-        self.CheckVar.set(0)
-
-        mask = Function_draw_mask.draw_mask(self.Vid)
-        Arenas, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        self.Arenas = Function_draw_mask.Organise_Ars(Arenas)
+        #self.CheckVar.set(0)
 
         self.one_every=self.Vid_Lecteur.one_every
 
-        try:
-            self.Calc_speed.seuil_movement = self.Vid.Analyses[0]
-            if len(self.Vid.Analyses[1])>0:
-                self.Calc_speed.Areas=self.Vid.Analyses[1]
-                # Pickle does not accept tkinter DoubleVar:
-                for Ar in self.Calc_speed.Areas:
-                    for shape in Ar:
-                        shape[2] = DoubleVar(value=shape[2])
-        except Exception as e:
-            print(e)
-            pass
-
-        try:
-            self.Infos_explo = self.Vid.Analyses[2]
-        except:
-            pass
 
 
 
@@ -386,7 +404,6 @@ class Analyse_track(Frame):
                     else:
                         first=False
             self.Coos_brutes["Ind"+str(ind)]=Ind_Coos
-        self.liste_colors=self.random_color(self.NB_ind)
         self.Coos=self.Coos_brutes.copy()
 
         if self.Vid.Smoothed[0]!=0:
@@ -395,21 +412,11 @@ class Analyse_track(Frame):
             self.Check_Smoothed.set(1)
             self.change_type_coos()
 
-
-    def random_color(self, ite=1):
-        cols=[]
-        for replicate in range(ite):
-            levels = range(32, 256, 32)
-            levels = str(tuple(random.choice(levels) for _ in range(3)))
-            cols.append(tuple(int(s) for s in levels.strip("()").split(",")))
-        return (cols)
-
-
     def modif_param_smoothed(self):
         newWindow = Toplevel(self.parent.master)
         interface = Interface_smooth_param.Modify(parent=newWindow, boss=self)
 
-    def modif_image(self, img=[], *args):
+    def modif_image(self, img=[], aff=False, *args):
         if self.Vid.Cropped[0]:
             to_remove = int(round((self.Vid.Cropped[1][0])/self.Vid_Lecteur.one_every))
         else:
@@ -421,12 +428,11 @@ class Analyse_track(Frame):
             self.last_empty = img
             new_img = np.copy(img)
 
-        if self.Vid.Stab:
-            new_img = (Class_stabilise.find_best_position(Prem_Im=self.Vid_Lecteur.Prem_image_to_show, frame=new_img, show=False))
-
+        if self.Vid.Stab[0]:
+            new_img = (Class_stabilise.find_best_position(Vid=self.Vid, Prem_Im=self.Vid_Lecteur.Prem_image_to_show, frame=new_img, show=False))
 
         for ind in range(self.NB_ind):
-            color=self.liste_colors[ind]
+            color=self.Vid.Identities[ind][2]
             for prev in range(min(int(self.tail_size.get()*self.Vid.Frame_rate[1]), int(self.Scrollbar.active_pos - to_remove))):
                 if int(self.Scrollbar.active_pos - prev) >= round(((self.Vid.Cropped[1][0])/self.Vid_Lecteur.one_every)) and int(self.Scrollbar.active_pos) <= round(((self.Vid.Cropped[1][1])/self.Vid_Lecteur.one_every)):
                     if self.Coos["Ind"+str(ind)][int(self.Scrollbar.active_pos - 1 - prev - to_remove)][0] != "NA" and self.Coos["Ind"+str(ind)][int(self.Scrollbar.active_pos - prev - to_remove)][0] != "NA" :
@@ -436,23 +442,23 @@ class Analyse_track(Frame):
                         TMP_tail_2 = (int(float(self.Coos["Ind"+str(ind)][int(self.Scrollbar.active_pos - prev - to_remove)][0])),
                                       int(float(self.Coos["Ind"+str(ind)][int(self.Scrollbar.active_pos - prev - to_remove)][1])))
 
-                        new_img = cv2.line(new_img, TMP_tail_1, TMP_tail_2, color, 2)
+                        new_img = cv2.line(new_img, TMP_tail_1, TMP_tail_2, color, max(int(3*self.Vid_Lecteur.ratio),1))
 
 
         Ind_pts=[]
+        self.img_no_shapes = new_img
         if self.Scrollbar.active_pos >= round(((self.Vid.Cropped[1][0]) / self.Vid_Lecteur.one_every)) and self.Scrollbar.active_pos <= int(round((self.Vid.Cropped[1][1]) / self.Vid_Lecteur.one_every)):
             for ind in range(self.NB_ind):
                 if self.CheckVar.get() == "InterInd":
                     Ind_pts.append(self.Coos["Ind" + str(ind)][self.Scrollbar.active_pos - to_remove])
 
-                color = self.liste_colors[ind]
+                color = self.Vid.Identities[ind][2]
                 if self.Coos["Ind" + str(ind)][self.Scrollbar.active_pos - to_remove][0]!="NA":
                     if self.highlight == "Ind" + str(ind):
-                        new_img = cv2.circle(new_img, (int(self.Coos["Ind" + str(ind)][self.Scrollbar.active_pos - to_remove][0]), int(self.Coos["Ind" + str(ind)][self.Scrollbar.active_pos - to_remove][1])), radius=9, color=(0,0,0),thickness=-1)
-                        new_img = cv2.circle(new_img, (int(self.Coos["Ind" + str(ind)][self.Scrollbar.active_pos - to_remove][0]), int(self.Coos["Ind" + str(ind)][self.Scrollbar.active_pos - to_remove][1])), radius=7, color=(255,255,255),thickness=-1)
+                        new_img = cv2.circle(new_img, (int(float(self.Coos["Ind" + str(ind)][self.Scrollbar.active_pos - to_remove][0])), int(float(self.Coos["Ind" + str(ind)][self.Scrollbar.active_pos - to_remove][1]))), radius=max(int(5*self.Vid_Lecteur.ratio),2), color=(0,0,0),thickness=-1)
+                        new_img = cv2.circle(new_img, (int(float(self.Coos["Ind" + str(ind)][self.Scrollbar.active_pos - to_remove][0])), int(float(self.Coos["Ind" + str(ind)][self.Scrollbar.active_pos - to_remove][1]))), radius=max(int(2*self.Vid_Lecteur.ratio),3), color=(255,255,255),thickness=-1)
 
-
-                    new_img=cv2.circle(new_img,(int(self.Coos["Ind" + str(ind)][self.Scrollbar.active_pos - to_remove][0]),int(self.Coos["Ind" + str(ind)][self.Scrollbar.active_pos - to_remove][1])),radius=5,color=color,thickness=-1)
+                    new_img=cv2.circle(new_img,(int(float(self.Coos["Ind" + str(ind)][self.Scrollbar.active_pos - to_remove][0])),int(float(self.Coos["Ind" + str(ind)][self.Scrollbar.active_pos - to_remove][1]))),radius=max(int(4*self.Vid_Lecteur.ratio),1),color=color,thickness=-1)
                     # Show speed:
                     if self.CheckVar.get() == "Basics" and self.Coos["Ind" + str(ind)][self.Scrollbar.active_pos - to_remove-1][0]!="NA" and (self.Scrollbar.active_pos) >= round(((self.Vid.Cropped[1][0])/self.Vid_Lecteur.one_every)+1):
                         speed = self.Calc_speed.calculate_speed(self, ind)
@@ -462,26 +468,29 @@ class Analyse_track(Frame):
                             col_fond=(0,255,0)
 
                         if not isinstance(speed, str):
-                            cv2.putText(new_img, str(round(speed, 2)), (int(self.Coos["Ind" + str(ind)][self.Scrollbar.active_pos - to_remove][0])+5,int(self.Coos["Ind" + str(ind)][self.Scrollbar.active_pos - to_remove][1])+5), cv2.FONT_HERSHEY_SIMPLEX, 1, col_fond, 10)
-                            cv2.putText(new_img, str(round(speed, 2)), (int(self.Coos["Ind" + str(ind)][self.Scrollbar.active_pos - to_remove][0])+5,int(self.Coos["Ind" + str(ind)][self.Scrollbar.active_pos - to_remove][1])+5), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+                            cv2.putText(new_img, str(round(speed, 2)), (int(float(self.Coos["Ind" + str(ind)][self.Scrollbar.active_pos - to_remove][0]))+5,int(float(self.Coos["Ind" + str(ind)][self.Scrollbar.active_pos - to_remove][1]))+5), cv2.FONT_HERSHEY_SIMPLEX, max(0.5,self.Vid_Lecteur.ratio), col_fond, max(2,int(self.Vid_Lecteur.ratio*7)))
+                            cv2.putText(new_img, str(round(speed, 2)), (int(float(self.Coos["Ind" + str(ind)][self.Scrollbar.active_pos - to_remove][0]))+5,int(float(self.Coos["Ind" + str(ind)][self.Scrollbar.active_pos - to_remove][1]))+5), cv2.FONT_HERSHEY_SIMPLEX, max(0.5,self.Vid_Lecteur.ratio), color,  max(1,int(self.Vid_Lecteur.ratio*3)))
 
-            if self.CheckVar.get()=="InterInd":
+            self.img_no_shapes = new_img
+
+            if self.CheckVar.get() == "InterInd" :
                 for nb_fish in self.Vid.Track[1][6]:
-                    if nb_fish>1 :
-                        new_img, dist, central = self.Calc_speed.calculate_interind_dist(Pts=Ind_pts[0:nb_fish], Scale=float(self.Vid.Scale[0]), draw=True, img=new_img)
-                        if dist!="NA":
-                            cv2.putText(new_img, str(round(dist, 3)), central, cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 5)
-                            cv2.putText(new_img, str(round(dist,3)), central, cv2.FONT_HERSHEY_SIMPLEX,1, (175,0,0), 2)
+                    if nb_fish > 1:
+                        new_img, dist, central = self.Calc_speed.calculate_interind_dist(Pts=Ind_pts[0:nb_fish],
+                                                                                         Scale=float(self.Vid.Scale[0]),
+                                                                                         draw=True, img=new_img, thick=max(1,int(self.Vid_Lecteur.ratio*3)))
+                        if dist != "NA":
+                            cv2.putText(new_img, str(round(dist, 3)), central, cv2.FONT_HERSHEY_SIMPLEX,  max(0.5,self.Vid_Lecteur.ratio), (0, 0, 0),  max(2,int(self.Vid_Lecteur.ratio*5)))
+                            cv2.putText(new_img, str(round(dist, 3)), central, cv2.FONT_HERSHEY_SIMPLEX,  max(0.5,self.Vid_Lecteur.ratio), (175, 0, 0),  max(1,int(self.Vid_Lecteur.ratio*3)))
                         del Ind_pts[0:nb_fish]
 
 
-        self.img_no_shapes = new_img
+            if self.CheckVar.get() == "Spatial" and self.Scrollbar.active_pos >= round(((self.Vid.Cropped[1][0]-1)/self.Vid_Lecteur.one_every)) and self.Scrollbar.active_pos <= int(((self.Vid.Cropped[1][1]-1)/self.Vid_Lecteur.one_every)+1):
+                new_img=self.draw_shapes(np.copy(self.img_no_shapes), to_remove)
 
-        if self.CheckVar.get() == "Spatial" and self.Scrollbar.active_pos >= round(((self.Vid.Cropped[1][0]-1)/self.Vid_Lecteur.one_every)) and self.Scrollbar.active_pos <= int(((self.Vid.Cropped[1][1]-1)/self.Vid_Lecteur.one_every)+1):
-            new_img=self.draw_shapes(np.copy(self.img_no_shapes), to_remove)
+            if self.CheckVar.get() == "Exploration" and self.Scrollbar.active_pos >= round(((self.Vid.Cropped[1][0] - 1) / self.Vid_Lecteur.one_every)) and self.Scrollbar.active_pos <= int(((self.Vid.Cropped[1][1] - 1) / self.Vid_Lecteur.one_every) + 1):
+                new_img = self.draw_explo(np.copy(self.img_no_shapes), to_remove)
 
-        if self.CheckVar.get() == "Exploration" and self.Scrollbar.active_pos >= round(((self.Vid.Cropped[1][0] - 1) / self.Vid_Lecteur.one_every)) and self.Scrollbar.active_pos <= int(((self.Vid.Cropped[1][1] - 1) / self.Vid_Lecteur.one_every) + 1):
-            new_img = self.draw_explo(np.copy(self.img_no_shapes), to_remove)
 
         self.Vid_Lecteur.afficher_img(new_img)
 
@@ -503,22 +512,20 @@ class Analyse_track(Frame):
         for Ar in range(len(self.Arenas)):
             for shape in self.Calc_speed.Areas[Ar]:
                 if shape[0] == "Point":
-                    cv2.circle(img, shape[1][0], 7, (0, 0, 0), -1)
-                    cv2.circle(img, shape[1][0], 5, (0, 0, 175), -1)
-                    cv2.circle(img, shape[1][0], int(round(float(shape[2].get()) * float(self.Vid.Scale[0]))),
-                               (0, 0, 100), 2)
-                    overlay = cv2.circle(overlay, shape[1][0],
-                                         int(round(float(shape[2].get()) * float(self.Vid.Scale[0]))), (0, 0, 175), -1)
+                    cv2.circle(img, shape[1][0], max(2,int(self.Vid_Lecteur.ratio*5)), (0, 0, 0), -1)
+                    cv2.circle(img, shape[1][0], max(1,int(self.Vid_Lecteur.ratio*3)), (0, 0, 175), -1)
+                    cv2.circle(img, shape[1][0], int(round(float(shape[2].get()) * float(self.Vid.Scale[0]))),(0, 0, 100), max(1,int(self.Vid_Lecteur.ratio*3)))
+                    overlay = cv2.circle(overlay, shape[1][0], int(round(float(shape[2].get()) * float(self.Vid.Scale[0]))), (0, 0, 100), -1)
 
                 if shape[0] == "Line":
                     for pt in shape[1]:
-                        cv2.circle(img, pt, 7, (0, 0, 0), -1)
-                        cv2.circle(img, pt, 5, (175, 0, 175), -1)
+                        cv2.circle(img, pt, max(2,int(self.Vid_Lecteur.ratio*5)), (0, 0, 0), -1)
+                        cv2.circle(img, pt, max(1,int(self.Vid_Lecteur.ratio*3)), (175, 0, 175), -1)
                     if len(shape[1]) > 1:
-                        cv2.line(img, shape[1][0], shape[1][1], color=(150, 0, 150), thickness=3)
+                        cv2.line(img, shape[1][0], shape[1][1], color=(150, 0, 150), thickness=max(1,int(self.Vid_Lecteur.ratio*3)))
 
                 if shape[0] == "All_borders":
-                    img = cv2.drawContours(img, [self.Arenas[Ar]], -1, (255, 0, 0), 2)
+                    img = cv2.drawContours(img, [self.Arenas[Ar]], -1, (255, 0, 0), max(1,int(self.Vid_Lecteur.ratio*3)))
 
                     if shape[2].get() > 0:
                         empty = np.zeros((img.shape[0], img.shape[1]), np.uint8)
@@ -527,59 +534,58 @@ class Analyse_track(Frame):
                         area = cv2.drawContours(np.copy(empty), [self.Arenas[Ar]], -1, (255, 255, 255), -1)
                         empty = cv2.bitwise_and(border, border, mask=area)
                         inside_border, _ = cv2.findContours(empty, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-                        img = cv2.drawContours(img, inside_border, -1, (150, 0, 0), 2)
+                        img = cv2.drawContours(img, inside_border, -1, (150, 0, 0), max(1,int(self.Vid_Lecteur.ratio*3)))
                         overlay = cv2.drawContours(overlay, inside_border, -1, (255, 0, 0), -1)
 
                 if shape[0] == "Borders":
                     for bord in shape[1]:
-                        cv2.line(img, bord[0], bord[1], color=(255, 0, 0), thickness=2)
+                        cv2.line(img, bord[0], bord[1], color=(255, 0, 0), thickness=max(1,int(self.Vid_Lecteur.ratio*3)))
 
                     empty = np.zeros((img.shape[0], img.shape[1]), np.uint8)
                     border = np.copy(empty)
 
                     for bord in shape[1]:
-                        border = cv2.line(border, bord[0], bord[1], color=(255, 0, 0), thickness=2)
+                        border = cv2.line(border, bord[0], bord[1], color=(255, 0, 0), thickness=max(1,int(self.Vid_Lecteur.ratio*3)))
                     cnts, _ = cv2.findContours(border, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-                    border = cv2.drawContours(border, cnts, -1, (255, 255, 255),
-                                              int(round(shape[2].get() * float(self.Vid.Scale[0]) * 2)))
+                    border = cv2.drawContours(border, cnts, -1, (255, 255, 255),int(round(shape[2].get() * float(self.Vid.Scale[0]) * 2)))
                     area = cv2.drawContours(np.copy(empty), [self.Arenas[Ar]], -1, (255, 255, 255), -1)
                     empty = cv2.bitwise_and(border, border, mask=area)
                     inside_border, _ = cv2.findContours(empty, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-                    img = cv2.drawContours(img, inside_border, -1, (150, 0, 0), 2)
+                    img = cv2.drawContours(img, inside_border, -1, (150, 0, 0), max(1,int(self.Vid_Lecteur.ratio*3)))
                     overlay = cv2.drawContours(overlay, inside_border, -1, (255, 0, 0), -1)
 
                 if shape[0] == "Ellipse":
                     if len(shape[1]) > 1:
                         Function_draw_mask.Draw_elli(img, [po[0] for po in shape[1]], [po[1] for po in shape[1]],
-                                                     (0, 255, 0))
+                                                     (0, 255, 0), thick=max(1,int(self.Vid_Lecteur.ratio*3)))
                         Function_draw_mask.Draw_elli(overlay, [po[0] for po in shape[1]], [po[1] for po in shape[1]],
                                                      (0, 255, 0), thick=-1)
 
                 if shape[0] == "Rectangle":
                     if len(shape[1]) > 1:
                         Function_draw_mask.Draw_rect(img, [po[0] for po in shape[1]], [po[1] for po in shape[1]],
-                                                     color=(0, 75, 75))
+                                                     color=(0, 75, 75), thick=max(1,int(self.Vid_Lecteur.ratio*3)))
                         Function_draw_mask.Draw_rect(overlay, [po[0] for po in shape[1]], [po[1] for po in shape[1]],
-                                                     color=(0, 175, 175), thick=-1)
+                                                     color=(0, 100, 100), thick=-1)
 
-                if shape[0] == "Poly":
+                if shape[0] == "Polygon":
                     if len(shape[1]) > 1:
                         Function_draw_mask.Draw_Poly(img, [po[0] for po in shape[1]], [po[1] for po in shape[1]],
-                                                     (75, 75, 0))
+                                                     (75, 75, 0), thick=max(1,int(self.Vid_Lecteur.ratio*3)))
                         Function_draw_mask.Draw_Poly(overlay, [po[0] for po in shape[1]], [po[1] for po in shape[1]],
                                                      (150, 150, 0), thick=-1)
 
-        self.overlay=overlay
-        self.mask = overlay.astype(bool)
+        grey=cv2.cvtColor(overlay, cv2.COLOR_BGR2GRAY)
+        self.mask = np.where(grey>0)
+        self.overlay = overlay
 
 
 
     def draw_shapes(self, img, to_remove):
-        self.overlay==None
         self.create_overlay(img)
-        #First the ones that will appear transparent:
 
+        #First the ones that will appear transparent:
         for Ar in range(len(self.Arenas)):
             for shape in self.Calc_speed.Areas[Ar]:
                 if shape[0] == "Point":
@@ -590,19 +596,20 @@ class Analyse_track(Frame):
                             fish_before = 0
                         if self.Coos["Ind" + str(fish + fish_before)][self.Scrollbar.active_pos - to_remove][0] != "NA":
                             center = self.Coos["Ind" + str(fish + fish_before)][self.Scrollbar.active_pos - to_remove]
+                            center=[float(val) for val in center]
                             cv2.line(img, (int(center[0]), int(center[1])), shape[1][0],
-                                     self.liste_colors[fish + fish_before], 2)
+                                     self.Vid.Identities[fish + fish_before][2],  max(1,int(self.Vid_Lecteur.ratio*3)))
                             dist = math.sqrt((float(center[0]) - shape[1][0][0]) ** 2 + (
                                         float(center[1]) - shape[1][0][1]) ** 2) / float(self.Vid.Scale[0])
                             cv2.putText(img, str(round(dist, 3)), (
                             int((float(center[0]) + shape[1][0][0]) / 2), int((float(center[1]) + shape[1][0][1]) / 2)),
-                                        cv2.FONT_HERSHEY_DUPLEX, fontScale=1,
-                                        color=(0,0,0), thickness=6)
+                                        cv2.FONT_HERSHEY_DUPLEX, max(0.5,self.Vid_Lecteur.ratio),
+                                        color=(0,0,0), thickness= max(2,int(self.Vid_Lecteur.ratio*5)))
 
                             cv2.putText(img, str(round(dist, 3)), (
                             int((float(center[0]) + shape[1][0][0]) / 2), int((float(center[1]) + shape[1][0][1]) / 2)),
-                                        cv2.FONT_HERSHEY_DUPLEX, fontScale=1,
-                                        color=self.liste_colors[fish + fish_before], thickness=2)
+                                        cv2.FONT_HERSHEY_DUPLEX, max(0.5,self.Vid_Lecteur.ratio),
+                                        color=self.Vid.Identities[fish + fish_before][2], thickness= max(1,int(self.Vid_Lecteur.ratio*3)))
                 if shape[0] == "Line":
                     for fish in range(self.Vid.Track[1][6][Ar]):
                         if Ar > 0:
@@ -614,19 +621,19 @@ class Analyse_track(Frame):
                             center=[int(float(center[0])),int(float(center[1]))]
                             dist,proj=Analyses_Speed.calculate_dist_one_pt_Line(Ligne=shape[1],Pt=center,Scale=float(self.Vid.Scale[0]),get_proj=True)
                             proj=[int(float(proj[0])),int(float(proj[1]))]
-                            cv2.line(img, (int(center[0]), int(center[1])), proj,self.liste_colors[fish + fish_before], 2)
+                            cv2.line(img, (int(center[0]), int(center[1])), proj,self.Vid.Identities[fish + fish_before][2], max(1,int(self.Vid_Lecteur.ratio*3)))
                             cv2.putText(img, str(round(dist, 3)), (int((float(center[0])*0.3 + proj[0]*0.7)), int((float(center[1])*0.3 + proj[1]*0.7))),
-                                        cv2.FONT_HERSHEY_DUPLEX, fontScale=1,
-                                        color=(0,0,0), thickness=6)
+                                        cv2.FONT_HERSHEY_DUPLEX, max(0.5,self.Vid_Lecteur.ratio),
+                                        color=(0,0,0), thickness=max(1,int(self.Vid_Lecteur.ratio*5)))
 
                             cv2.putText(img, str(round(dist, 3)), (int((float(center[0])*0.3 + proj[0]*0.7) ), int((float(center[1]*0.3) + proj[1]*0.7))),
-                                        cv2.FONT_HERSHEY_DUPLEX, fontScale=1,
-                                        color=self.liste_colors[fish + fish_before], thickness=2)
+                                        cv2.FONT_HERSHEY_DUPLEX, max(0.5,self.Vid_Lecteur.ratio),
+                                        color=self.Vid.Identities[fish + fish_before][2], thickness=max(1,int(self.Vid_Lecteur.ratio*3)))
 
-        alpha=0.35
-        img[self.mask] = cv2.addWeighted(img, alpha, self.overlay, 1 - alpha, 0)[self.mask]
 
+        img[self.mask] = cv2.addWeighted(img, 0.5, self.overlay, 0.5, 0)[self.mask]
         return(img)
+
 
 
     def Organise_Ars(self, Arenas):
@@ -664,7 +671,7 @@ class Analyse_track(Frame):
                     pt=self.Coos["Ind" + str(fish + fish_before)][self.Scrollbar.active_pos - to_remove]
 
                     if pt[0] != "NA":
-                        cv2.circle(empty, (int(pt[0]), int(pt[1])), int(radius * float(self.Vid.Scale[0])), (1), -1)
+                        cv2.circle(empty, (int(float(pt[0])), int(float(pt[1]))), int(radius * float(self.Vid.Scale[0])), (1), -1)
 
 
                 mask = np.zeros((img.shape[0], img.shape[1], 1), np.uint8)
@@ -701,7 +708,7 @@ class Analyse_track(Frame):
                     img = cv2.line(img, pt1=(int(min(self.Arenas[Ar][:, :, 0]) - decal_x + vert * (largeur)),
                                                            int(min(self.Arenas[Ar][:, :, 1]) - decal_y)), pt2=(
                         int(min(self.Arenas[Ar][:, :, 0]) - decal_x + vert * (largeur)),
-                        int(max(self.Arenas[Ar][:, :, 1]) + decal_y)), color=(0, 0, 0), thickness=1)
+                        int(max(self.Arenas[Ar][:, :, 1]) + decal_y)), color=(0, 0, 0), thickness=max(1,int(self.Vid_Lecteur.ratio*3)))
 
                 for horz in range(nb_squares_h + 1):
                     img = cv2.line(img, pt1=(int(min(self.Arenas[Ar][:, :, 0]) - decal_x),
@@ -709,7 +716,7 @@ class Analyse_track(Frame):
                                           pt2=(int(max(self.Arenas[Ar][:, :, 0]) + decal_x),
                                                int(min(self.Arenas[Ar][:, :, 1]) - decal_y + horz * (largeur))),
                                           color=(0, 0, 0),
-                                          thickness=1)
+                                          thickness=max(1,int(self.Vid_Lecteur.ratio*3)))
             return(img)
 
         elif self.Infos_explo[0]==2:
@@ -747,15 +754,15 @@ class Analyse_track(Frame):
                     last_nb = new_nb
 
                 for circle in range(len(list_rads)):
-                    img = cv2.circle(img, (cX, cY), int(list_rads[circle]), (0, 0, 0), 1)
+                    img = cv2.circle(img, (cX, cY), int(list_rads[circle]), (0, 0, 0), max(1,int(self.Vid_Lecteur.ratio*3)))
                     if circle > 0:
                         for cur_angle in list_angles[circle]:
                             pt1 = (int(cX + math.cos(math.pi + cur_angle) * list_rads[circle - 1]),
                                    int(cY + math.sin(math.pi + cur_angle) * list_rads[circle - 1]))
                             pt2 = (int(cX + math.cos(math.pi + cur_angle) * list_rads[circle]),
                                    int(cY + math.sin(math.pi + cur_angle) * list_rads[circle]))
-                            img = cv2.line(img, pt1, pt2, (0, 0, 0), 1)  # We draw the limits
-                img = cv2.circle(img, (cX, cY), int(last_rad), (0, 0, 0), 1)
+                            img = cv2.line(img, pt1, pt2, (0, 0, 0), max(1,int(self.Vid_Lecteur.ratio*3)))  # We draw the limits
+                img = cv2.circle(img, (cX, cY), int(last_rad), (0, 0, 0), max(1,int(self.Vid_Lecteur.ratio*3)))
 
             return(img)
 

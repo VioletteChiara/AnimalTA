@@ -1,10 +1,11 @@
 from tkinter import *
 import cv2
 import PIL.Image, PIL.ImageTk
+import decord
 import numpy as np
 import math
 import random
-from BioTrack import UserMessages, Function_draw_mask as Dr
+from BioTrack import UserMessages, Function_draw_mask as Dr, User_help
 
 
 class Mask(Frame):
@@ -32,25 +33,22 @@ class Mask(Frame):
 
         self.zoom_sq=[0,0,self.Vid.shape[1],self.Vid.shape[0]]
         self.zoom_strength = 0.3
+        self.liste_points=[]
 
 
         if self.Vid.Back[0]:
             self.background=self.Vid.Back[1]
+
         else:
-            self.capture = cv2.VideoCapture(self.Vid.File_name)
             Which_part = 0
             if self.Vid.Cropped[0]:
                 if len(self.Vid.Fusion) > 1:  # Si on a plus d'une video
                     Which_part = [index for index, Fu_inf in enumerate(self.Vid.Fusion) if Fu_inf[0] <= self.Vid.Cropped[1][0]][-1]
-                    if Which_part != 0:  # si on est pas dans la première partie de la vidéo
-                        self.capture.release()
-                        self.capture = cv2.VideoCapture(self.Vid.Fusion[Which_part][1])
 
-            self.capture.set(cv2.CAP_PROP_POS_FRAMES, self.Vid.Cropped[1][0] - self.Vid.Fusion[Which_part][0])
-            self.ret, self.Represent = self.capture.read()
-            self.background = cv2.cvtColor(self.Represent,cv2.COLOR_BGR2GRAY)
-            self.capture.release()
-
+            self.capture = decord.VideoReader(self.Vid.Fusion[Which_part][1])
+            self.background = self.capture[self.Vid.Cropped[1][0] - self.Vid.Fusion[Which_part][0]].asnumpy()
+            del self.capture
+            self.background=cv2.cvtColor(self.background,cv2.COLOR_RGB2GRAY)
 
         self.image_to_show=np.copy(self.background)
         self.Shape_ar = IntVar(self)
@@ -79,7 +77,7 @@ class Mask(Frame):
         Grid.rowconfigure(self, 0, weight=1)  ########NEW
 
 
-        #Canvs to show img
+        #Canvas to show img
         self.canvas_img = Canvas(self, bd=0, highlightthickness=0, relief='ridge')
         self.canvas_img.grid(row=1, column=0, rowspan=2, sticky="nsew")
         self.canvas_img.bind_all("<MouseWheel>", self.On_mousewheel)
@@ -96,15 +94,9 @@ class Mask(Frame):
         self.Size = self.Vid.shape
         self.canvas_img.bind("<Configure>", self.afficher)
 
-
         #Help user and parameters
-        self.canvas_User_help = Frame(self.parent, width=150,  highlightthickness=4, relief='flat', highlightbackground="RoyalBlue3")
-        self.canvas_User_help.grid(row=0, column=1, sticky="new")
-        Info_title=Label(self.canvas_User_help, text=self.Messages["Info"],  justify=CENTER, background="RoyalBlue3", fg="white", font=("Helvetica", 16, "bold"))
-        Info_title.grid(row=0, sticky="new")
-        self.User_help=Label(self.canvas_User_help, text=self.Messages["Mask10"], width=35, wraplengt=250, borderwidth=2, justify=LEFT)
-        self.User_help.grid(row=1, sticky="new")
-        Grid.columnconfigure(self.canvas_User_help, 0, weight=1)
+        self.HW=User_help.Help_win(self.parent, default_message=self.Messages["Stab1"])
+        self.HW.grid(row=0, column=1,sticky="nsew")
 
         ##Parameters
         self.canvas_User_params = Canvas(self.parent, width=200, height=0, bd=0, highlightthickness=0, relief='ridge')
@@ -122,6 +114,9 @@ class Mask(Frame):
         self.bouton_validate = Button(self.canvas_User_params, text=self.Messages["Validate"], background="green", fg="black", command=self.validate)
         self.B_Validate_NContinue=Button(self.canvas_User_params, text=self.Messages["Validate_NC"],bg="green", command=lambda: self.validate(follow=True))
 
+        self.NB_Arenas=StringVar(value="0")
+        Label_nb_Arenas=Label(self.canvas_User_params, text=self.Messages["Mask11"])
+        nb_Arenas = Label(self.canvas_User_params, textvariable=self.NB_Arenas)
 
         self.Label_shapes = Label(self.canvas_User_params, text=self.Messages["Mask3"])
 
@@ -137,20 +132,23 @@ class Mask(Frame):
 
 
         #Grids
-        self.Label_shapes.grid(row=0, columnspan=2)
-        self.shape1.grid(row=1, columnspan=2)
-        self.shape2.grid(row=2, columnspan=2)
-        self.shape3.grid(row=3, columnspan=2)
+        Label_nb_Arenas.grid(row=0, column=0, sticky="e")
+        nb_Arenas.grid(row=0, column=1, sticky="w")
 
-        self.bouton_add_mask_ar.grid(row=4, column=0)
-        self.bouton_remove_mask_one_ar.grid(row=4, column=1)
-        self.bouton_remove_mask_ar.grid(row=5, columnspan=2)
-        self.bouton_efface.grid(row=6, columnspan=2)
-        self.bouton_validate.grid(row=7, columnspan=2,sticky="nsew")
+        self.Label_shapes.grid(row=1, columnspan=2)
+        self.shape1.grid(row=2, columnspan=2)
+        self.shape2.grid(row=3, columnspan=2)
+        self.shape3.grid(row=4, columnspan=2)
+
+        self.bouton_add_mask_ar.grid(row=5, column=0)
+        self.bouton_remove_mask_one_ar.grid(row=5, column=1)
+        self.bouton_remove_mask_ar.grid(row=6, columnspan=2)
+        self.bouton_efface.grid(row=7, columnspan=2)
+        self.bouton_validate.grid(row=8, columnspan=2,sticky="nsew")
         if not self.portion:
-            self.B_Validate_NContinue.grid(row=8,columnspan=2, sticky="ewsn")
+            self.B_Validate_NContinue.grid(row=9,columnspan=2, sticky="ewsn")
 
-        self.canvas_User_params.grid_rowconfigure((0,1,2,3,4,5,6,7,8), weight=3, uniform="row")
+        self.canvas_User_params.grid_rowconfigure((0,1,2,3,4,5,6,7,8,9), weight=3, uniform="row")
 
         self.canvas_img.update()
         self.final_width = self.canvas_img.winfo_width()
@@ -277,8 +275,8 @@ class Mask(Frame):
         self.grab_release()
         self.canvas_User_params.grid_forget()
         self.canvas_User_params.destroy()
-        self.canvas_User_help.grid_forget()
-        self.canvas_User_help.destroy()
+        self.HW.grid_forget()
+        self.HW.destroy()
         if not self.portion:
             self.boss.update()
             self.main_frame.return_main()
@@ -413,6 +411,10 @@ class Mask(Frame):
         self.afficher()
 
     def afficher(self, *args):
+        #We calculate how much of arenas:
+        empty= np.zeros_like(self.background)
+        self.draw_binaries(empty)
+
         best_ratio = max(self.Size[1] / (self.canvas_img.winfo_width()),
                          self.Size[0] / (self.canvas_img.winfo_height()))
         prev_final_width=self.final_width
@@ -427,25 +429,36 @@ class Mask(Frame):
         self.canvas_img.config(width=self.final_width, height=int(self.final_width * (self.Size[0] / self.Size[1])))
 
 
+    def draw_binaries(self, img):
+        for i in range(len(self.liste_points)):
+            New_col = (255)
+            if len(self.liste_points[i][0]) > 0:
+                if self.liste_points[i][3] == 1:
+                    img, _ = Dr.Draw_elli(img, self.liste_points[i][0],
+                                                         self.liste_points[i][1], New_col, -1)
+
+                elif self.liste_points[i][3] == 2 and len(self.liste_points[i][0]) > 1:
+                    img, _ = Dr.Draw_rect(img, self.liste_points[i][0],
+                                                         self.liste_points[i][1], New_col, -1)
+
+                elif self.liste_points[i][3] == 3 and len(self.liste_points[i][0]) > 1:
+                    img, _ = Dr.Draw_Poly(img, self.liste_points[i][0],
+                                                         self.liste_points[i][1], New_col, -1)
+
+        if np.any(img[:,:]>0):
+            Arenas, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            self.NB_Arenas.set(len(Arenas))
+        else:
+            self.NB_Arenas.set(1)
+
+        return(img)
+
     def remove_ind(self):
         if not self.view_mask:
             self.New_ar_mask()
-            self.image_to_show = np.zeros(self.background.shape)
+            self.image_to_show = np.zeros_like(self.background)
+            self.image_to_show =self.draw_binaries(self.image_to_show)
 
-            for i in range(len(self.liste_points)):
-                New_col = (255)
-                if len(self.liste_points[i][0])>0:
-                    if self.liste_points[i][3] == 1:
-                        self.image_to_show, _ = Dr.Draw_elli(self.image_to_show, self.liste_points[i][0],
-                                                               self.liste_points[i][1], New_col,-1)
-
-                    elif self.liste_points[i][3] == 2 and len(self.liste_points[i][0]) > 1:
-                        self.image_to_show, _ = Dr.Draw_rect(self.image_to_show, self.liste_points[i][0],
-                                                            self.liste_points[i][1], New_col,-1)
-
-                    elif self.liste_points[i][3] == 3 and len(self.liste_points[i][0]) > 1:
-                        self.image_to_show, _ = Dr.Draw_Poly(self.image_to_show, self.liste_points[i][0],
-                                                            self.liste_points[i][1], New_col,-1)
             self.view_mask=True
             self.afficher()
         else:

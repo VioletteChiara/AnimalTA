@@ -176,7 +176,7 @@ class Row_Line(Frame):
         Lab.insert(0, label)
         Lab.config()
         Lab.grid(row=0, column=0, sticky="w")
-        supr_button=Button(self, text="-", command=self.supress)
+        supr_button=Button(self, text=self.Messages["Analyses_details_sp8"], command=self.supress)
         supr_button.grid(row=0, column=1, sticky="w")
 
         Title_mean_dist=Label(self, text=self.Messages["Analyses_details_sp_Lab4"])
@@ -277,7 +277,7 @@ class Row_All_Border(Frame):
         Lab.insert(0, label)
         Lab.config()
         Lab.grid(row=0, column=0, sticky="w")
-        supr_button=Button(self, text="-", command=self.supress)
+        supr_button=Button(self, text=self.Messages["Analyses_details_sp8"], command=self.supress)
         supr_button.grid(row=0, column=1, sticky="w")
 
         Title_mean_dist=Label(self, text=self.Messages["Analyses_details_sp_Lab7"])
@@ -399,7 +399,7 @@ class Row_Border(Frame):
         Lab.insert(0, label)
         Lab.config()
         Lab.grid(row=0, column=0, sticky="w")
-        supr_button=Button(self, text="-", command=self.supress)
+        supr_button=Button(self, text=self.Messages["Analyses_details_sp8"], command=self.supress)
         supr_button.grid(row=0, column=1, sticky="w")
 
         Title_mean_dist=Label(self, text=self.Messages["Analyses_details_sp_Lab9"])
@@ -540,7 +540,7 @@ class Row_Shape(Frame):
         Lab.insert(0, label)
         Lab.config()
         Lab.grid(row=0, column=0, sticky="w")
-        supr_button = Button(self, text="-", command=self.supress)
+        supr_button = Button(self, text=self.Messages["Analyses_details_sp8"], command=self.supress)
         supr_button.grid(row=0, column=1, sticky="w")
 
         Title_prop_inside=Label(self, text=self.Messages["Analyses_details_sp_Lab11"])

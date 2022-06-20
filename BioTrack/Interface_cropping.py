@@ -1,9 +1,7 @@
 from tkinter import *
 import cv2
-import PIL.Image, PIL.ImageTk
-import time
 import numpy as np
-from BioTrack import UserMessages, Class_Lecteur
+from BioTrack import UserMessages, Class_Lecteur, User_help
 
 
 class Cropping(Frame):
@@ -23,7 +21,6 @@ class Cropping(Frame):
         f.close()
         self.Messages = UserMessages.Mess[self.Language.get()]
 
-        self.default_message=self.Messages["Crop2"]
 
         self.fr_rate=self.Vid.Frame_rate[1]
         self.one_every=int(round(round(self.Vid.Frame_rate[0],2)/self.Vid.Frame_rate[1]))
@@ -46,9 +43,12 @@ class Cropping(Frame):
         Grid.rowconfigure(self, 0, weight=1)  ########NEW
         Grid.rowconfigure(self, 1, weight=1)  ########NEW
         # Visualisation de la video et barre de temps
+
         self.Vid_Lecteur = Class_Lecteur.Lecteur(self, self.Vid)
         self.Vid_Lecteur.grid(row=1, column=0, sticky="nsew")
         self.Scrollbar=self.Vid_Lecteur.Scrollbar
+
+
 
         self.Vid_Lecteur.canvas_video.update()
         self.Vid_Lecteur.update_image(self.Vid_Lecteur.to_sub)
@@ -137,15 +137,8 @@ class Cropping(Frame):
         self.canvas_fix.grid_columnconfigure((1,3), weight=3, uniform="column")
         self.canvas_fix.grid_columnconfigure((0,2,4), weight=1, uniform="column")
 
-        self.canvas_user = Frame(self.parent, width=150,  highlightthickness=4, relief='flat', highlightbackground="RoyalBlue3")
-        self.canvas_user.grid(row=0, column=1, sticky="new")
-        Info_title=Label(self.canvas_user, text=self.Messages["Info"],  justify=CENTER, background="RoyalBlue3", fg="white", font=("Helvetica", 16, "bold"))
-        Info_title.grid(row=0, sticky="new")
-
-        self.user_message=StringVar()
-        self.user_message.set(self.default_message)
-        self.User_help=Label(self.canvas_user, textvariable=self.user_message, width=35, wraplengt=200, borderwidth=2, justify=LEFT)
-        self.User_help.grid(sticky="nsew")
+        self.HW=User_help.Help_win(self.parent, default_message=self.Messages["Crop2"], width=250)
+        self.HW.grid(row=0, column=1,sticky="nsew")
 
         #Validate crop
         self.canvas_validate=Canvas(self.parent, bd=2, highlightthickness=1, relief='ridge')
@@ -176,11 +169,11 @@ class Cropping(Frame):
         if order != "End_fr":
             self.Efrvar.set(self.Scrollbar.crop_end)
         if order != "End_sec":
-            self.Esecvar.set(round(self.Scrollbar.crop_end / self.fr_rate,2))
+            self.Esecvar.set(round((self.Scrollbar.crop_end+1) / self.fr_rate,2))
         if order != "Len_fr":
-            self.Lfrvar.set(self.Scrollbar.crop_end-self.Scrollbar.crop_beg)
+            self.Lfrvar.set(self.Scrollbar.crop_end-self.Scrollbar.crop_beg+1)
         if order != "Len_sec":
-            self.Lsecvar.set(round((self.Scrollbar.crop_end-self.Scrollbar.crop_beg)/self.fr_rate,2))
+            self.Lsecvar.set(round((self.Scrollbar.crop_end-self.Scrollbar.crop_beg+1)/self.fr_rate,2))
 
 
 
@@ -193,11 +186,11 @@ class Cropping(Frame):
                     if int(new_val) >= 0 and int(new_val) < self.Vid.Frame_nb[1]:
                         self.Scrollbar.crop_beg = int(new_val)
                         if int(new_val) >= self.Scrollbar.crop_end:
-                            self.Scrollbar.crop_end = self.Vid.Frame_nb[1]
+                            self.Scrollbar.crop_end = self.Vid.Frame_nb[1]-1
                         self.Scrollbar.refresh()
                         self.Bsecvar.set(round(self.Scrollbar.crop_beg / self.fr_rate,2))
-                        self.Lsecvar.set(round((self.Scrollbar.crop_end - self.Scrollbar.crop_beg) / self.fr_rate, 2))
-                        self.Lfrvar.set(int(self.Scrollbar.crop_end - self.Scrollbar.crop_beg))
+                        self.Lsecvar.set(round((self.Scrollbar.crop_end - self.Scrollbar.crop_beg+1) / self.fr_rate, 2))
+                        self.Lfrvar.set(int(self.Scrollbar.crop_end - self.Scrollbar.crop_beg+1))
                         self.Efrvar.set(self.Scrollbar.crop_end)
                         self.Esecvar.set(round(self.Scrollbar.crop_end / self.fr_rate, 2))
                         self.Vid_Lecteur.update_image(self.Scrollbar.active_pos)
@@ -220,11 +213,11 @@ class Cropping(Frame):
                     if float(new_val) >= 0 and float(new_val) < (self.Vid.Frame_nb[1] / self.fr_rate):
                         self.Scrollbar.crop_beg = int(round(float(new_val) * self.fr_rate))
                         if (float(new_val)*self.fr_rate) >= self.Scrollbar.crop_end:
-                            self.Scrollbar.crop_end = self.Vid.Frame_nb[1]
+                            self.Scrollbar.crop_end = self.Vid.Frame_nb[1]-1
                         self.Scrollbar.refresh()
                         self.Bfrvar.set(self.Scrollbar.crop_beg)
-                        self.Lsecvar.set(round((self.Scrollbar.crop_end - self.Scrollbar.crop_beg) / self.fr_rate, 2))
-                        self.Lfrvar.set(int(self.Scrollbar.crop_end - self.Scrollbar.crop_beg))
+                        self.Lsecvar.set(round((self.Scrollbar.crop_end - self.Scrollbar.crop_beg+1) / self.fr_rate, 2))
+                        self.Lfrvar.set(int(self.Scrollbar.crop_end - self.Scrollbar.crop_beg+1))
                         self.Efrvar.set(self.Scrollbar.crop_end)
                         self.Esecvar.set(round(self.Scrollbar.crop_end / self.fr_rate, 2))
                         self.Vid_Lecteur.update_image(self.Scrollbar.active_pos)
@@ -246,11 +239,9 @@ class Cropping(Frame):
             if method == "key":
                 try:
                     if int(new_val) >= 0 and int(new_val) < self.Vid.Frame_nb[1]:
-                        self.Scrollbar.crop_end = min(self.Scrollbar.crop_beg+int(new_val),self.Vid.Frame_nb[1])
-                        if self.Scrollbar.crop_beg+int(new_val)>self.Vid.Frame_nb[1]:
-                            self.Scrollbar.crop_beg = self.Vid.Frame_nb[1] - int(new_val)
+                        self.Scrollbar.crop_end = min(self.Scrollbar.crop_beg+int(new_val),self.Vid.Frame_nb[1]-1)
                         self.Scrollbar.refresh()
-                        self.Lsecvar.set(round((self.Scrollbar.crop_end-self.Scrollbar.crop_beg)/self.fr_rate,2))
+                        self.Lsecvar.set(round((self.Scrollbar.crop_end-self.Scrollbar.crop_beg+1)/self.fr_rate,2))
                         self.Bfrvar.set(self.Scrollbar.crop_beg)
                         self.Bsecvar.set(round(self.Scrollbar.crop_beg / self.fr_rate, 2))
                         self.Efrvar.set(self.Scrollbar.crop_end)
@@ -275,11 +266,9 @@ class Cropping(Frame):
             if method == "key":
                 try:
                     if float(new_val) >= 0 and (float(new_val)*self.fr_rate) < self.Vid.Frame_nb[1]:
-                        self.Scrollbar.crop_end = int(min((self.Scrollbar.crop_beg + float(new_val)*self.fr_rate), self.Vid.Frame_nb[1]))
-                        if self.Scrollbar.crop_beg + (float(new_val)*self.fr_rate) > self.Vid.Frame_nb[1]:
-                            self.Scrollbar.crop_beg = int(self.Vid.Frame_nb[1] - (float(new_val)*self.fr_rate))
+                        self.Scrollbar.crop_end = int(min((self.Scrollbar.crop_beg + float(new_val)*self.fr_rate), self.Vid.Frame_nb[1]-1))
                         self.Scrollbar.refresh()
-                        self.Lfrvar.set(round((self.Scrollbar.crop_end - self.Scrollbar.crop_beg), 2))
+                        self.Lfrvar.set(round((self.Scrollbar.crop_end - self.Scrollbar.crop_beg+1), 2))
                         self.Bfrvar.set(self.Scrollbar.crop_beg)
                         self.Bsecvar.set(round(self.Scrollbar.crop_beg / self.fr_rate, 2))
                         self.Efrvar.set(self.Scrollbar.crop_end)
@@ -313,9 +302,11 @@ class Cropping(Frame):
         self.Vid_Lecteur.update_image(self.Scrollbar.active_pos)
         self.Scrollbar.refresh()
 
-
-    def modif_image(self, img):
+    def modif_image(self, img, aff=False):
         new_img=np.copy(img)
+        self.last_empty = img
+
+
         if self.Scrollbar.active_pos>self.Scrollbar.crop_end or self.Scrollbar.active_pos<self.Scrollbar.crop_beg:
             new_img = cv2.addWeighted(new_img, 1, new_img, 0, 1)
 
@@ -327,10 +318,6 @@ class Cropping(Frame):
 
 
     def Validate_crop(self, follow=False):
-        if self.Vid.Back[0]:
-            self.Vid.Back[0] = False
-            self.Vid.Back[1] = []
-
         self.Vid.Cropped=[True,[round((self.Scrollbar.crop_beg)*self.one_every),round((self.Scrollbar.crop_end)*self.one_every)]]
         self.End_of_window()
 
@@ -345,11 +332,11 @@ class Cropping(Frame):
         self.grab_release()
         self.canvas_validate.grid_forget()
         self.canvas_validate.destroy()
-        self.canvas_user.grid_forget()
-        self.canvas_user.destroy()
+        self.HW.grid_forget()
+        self.HW.destroy()
         self.main_frame.return_main()
 
-    def pressed_can(self, Pt):
+    def pressed_can(self, Pt, Shift):
         pass
 
     def moved_can(self, Pt):

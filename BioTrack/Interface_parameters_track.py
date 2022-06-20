@@ -1,9 +1,8 @@
 import cv2
 from tkinter import *
-import PIL.Image, PIL.ImageTk
-import time
+import decord
 import numpy as np
-from BioTrack import Interface_nb_per_Ar, UserMessages, Class_stabilise, Class_Lecteur, Function_draw_mask as Dr
+from BioTrack import Interface_nb_per_Ar, UserMessages, Class_stabilise, Class_Lecteur, Function_draw_mask as Dr, User_help
 from functools import partial
 
 class Param_definer(Frame):
@@ -28,9 +27,6 @@ class Param_definer(Frame):
         self.LanguageO = self.Language.get()
         f.close()
         self.Messages = UserMessages.Mess[self.Language.get()]
-        self.default_message=self.Messages["Track0"]
-        self.user_message=StringVar()
-        self.user_message.set(self.default_message)
 
         self.fr_rate=self.Vid.Frame_rate[1]
         self.one_every=int(round(round(self.Vid.Frame_rate[0],2)/self.Vid.Frame_rate[1]))
@@ -58,11 +54,11 @@ class Param_definer(Frame):
 
         if self.Vid.Scale[0]==0:
             self.distance_maximum=(max([self.Vid.shape[0],self.Vid.shape[1]])/2)
-            self.max_area=float(self.distance_maximum/2)
+            self.max_area=float(self.Vid.shape[0]*self.Vid.shape[1])/10
             self.units.set("px")
         else:
             self.distance_maximum = (max([self.Vid.shape[0],self.Vid.shape[1]]) / 2)/float(self.Vid.Scale[0])
-            self.max_area=round(self.distance_maximum/2)
+            self.max_area=((self.Vid.shape[0]/float(self.Vid.Scale[0])) * (self.Vid.shape[1]/float(self.Vid.Scale[0])))/10
 
 
         # Nom de la video et changer de video:
@@ -85,6 +81,13 @@ class Param_definer(Frame):
         Grid.rowconfigure(self, 0, weight=1)  ########NEW
         Grid.rowconfigure(self, 1, weight=100)  ########NEW
 
+
+        #Help user and parameters
+        self.HW=User_help.Help_win(self.parent, default_message=self.Messages["Track0"])
+        self.HW.grid(row=0, column=1,sticky="nsew")
+
+
+
         #Options
         self.canvas_options=Canvas(self.parent, bd=2, highlightthickness=1, relief='ridge')
         self.canvas_options.grid(row=1, column=1, sticky="sew")
@@ -97,27 +100,35 @@ class Param_definer(Frame):
         F_Ori.grid(sticky="nsew", columnspan=3)
         Original_vis = Checkbutton(F_Ori, text=self.Messages["Track2"], variable=self.CheckVar,
                                         onvalue=0, offvalue=0, width=width_labels, command=self.modif_image, anchor="w", background="white")
-        Original_vis.bind("<Enter>", partial(self.change_msg, self.Messages["Param1"]))
-        Original_vis.bind("<Leave>", self.remove_msg)
+        Original_vis.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Param1"]))
+        Original_vis.bind("<Leave>", self.HW.remove_tmp_message)
         Original_vis.grid(sticky="w")
 
-        F_Sub=Frame(self.canvas_options, background="grey80")
-        F_Sub.grid(sticky="nsew")
-        Subtract_vis = Checkbutton(F_Sub, text=self.Messages["Names7"], variable=self.CheckVar,
-                                        onvalue=1, offvalue=0, width=width_labels, command=self.modif_image, anchor="w", background="grey80")
-        Subtract_vis.bind("<Enter>", partial(self.change_msg, self.Messages["Param2"]))
-        Subtract_vis.bind("<Leave>", self.remove_msg)
-        Subtract_vis.grid(sticky="w")
+        if self.Vid.Back[0]:
+            F_Sub=Frame(self.canvas_options, background="grey80")
+            F_Sub.grid(sticky="nsew")
+            Subtract_vis = Checkbutton(F_Sub, text=self.Messages["Names7"], variable=self.CheckVar,
+                                            onvalue=1, offvalue=0, width=width_labels, command=self.modif_image, anchor="w", background="grey80")
+            Subtract_vis.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Param2"]))
+            Subtract_vis.bind("<Leave>", self.HW.remove_tmp_message)
+            Subtract_vis.grid(sticky="w")
 
         F_Thresh=Frame(self.canvas_options, background="white")
         F_Thresh.grid(sticky="nsew")
 
         Threshol_vis = Checkbutton(F_Thresh, text=self.Messages["Names1"], variable=self.CheckVar, onvalue=2, offvalue=0, width=width_labels, command=self.modif_image, anchor="w", background="white")
-        Threshol_vis.bind("<Enter>", partial(self.change_msg, self.Messages["Param3"]))
-        Threshol_vis.bind("<Leave>", self.remove_msg)
+        Threshol_vis.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Param3"]))
+        Threshol_vis.bind("<Leave>", self.HW.remove_tmp_message)
         Threshol_vis.grid(sticky="w")
 
-        Thresh_scroll = Scale(F_Thresh, from_=0, to=255, variable=self.thresh_value, orient=HORIZONTAL, background="white",highlightbackground="white")
+        if self.Vid.Back[0]:
+            Thresh_scroll = Scale(F_Thresh, from_=0, to=255, variable=self.thresh_value, orient=HORIZONTAL, background="white",highlightbackground="white")
+        else:
+            print((int(self.thresh_value.get()) % 2))
+            if (int(self.thresh_value.get()) % 2) == 0:
+                self.thresh_value.set(int(self.thresh_value.get())+1)
+
+            Thresh_scroll = Scale(F_Thresh, from_=2, to=1000, resolution=2, variable=self.thresh_value, orient=HORIZONTAL,background="white", highlightbackground="white")
         Thresh_scroll.grid(row=0,column=1, sticky="NSEW")
 
         verif_E_tresh = (self.register(self.verif_E_tresh_fun), '%P', '%V')
@@ -133,8 +144,8 @@ class Param_definer(Frame):
 
         Erode_vis = Checkbutton(F_Ero, text=self.Messages["Names2"], variable=self.CheckVar,
                                      onvalue=3, offvalue=0, width=width_labels, command=self.modif_image, anchor="w", background="grey80")
-        Erode_vis.bind("<Enter>", partial(self.change_msg, self.Messages["Param4"]))
-        Erode_vis.bind("<Leave>", self.remove_msg)
+        Erode_vis.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Param4"]))
+        Erode_vis.bind("<Leave>", self.HW.remove_tmp_message)
         Erode_vis.grid(sticky="w")
         Erode_scroll = Scale(F_Ero, from_=0, to=50, variable=self.erode_value, orient=HORIZONTAL, background="grey80",highlightbackground="grey80")
         Erode_scroll.grid(row=0, column=1, sticky="ew")
@@ -156,8 +167,8 @@ class Param_definer(Frame):
         F_Dil.grid_columnconfigure(2, weight=1)
         Dilate_vis = Checkbutton(F_Dil, text=self.Messages["Names3"], variable=self.CheckVar,
                                       onvalue=4, offvalue=0, width=width_labels, command=self.modif_image, anchor="w", background="white")
-        Dilate_vis.bind("<Enter>", partial(self.change_msg, self.Messages["Param5"]))
-        Dilate_vis.bind("<Leave>", self.remove_msg)
+        Dilate_vis.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Param5"]))
+        Dilate_vis.bind("<Leave>", self.HW.remove_tmp_message)
         Dilate_vis.grid(sticky="w")
         Dilate_scroll = Scale(F_Dil, from_=0, to=50, variable=self.dilate_value, orient=HORIZONTAL, background="white", highlightbackground="white")
         Dilate_scroll.grid(row=0, column=1, sticky="we")
@@ -179,8 +190,8 @@ class Param_definer(Frame):
 
         Min_area_vis = Checkbutton(F_Area, text=self.Messages["Names4"], variable=self.CheckVar,
                                         onvalue=5, offvalue=0, width=width_labels, command=self.modif_image, anchor="w", background="grey80")
-        Min_area_vis.bind("<Enter>", partial(self.change_msg, self.Messages["Param6"]))
-        Min_area_vis.bind("<Leave>", self.remove_msg)
+        Min_area_vis.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Param6"]))
+        Min_area_vis.bind("<Leave>", self.HW.remove_tmp_message)
         Min_area_vis.grid(rowspan=2, sticky="w")
         Min_lab=Label(F_Area, text="min:", background="grey80")
         Min_lab.grid(row=0, column=1, sticky="e")
@@ -211,8 +222,8 @@ class Param_definer(Frame):
         Distance_traveled_vis = Checkbutton(F_Dist, text=self.Messages["Names6"],
                                                  variable=self.CheckVar, onvalue=7, offvalue=0, width=width_labels,
                                                  command=self.modif_image, anchor="w", background="white")
-        Distance_traveled_vis.bind("<Enter>", partial(self.change_msg, self.Messages["Param7"]))
-        Distance_traveled_vis.bind("<Leave>", self.remove_msg)
+        Distance_traveled_vis.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Param7"]))
+        Distance_traveled_vis.bind("<Leave>", self.HW.remove_tmp_message)
         Distance_traveled_vis.grid(row=0,column=0, sticky="w")
 
         Distance_traveled_scroll = Scale(F_Dist, from_=0.0, to=self.distance_maximum, resolution=0.05, length=self.Scroll_L, variable=self.distance_max_value, orient=HORIZONTAL, background="white", highlightbackground="white")
@@ -233,8 +244,8 @@ class Param_definer(Frame):
             F_Nb.grid_columnconfigure(1, weight=5)
             F_Nb.grid_columnconfigure(2, weight=1)
             Lab_three_per_Ar = Label(F_Nb, text=self.Messages["Param9"], width=width_labels+3, wraplength=120, background="grey80")
-            Lab_three_per_Ar.bind("<Enter>", partial(self.change_msg, self.Messages["Param8"]))
-            Lab_three_per_Ar.bind("<Leave>", self.remove_msg)
+            Lab_three_per_Ar.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Param8"]))
+            Lab_three_per_Ar.bind("<Leave>", self.HW.remove_tmp_message)
             Lab_three_per_Ar.grid(row=0, column=0, sticky="w")
 
             Three_per_Ar = Scale(F_Nb, variable=self.KindTVar,
@@ -244,8 +255,8 @@ class Param_definer(Frame):
             self.KindTVar.set(self.Vid.Track[1][6][0])
             param_nb_per_ar = Button(F_Nb, text="P", command=self.change_nb_ar)
             param_nb_per_ar.grid(row=0, column=2)
-            param_nb_per_ar.bind("<Enter>", partial(self.change_msg, self.Messages["TrackB2"]))
-            param_nb_per_ar.bind("<Leave>", self.remove_msg)
+            param_nb_per_ar.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["TrackB2"]))
+            param_nb_per_ar.bind("<Leave>", self.HW.remove_tmp_message)
 
 
         if not len(self.Vid.Track[1][6]) == len(self.Arenas):
@@ -265,14 +276,6 @@ class Param_definer(Frame):
         self.B_Validate=Button(self.canvas_options, text=self.Messages["Validate"],bg="green", command=self.Validate)#######NEW
         self.B_Validate.grid(row=13,column=0, sticky="ews")#######NEW
 
-        self.canvas_user = Frame(self.parent, width=150,  highlightthickness=4, relief='flat', highlightbackground="RoyalBlue3")
-        self.canvas_user.grid(row=0, column=1, sticky="snew")
-        Info_title=Label(self.canvas_user, text=self.Messages["Info"],  justify=CENTER, background="RoyalBlue3", fg="white", font=("Helvetica", 16, "bold"))
-        Info_title.grid(row=0, sticky="nsew")
-        Grid.columnconfigure(self.canvas_user, 0, weight=1)
-
-        self.User_help=Label(self.canvas_user, textvariable=self.user_message, wraplengt=375, borderwidth=2, justify=LEFT)
-        self.User_help.grid(sticky="nsew")
 
         # Visualisation de la video et barre de temps
         self.Vid_Lecteur = Class_Lecteur.Lecteur(self, self.Vid, ecart=10)
@@ -294,7 +297,7 @@ class Param_definer(Frame):
 
 
     def changed_val(self, new_val, type):
-        if len(new_val)>0:
+        if len(new_val)>0 and new_val!="":
             self.modif_image(self.last_empty, change_track=type)
 
     def verif_E_tresh_fun(self, value, method):
@@ -321,12 +324,6 @@ class Param_definer(Frame):
             return False
 
 
-    def change_msg(self,new_message,*arg):
-        self.user_message.set(new_message)
-
-    def remove_msg(self,*arg):
-        self.user_message.set(self.default_message)
-
     def change_nb_ar(self):
         newWindow = Toplevel(self.parent.master)
         interface = Interface_nb_per_Ar.Assign(parent=newWindow, boss=self)
@@ -342,7 +339,7 @@ class Param_definer(Frame):
         if event.widget.winfo_class()!="Entry":################
             self.Vid_Lecteur.focus_set()####################
 
-    def modif_image(self, img=[], aff=True, change_track=None, *arg):
+    def modif_image(self, img=[], aff=False, affi=True, change_track=None, *arg):
         if change_track!=None:
             self.CheckVar.set(change_track)
 
@@ -353,8 +350,8 @@ class Param_definer(Frame):
 
         liste_positions=[]
         actual_pos=self.Scrollbar.active_pos
-        if self.Vid.Stab:
-            img = Class_stabilise.find_best_position(Prem_Im=self.Vid_Lecteur.Prem_image_to_show, frame=img, show=False)
+        if self.Vid.Stab[0]:
+            img = Class_stabilise.find_best_position(Vid=self.Vid, Prem_Im=self.Vid_Lecteur.Prem_image_to_show, frame=img, show=False)
 
         TMP_image_to_show2 = np.copy(img)
 
@@ -362,13 +359,12 @@ class Param_definer(Frame):
             TMP_image_to_show2=cv2.cvtColor(TMP_image_to_show2,cv2.COLOR_BGR2GRAY)
             if self.Vid.Back[0]:
                 TMP_image_to_show2 = cv2.subtract(self.Vid.Back[1],TMP_image_to_show2) + cv2.subtract(TMP_image_to_show2,self.Vid.Back[1])
-            else:
-                White_screen=np.zeros([TMP_image_to_show2.shape[0],TMP_image_to_show2.shape[1],1], np.uint8)
-                White_screen.fill(255)
-                TMP_image_to_show2 = cv2.subtract(White_screen, TMP_image_to_show2)
 
             if self.CheckVar.get()>1:
-                _, TMP_image_to_show2=cv2.threshold(TMP_image_to_show2, int(self.thresh_value.get()), 255, cv2.THRESH_BINARY)
+                if self.Vid.Back[0]:
+                    _, TMP_image_to_show2=cv2.threshold(TMP_image_to_show2, int(self.thresh_value.get()), 255, cv2.THRESH_BINARY)
+                else:
+                    TMP_image_to_show2 = cv2.adaptiveThreshold(TMP_image_to_show2, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, int(self.thresh_value.get())+1,10)
                 if self.Vid.Mask[0]:
                     TMP_image_to_show2 = cv2.bitwise_and(TMP_image_to_show2, TMP_image_to_show2, mask=self.mask)
 
@@ -394,23 +390,22 @@ class Param_definer(Frame):
 
                                         if self.CheckVar.get() == 7 and self.Scrollbar.active_pos >= (self.Vid.Cropped[1][0]/self.one_every):
                                             cnt_M = cv2.moments(cnt)
-                                            cX = int(cnt_M["m10"] / cnt_M["m00"])
-                                            cY = int(cnt_M["m01"] / cnt_M["m00"])
-                                            liste_positions.append((cX,cY))
+                                            if cnt_M["m00"]>0:
+                                                cX = int(cnt_M["m10"] / cnt_M["m00"])
+                                                cY = int(cnt_M["m01"] / cnt_M["m00"])
+                                                liste_positions.append((cX,cY))
 
-                            if self.CheckVar.get() == 7 and aff:
+                            if self.CheckVar.get() == 7 and affi:
                                 if self.Scrollbar.active_pos > (self.Vid.Cropped[1][0]/self.one_every):
                                     TMP_part = self.Vid_Lecteur.current_part
                                     if self.Vid.Fusion[self.Vid_Lecteur.current_part][0] > ((self.Scrollbar.active_pos-1 )* self.one_every):
-                                        self.Vid_Lecteur.capture.release()
                                         TMP_part=self.Vid_Lecteur.current_part-1
-                                        self.Vid_Lecteur.capture = cv2.VideoCapture(self.Vid.Fusion[TMP_part][1])
+                                        self.Vid_Lecteur.capture = decord.VideoReader(self.Vid.Fusion[TMP_part][1])
 
 
                                     old_img = self.Vid_Lecteur.capture[int((self.Scrollbar.active_pos-1)* self.one_every) - self.Vid.Fusion[TMP_part][0]].asnumpy()
-                                    old_img=cv2.cvtColor(old_img, cv2.COLOR_BGR2RGB)
 
-                                    Old_pos=self.modif_image(img=old_img,aff=False)
+                                    Old_pos=self.modif_image(img=old_img,affi=False)
                                     overlay=np.copy(img)
                                     alpha = 0.25  # Transparency factor.
 
@@ -429,18 +424,18 @@ class Param_definer(Frame):
 
                                 if self.Scrollbar.active_pos >= (self.Vid.Cropped[1][0] / self.one_every):
                                     for Pt in liste_positions:
-                                        TMP_image_to_show2 = cv2.circle(TMP_image_to_show2, Pt, 5, (0, 200, 200), -1)
+                                        TMP_image_to_show2 = cv2.circle(TMP_image_to_show2, Pt, max(int(5* self.Vid_Lecteur.ratio),1), (0, 200, 200), -1)
 
         if self.Vid.Mask[0] and self.CheckVar.get() <2:
             TMP_image_to_show2 = cv2.bitwise_and(TMP_image_to_show2, TMP_image_to_show2, mask=self.mask)
 
-        TMP_image_to_show2 = cv2.drawContours(TMP_image_to_show2, self.Arenas, -1, (255, 0, 0), 4)
+        TMP_image_to_show2 = cv2.drawContours(TMP_image_to_show2, self.Arenas, -1, (255, 0, 0), max(int(3* self.Vid_Lecteur.ratio),1))
         for Ar in range(len(self.Arenas)):
-            TMP_image_to_show2 = cv2.putText(TMP_image_to_show2, str(self.liste_ind_per_ar[Ar]), (self.Arenas[Ar][0][0][0]-50, self.Arenas[Ar][0][0][1] + 50),
-                              cv2.FONT_HERSHEY_DUPLEX, 2, (255, 0, 0), 3)
-
-        TMP_image_to_show2=cv2.resize(TMP_image_to_show2,(int(img.shape[1]/1.5),int(img.shape[0]/1.5)))
-        if aff:
+            x,y,w,h =cv2.boundingRect(self.Arenas[Ar])
+            (w, h), _ = cv2.getTextSize(str(self.liste_ind_per_ar[Ar]), fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=self.Vid_Lecteur.ratio, thickness=1)
+            TMP_image_to_show2 = cv2.putText(TMP_image_to_show2, str(self.liste_ind_per_ar[Ar]), (x+max(int(2* self.Vid_Lecteur.ratio),1), y + h + max(int(2* self.Vid_Lecteur.ratio),1)),
+                              cv2.FONT_HERSHEY_DUPLEX,  self.Vid_Lecteur.ratio, (255, 0, 0), max(int(3* self.Vid_Lecteur.ratio),1))
+        if affi:
             self.Vid_Lecteur.afficher_img(TMP_image_to_show2)
         else:
             return(liste_positions)
@@ -469,8 +464,8 @@ class Param_definer(Frame):
         self.grab_release()
         self.canvas_options.grid_forget()
         self.canvas_options.destroy()
-        self.canvas_user.grid_forget()
-        self.canvas_user.destroy()
+        self.HW.grid_forget()
+        self.HW.destroy()
 
         if not self.portion:
             self.boss.update()

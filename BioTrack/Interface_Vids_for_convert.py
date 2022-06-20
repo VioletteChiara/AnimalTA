@@ -1,4 +1,5 @@
 from tkinter import *
+from tkinter import messagebox
 from BioTrack import Class_Video, UserMessages, Class_coverter
 
 class Convert(Frame):
@@ -34,7 +35,7 @@ class Convert(Frame):
         self.bouton_sel_all.grid(row=1,columnspan=2)
 
         self.yscrollbar = Scrollbar(self)
-        self.Liste=Listbox(self, selectmode = "multiple", yscrollcommand=self.yscrollbar.set)
+        self.Liste=Listbox(self, selectmode = EXTENDED, yscrollcommand=self.yscrollbar.set)
         self.Liste.config(height=15, width=150)
         self.list_vid_minus=[]
         for i in range(len(self.list_vid)):
@@ -89,8 +90,8 @@ class Convert(Frame):
                 new_file=Class_coverter.convert_to_avi(self, self.list_vid_minus[V], self.boss.folder)
                 self.boss.liste_of_videos.append(Class_Video.Video(File_name=new_file, Folder=self.boss.folder))
             except:
-                self.boss.get_attention(0)
-                self.boss.user_message.set(self.Messages["General3"])
+                messagebox.showinfo(self.Messages["GWarnT5"], self.Messages["GWarn6"].format(self.list_vid_minus[V]))
+                self.boss.HW.change_tmp_message(self.Messages["General3"])
 
         self.boss.update_projects()
         self.boss.update_selections()

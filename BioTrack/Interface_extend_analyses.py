@@ -57,7 +57,7 @@ class Lists(Frame):
         self.all_sel_areas=False
         self.yscrollbar2 = Scrollbar(self)
         self.yscrollbar2.grid(row=2, column=4, sticky="ns")
-        self.Liste_Vids = Listbox(self, selectmode="multiple", width=50, exportselection=0, yscrollcommand=self.yscrollbar2.set)
+        self.Liste_Vids = Listbox(self, selectmode = EXTENDED, width=50, exportselection=0, yscrollcommand=self.yscrollbar2.set)
         self.yscrollbar2.config(command=self.Liste_Vids.yview)
 
         self.to_remove_sel=[]
@@ -87,7 +87,10 @@ class Lists(Frame):
         self.Validate_button.grid(row=3, columnspan=5, sticky="nsew")
         self.Validate_button.config(state="disable")
 
-        self.max_can_height = self.parent.winfo_screenheight()-self.parent.winfo_height()-200
+        self.parent.update()
+        self.max_can_height = self.parent.winfo_height()
+        self.max_can_width = self.parent.winfo_screenwidth()-self.parent.winfo_width()-200
+
 
         self.Canvas_shaow_Ar=Canvas(self)
         self.Canvas_shaow_Ar.grid(row=0, column=5, rowspan=4, sticky="nsew")
@@ -219,10 +222,18 @@ class Lists(Frame):
 
     def show_Arenas(self, event):
         index = self.Liste_Vids.index("@%s,%s" % (event.x, event.y))
-        capture=cv2.VideoCapture(self.pointers[index][0].File_name)
+        Which_part = 0
         if self.pointers[index][0].Cropped[0]:
-            capture.set(cv2.CAP_PROP_POS_FRAMES,int(self.pointers[index][0].Cropped[1][0]))
-        ret, img = capture.read()
+            if len(self.pointers[index][0].Fusion) > 1:  # Si on a plus d'une video
+                Which_part = \
+                [index for index, Fu_inf in enumerate(self.pointers[index][0].Fusion) if Fu_inf[0] <= self.pointers[index][0].Cropped[1][0]][-1]
+
+        capture = cv2.VideoCapture(self.pointers[index][0].Fusion[Which_part][1])  # Faster with opencv
+        capture.set(cv2.CAP_PROP_POS_FRAMES, self.pointers[index][0].Cropped[1][0] - self.pointers[index][0].Fusion[Which_part][0])
+        _, img = capture.read()
+        img=cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+        del capture
         mask=Function_draw_mask.draw_mask(self.pointers[index][0])
         self.Arenas, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         self.Arenas = self.Organise_Ars(self.Arenas)
@@ -242,13 +253,11 @@ class Lists(Frame):
                     img=cv2.drawContours(img, self.Arenas, Ar,(255,0,0),2)
                     img=cv2.putText(img,str(Ar),(cX,cY), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 2)
 
-        img=cv2.resize(img,(self.max_can_height,int(img.shape[0]/(img.shape[1]/self.max_can_height))))
-        img=cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
+        ratio=max(img.shape[1]/self.max_can_width, img.shape[0]/self.max_can_height)
+        img=cv2.resize(img,(int(img.shape[1]/ratio),int(img.shape[0]/ratio)))
         img2=self.image_to_show3 = PIL.ImageTk.PhotoImage(image=PIL.Image.fromarray(img))
         self.Canvas_shaow_Ar.create_image(0, 0, image=img2, anchor=NW)
         self.Canvas_shaow_Ar.config(height=img.shape[0], width=img.shape[1])
-
-
 
 
 

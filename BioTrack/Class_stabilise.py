@@ -1,63 +1,125 @@
-from tkinter import filedialog
+from tkinter import *
 import numpy as np
 import cv2
+from BioTrack import UserMessages
 import os
 
-resume_values=[]
-def find_best_position(Prem_Im,frame,show):
-    prev_gray=cv2.cvtColor(Prem_Im,cv2.COLOR_BGR2GRAY)
+""" These functions are based on the work of members of the learnopencv team.
+https://github.com/spmallick/learnopencv/blob/master/VideoStabilization/video_stabilization.py"""
+
+
+f = open("Files/Language", "r")
+Language=f.read()
+f.close()
+Messages = UserMessages.Mess[Language]
+
+def find_pts(Vid, Prem_Im):
+    if len(Prem_Im.shape)>2:
+        prev_gray=cv2.cvtColor(Prem_Im,cv2.COLOR_BGR2GRAY)
+    else:
+        prev_gray = Prem_Im.copy()
+
+
+    quality = 0.05
+    found=False
+    while not found and quality > 0.01:
+        prev_pts = cv2.goodFeaturesToTrack(prev_gray,
+                                           maxCorners=200,
+                                           qualityLevel=quality,
+                                           minDistance=30,
+                                           blockSize=3)
+        quality = quality - 0.01
+
+        if len(prev_pts) > 10:
+            found = True
+
+    Vid.Stab[1]=prev_pts
+    return(prev_pts)
+
+
+
+def find_best_position(Vid, Prem_Im, frame, show, scale=1):
+    prev_pts=Vid.Stab[1]
+    try:
+        if prev_pts==None:
+            prev_pts=find_pts(Vid,Prem_Im)
+    except:
+        pass
+
+    if len(Prem_Im.shape)>2:
+        prev_gray=cv2.cvtColor(Prem_Im,cv2.COLOR_BGR2GRAY)
+    else:
+        prev_gray = Prem_Im.copy()
+
     curr_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     h = prev_gray.shape[0]
     w = prev_gray.shape[1]
 
-    prev_pts = cv2.goodFeaturesToTrack(prev_gray,
-                                       maxCorners=200,
-                                       qualityLevel=0.01,
-                                       minDistance=30,
-                                       blockSize=3)
 
-    curr_pts, status, err = cv2.calcOpticalFlowPyrLK(prev_gray, curr_gray, prev_pts, None)
+    if len(prev_pts)>1:
+        choose_pts=prev_pts.copy()
+        curr_pts, status, err = cv2.calcOpticalFlowPyrLK(prev_gray, curr_gray, prev_pts, None)
 
-    # Sanity check
-    assert prev_pts.shape == curr_pts.shape
+        assert choose_pts.shape == curr_pts.shape
 
-    # Filter only valid points
-    idx = np.where(status == 1)[0]
-    prev_pts = prev_pts[idx]
-    curr_pts = curr_pts[idx]
+        # Filter only valid points
+        idx = np.where(status == 1)[0]
+        choose_pts = choose_pts[idx]
+        curr_pts = curr_pts[idx]
 
-    # Find transformation matrix
-    m, _ = cv2.estimateAffinePartial2D(prev_pts, curr_pts)  # will only work with OpenCV-3 or less
+        if len(choose_pts)>1:
 
-    # Extract traslation
-    dx = -m[0, 2]
-    dy = -m[1, 2]
-    # Extract rotation angle
-    da = -np.arctan2(m[1, 0], m[0, 0])
+            # Find transformation matrix
+            m, _ = cv2.estimateAffinePartial2D(choose_pts, curr_pts)  # will only work with OpenCV-3 or less
 
-    # Reconstruct transformation matrix accordingly to new values
-    m = np.zeros((2, 3), np.float32)
-    m[0, 0] = np.cos(da)
-    m[0, 1] = -np.sin(da)
-    m[1, 0] = np.sin(da)
-    m[1, 1] = np.cos(da)
-    m[0, 2] = dx
-    m[1, 2] = dy
+            # Extract traslation
+            dx = -m[0, 2]
+            dy = -m[1, 2]
 
+            # Extract rotation angle
+            da = -np.arctan2(m[1, 0], m[0, 0])
 
-    # Apply affine wrapping to the given frame
-    frame_stabilized = cv2.warpAffine(frame, m, (w, h))
+            # Reconstruct transformation matrix accordingly to new values
+            m = np.zeros((2, 3), np.float32)
+            m[0, 0] = np.cos(da)
+            m[0, 1] = -np.sin(da)
+            m[1, 0] = np.sin(da)
+            m[1, 1] = np.cos(da)
+            m[0, 2] = dx
+            m[1, 2] = dy
 
-    # Fix border artifacts
-    #frame_stabilized = fixBorder(frame_stabilized)
+            # Apply affine wrapping to the given frame
+            frame_stabilized = cv2.warpAffine(frame, m, (w, h))
+
+        else:
+            frame_stabilized = frame
+    else:
+        frame_stabilized=frame
 
     if show:
-        frame_out = cv2.hconcat([frame, frame_stabilized])
-        cv2.putText(frame_out,"Original", (25,75), cv2.FONT_HERSHEY_PLAIN, 5, (255,255,255), 20)
-        cv2.putText(frame_out, "Original", (25, 75), cv2.FONT_HERSHEY_PLAIN, 5, (0, 0, 0), 8)
+        first_im = np.copy(Prem_Im)
+        cv2.putText(first_im, Messages["Stab3"], (max(1,int(scale*30)), max(1,int(scale*30))), cv2.FONT_HERSHEY_PLAIN, max(1,scale*2), (255, 255, 255), max(2,int(scale*5)))
+        cv2.putText(first_im, Messages["Stab3"], (max(1,int(scale*30)), max(1,int(scale*30))), cv2.FONT_HERSHEY_PLAIN, max(1,scale*2), (0, 0, 0), max(1,int(scale*3)))
 
-        cv2.putText(frame_out, "Stabilised", (w+25, 75), cv2.FONT_HERSHEY_PLAIN, 5, (255, 255, 255), 20)
-        cv2.putText(frame_out, "Stabilised", (w+25, 75), cv2.FONT_HERSHEY_PLAIN, 5, (0,0,0), 8)
+        cv2.putText(frame, Messages["Stab4"], (max(1,int(scale*30)), max(1,int(scale*30))), cv2.FONT_HERSHEY_PLAIN, max(1,scale*2), (255, 255, 255), max(2,int(scale*5)))
+        cv2.putText(frame, Messages["Stab4"], (max(1,int(scale*30)), max(1,int(scale*30))), cv2.FONT_HERSHEY_PLAIN, max(1,scale*2), (0, 0, 0), max(1,int(scale*3)))
+
+        cv2.putText(frame_stabilized, Messages["Stab5"], (max(1,int(scale*30)), max(1,int(scale*30))), cv2.FONT_HERSHEY_PLAIN, max(1,scale*2), (255, 255, 255), max(2,int(scale*5)))
+        cv2.putText(frame_stabilized, Messages["Stab5"], (max(1,int(scale*30)), max(1,int(scale*30))), cv2.FONT_HERSHEY_PLAIN, max(1,scale*2), (0, 0, 0), max(1,int(scale*3)))
+
+        for pt in range(len(prev_pts)):
+            cv2.circle(first_im, (int(prev_pts[pt][0][0]), int(prev_pts[pt][0][1])), max(1,int(scale*3)), (255,0,0), -1)
+            cv2.putText(first_im,str(pt),(int(prev_pts[pt][0][0])+max(1,int(scale*3)), int(prev_pts[pt][0][1])-max(1,int(scale*3))),cv2.FONT_HERSHEY_PLAIN,max(1,scale*1.5),(255,0,0),max(1,int(scale*2)))
+
+
+        for pt in range(len(curr_pts)):
+            cv2.circle(frame, (int(curr_pts[pt][0][0]), int(curr_pts[pt][0][1])), max(1,int(scale*3)), (0,255,200), -1)
+            cv2.putText(frame, str(pt), (int(curr_pts[pt][0][0])+max(1,int(scale*3)), int(curr_pts[pt][0][1])-max(1,int(scale*3))), cv2.FONT_HERSHEY_PLAIN, max(1,scale*1.5), (0, 255, 200),max(1,int(scale*2)))
+
+
+        frame_out1 = cv2.hconcat([frame, frame_stabilized])
+        frame_out2 = cv2.hconcat([first_im, np.zeros_like(first_im)])
+        frame_out = cv2.vconcat([frame_out2, frame_out1])
 
         # Store transformation
         return(frame_out)

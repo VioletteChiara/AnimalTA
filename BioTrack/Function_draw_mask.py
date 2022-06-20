@@ -8,7 +8,7 @@ from BioTrack import F_Ellipse
 
 def draw_mask(Vid):
     liste_points=Vid.Mask[1]
-    image_to_save = np.zeros(Vid.shape, np.uint8)
+    image_to_save = np.zeros([Vid.shape[0], Vid.shape[1], 1], np.uint8)
     if len(liste_points)>0:
         for i in range(len(liste_points)):
             if len(liste_points[i][0]) > 0:

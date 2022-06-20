@@ -2,6 +2,9 @@ import cv2
 import os
 
 def convert_to_avi(parent, file, folder):
+    """Function to convert videos toward .avi. The new .avi file will be stored in the project folder with the same name as the previous one.
+    """
+
     file_name=os.path.basename(file)
     point_pos=file_name.rfind(".")
     if not os.path.isdir(folder+str("/converted_vids")):

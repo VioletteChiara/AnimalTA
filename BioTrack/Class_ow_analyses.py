@@ -1,9 +1,10 @@
 from tkinter import *
 from BioTrack import Interface_details_ana, UserMessages
-import cv2
-
 
 class Row_Ana(Frame):
+    """
+    This class is a frame that display the information about the different possibilities of video analyses.
+    """
     def __init__(self, main, parent, checkvar, value, position, **kw):
         Frame.__init__(self, parent, **kw)
         self.parent=parent
@@ -20,6 +21,7 @@ class Row_Ana(Frame):
         f.close()
         Messages = UserMessages.Mess[Language]
 
+        #List of the possibilities for video analyses.
         self.Ana_liste = dict(
             Basics=Messages["Ana_dict1"],
             Spatial=Messages["Ana_dict2"],
@@ -34,9 +36,8 @@ class Row_Ana(Frame):
         checkB=Checkbutton(self, text=self.Ana_liste[value], variable=self.checkvar, onvalue=value, offvalue=0, wraplength=150, command=self.main.modif_image)
         checkB.grid(row=0, column=0, sticky="w")
 
-        if self.value!="InterInd":
-            Change_param=Button(self, text="P", command=self.change_params)
-            Change_param.grid(row=0, column=1, sticky="e")
+        Change_param=Button(self, text="P", command=self.change_params)
+        Change_param.grid(row=0, column=1, sticky="e")
 
         self.main.modif_image()
 
@@ -55,5 +56,9 @@ class Row_Ana(Frame):
             self.main.overlay=None
             newWindow = Toplevel(self.main.master)
             interface = Interface_details_ana.Details_explo(parent=newWindow, main=self.main)
+        elif self.value=="InterInd":
+            self.main.overlay=None
+            newWindow = Toplevel(self.main.master)
+            interface = Interface_details_ana.Details_inter(parent=newWindow, main=self.main)
 
 
