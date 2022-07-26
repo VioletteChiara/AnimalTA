@@ -1,4 +1,4 @@
-# AnimalTA (1.4)
+# AnimalTA (1.5)
 
 This is the early release version of AnimalTA, an easy to use video tracking program.
 AnimalTA is intended for use under the Windows operating system.
