@@ -117,12 +117,11 @@ def Do_tracking(parent, Vid, folder, portion=False, prev_row=None):
     Th_associate_cnts.start()
 
     while Th_associate_cnts.is_alive():
-        parent.timer=AD.get()/end
+        parent.timer=(AD.get()-start)/(end)
         parent.show_load()
         overload = check_memory_overload()#Avoid memory leak problems
         if overload:
             break
-
 
     if overload:#To prevent the effects of memory leak.
         global stop_threads

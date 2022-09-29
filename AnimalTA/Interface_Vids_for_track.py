@@ -526,7 +526,7 @@ class Extend(Frame):
                 first = True
                 for row in csv_reader:
                     if not first:
-                        Ind_Coos.append([row[1 + (ind * 2)], row[(2 + (ind * 2))]])
+                        Ind_Coos.append([row[2 + (ind * 2)], row[(3 + (ind * 2))]])
                     else:
                         first = False
             self.Coos["Ind" + str(ind)] = Ind_Coos

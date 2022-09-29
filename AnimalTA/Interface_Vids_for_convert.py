@@ -91,12 +91,12 @@ class Convert(Frame):
         for V in list_item:
             pos+=1
             self.loading_state.config(text=self.Messages["Video"] + " {act}/{tot}".format(act=pos,tot=len(list_item)))
-            try:
-                new_file=Class_coverter.convert_to_avi(self, self.list_vid_minus[V], self.boss.folder)
-                self.boss.liste_of_videos.append(Class_Video.Video(File_name=new_file, Folder=self.boss.folder))
-            except:
-                messagebox.showinfo(self.Messages["GWarnT5"], self.Messages["GWarn6"].format(self.list_vid_minus[V]))
-                self.boss.HW.change_tmp_message(self.Messages["General1"])
+            #try:
+            new_file=Class_coverter.convert_to_avi(self, self.list_vid_minus[V], self.boss.folder)
+            self.boss.liste_of_videos.append(Class_Video.Video(File_name=new_file, Folder=self.boss.folder))
+            #except:
+                #messagebox.showinfo(self.Messages["GWarnT5"], self.Messages["GWarn6"].format(self.list_vid_minus[V]))
+                #self.boss.HW.change_tmp_message(self.Messages["General1"])
 
         #Update the main frame
         self.boss.update_projects()

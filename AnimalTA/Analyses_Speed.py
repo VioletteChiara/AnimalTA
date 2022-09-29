@@ -186,7 +186,11 @@ class speed_calculations:
         speeds = []
         for ligne in range(len(parent.Coos[ind])):
             if ligne > 0 and parent.Coos[ind][ligne][0] != "NA" and parent.Coos[ind][ligne - 1][0] != "NA":
-                dist = math.sqrt((float(parent.Coos[ind][ligne][0]) - float(parent.Coos[ind][ligne - 1][0])) ** 2 + (float(parent.Coos[ind][ligne][1]) - float(parent.Coos[ind][ligne - 1][1])) ** 2)
+                try:
+                    dist = math.sqrt((float(parent.Coos[ind][ligne][0]) - float(parent.Coos[ind][ligne - 1][0])) ** 2 + (float(parent.Coos[ind][ligne][1]) - float(parent.Coos[ind][ligne - 1][1])) ** 2)
+                except:
+                    print(parent.Coos[ind][ligne][1])
+                    print(parent.Coos[ind][ligne-1][1])
                 speed = (dist / float(parent.Vid.Scale[0])) / (1 / parent.Vid.Frame_rate[1])
                 if (in_move and speed > self.seuil_movement) or not in_move:
                     speeds.append(speed)
@@ -233,8 +237,12 @@ class speed_calculations:
         for ligne in range(len(parent.Coos[ind])):
             if ligne > 0 and parent.Coos[ind][ligne][0] != "NA":
                 if parent.Coos[ind][ligne - 1][0] != "NA":
-                    dist = (math.sqrt((float(parent.Coos[ind][ligne][0]) - float(parent.Coos[ind][ligne - 1][0])) ** 2 + (
-                                float(parent.Coos[ind][ligne][1]) - float(parent.Coos[ind][ligne - 1][1])) ** 2))/ float(parent.Vid.Scale[0])
+                    try:
+                        dist = (math.sqrt((float(parent.Coos[ind][ligne][0]) - float(parent.Coos[ind][ligne - 1][0])) ** 2 + (
+                                    float(parent.Coos[ind][ligne][1]) - float(parent.Coos[ind][ligne - 1][1])) ** 2))/ float(parent.Vid.Scale[0])
+                    except:
+                        print(parent.Coos[ind][ligne - 1][0])
+                        print(parent.Coos[ind][ligne][0])
                     speed = (dist) / (1 / parent.Vid.Frame_rate[1])
                     last=parent.Coos[ind][ligne]
                     if (in_move and speed > self.seuil_movement) or not in_move:

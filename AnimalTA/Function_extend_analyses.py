@@ -269,7 +269,7 @@ def match_shapes(cnt1,cnt2, pts):
                     new_pts.append([pt[0], pt[1]])
 
         else :
-            new_pts.append([pt[0],pt[1]])
+            new_pts=[[pt[0],pt[1]] for pt in pts]
 
         return(True, new_pts)
     else:
