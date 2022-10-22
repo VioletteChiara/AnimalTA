@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/decord" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/decord/3rdparty/dlpack" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/decord/3rdparty/dmlc-core" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/decord/build/decord" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/decord/build/decord/3rdparty/dlpack" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/decord/build/decord/3rdparty/dmlc-core" vcs="Git" />
+  </component>
+</project>

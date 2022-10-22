@@ -24,7 +24,7 @@ class Ask(Frame):
 
         #Importation of messages
         self.Language = StringVar()
-        f = open("Files/Language", "r")
+        f = open("Files/Language", "r", encoding="utf-8")
         self.Language.set(f.read())
         self.LanguageO = self.Language.get()
         f.close()

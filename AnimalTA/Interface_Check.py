@@ -33,7 +33,7 @@ class Lecteur(Frame):
 
         #Messages importation
         self.Language = StringVar()
-        f = open("Files/Language", "r")
+        f = open("Files/Language", "r", encoding="utf-8")
         self.Language.set(f.read())
         self.LanguageO = self.Language.get()
         self.Messages = UserMessages.Mess[self.Language.get()]
@@ -215,7 +215,7 @@ class Lecteur(Frame):
                 os.makedirs(self.Vid.Folder + str("/TMP_portion"))
             file_name = os.path.basename(self.Vid.File_name)
             point_pos = file_name.rfind(".")
-            with open(self.Vid.Folder + "/TMP_portion/" + file_name[:point_pos] + "_TMP_portion_Coordinates.csv", 'w', newline='') as file:
+            with open(self.Vid.Folder + "/TMP_portion/" + file_name[:point_pos] + "_TMP_portion_Coordinates.csv", 'w', newline='', encoding="utf-8") as file:
                 writer = csv.writer(file, delimiter=";")
                 for time in range(self.last-self.first):
                     new_row=[self.first+time, (self.first+time)*self.Vid.Frame_rate[1]]
@@ -263,7 +263,7 @@ class Lecteur(Frame):
         #We load the temporary table with coordinates from rerunned tracking:
         path = self.Vid.Folder + "/TMP_portion/" + file_name[:point_pos] + "_TMP_portion_Coordinates.csv"
         for ind in range(len(self.Coos)):
-            with open(path) as csv_file:
+            with open(path, encoding="utf-8") as csv_file:
                 csv_reader = csv.reader(csv_file, delimiter=";")
                 time=0
                 #We make the change
@@ -317,7 +317,7 @@ class Lecteur(Frame):
             os.makedirs(self.main_frame.folder + str("/corrected_coordinates"))
 
         path_to_save= self.main_frame.folder + str("/corrected_coordinates/")+file_name[:point_pos]+"_Corrected.csv"
-        with open(path_to_save, 'w', newline='') as file:
+        with open(path_to_save, 'w', newline='', encoding="utf-8") as file:
             writer = csv.writer(file, delimiter=";")
             First_row = ["Frame","Time"]
             for ind in range(len(self.Coos)):
@@ -521,7 +521,7 @@ class Lecteur(Frame):
 
         pos=0
         for ind in range(len(self.Vid.Identities)):
-            with open(path) as csv_file:
+            with open(path, encoding="utf-8") as csv_file:
                 csv_reader = csv.reader(csv_file, delimiter=";")
                 Ind_Coos=[]
                 first=True

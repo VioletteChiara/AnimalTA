@@ -19,7 +19,7 @@ class Assign(Frame):
 
         #Message importation
         self.Language = StringVar()
-        f = open("Files/Language", "r")
+        f = open("Files/Language", "r", encoding="utf-8")
         self.Language.set(f.read())
         self.LanguageO = self.Language.get()
         f.close()
@@ -72,7 +72,6 @@ class Assign(Frame):
         self.ratio = self.ratio * (prev_final_width / self.final_width)
 
         #Draw the contours of the arenas
-        print(int(5/self.ratio))
         self.TMP_image_to_show_Cop=np.copy(self.TMP_image_to_show)
         self.TMP_image_to_show_Cop=cv2.drawContours(self.TMP_image_to_show_Cop,self.Arenas,-1,(255,0,0),max(1,int(2*self.ratio)))
 

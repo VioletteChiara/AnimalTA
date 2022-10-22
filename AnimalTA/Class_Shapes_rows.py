@@ -32,7 +32,7 @@ class Row_Point(Frame):
 
         # Import the language settings
         self.Language = StringVar()
-        f = open("Files/Language", "r")
+        f = open("Files/Language", "r", encoding="utf-8")
         self.Language.set(f.read())
         self.LanguageO = self.Language.get()
         f.close()
@@ -207,7 +207,7 @@ class Row_Line(Frame):
 
         # Import the language settings
         self.Language = StringVar()
-        f = open("Files/Language", "r")
+        f = open("Files/Language", "r", encoding="utf-8")
         self.Language.set(f.read())
         self.LanguageO = self.Language.get()
         f.close()
@@ -335,7 +335,7 @@ class Row_All_Border(Frame):
 
         #Import language
         self.Language = StringVar()
-        f = open("Files/Language", "r")
+        f = open("Files/Language", "r", encoding="utf-8")
         self.Language.set(f.read())
         self.LanguageO = self.Language.get()
         f.close()
@@ -486,7 +486,7 @@ class Row_Border(Frame):
 
         #Import language
         self.Language = StringVar()
-        f = open("Files/Language", "r")
+        f = open("Files/Language", "r", encoding="utf-8")
         self.Language.set(f.read())
         self.LanguageO = self.Language.get()
         f.close()
@@ -659,7 +659,7 @@ class Row_Shape(Frame):
 
         #Import the language
         self.Language = StringVar()
-        f = open("Files/Language", "r")
+        f = open("Files/Language", "r", encoding="utf-8")
         self.Language.set(f.read())
         self.LanguageO = self.Language.get()
         f.close()

@@ -34,7 +34,7 @@ class Details_basics(Frame):
 
         #Import messages
         self.Language = StringVar()
-        f = open("Files/Language", "r")
+        f = open("Files/Language", "r", encoding="utf-8")
         self.Language.set(f.read())
         self.LanguageO = self.Language.get()
         f.close()
@@ -381,7 +381,7 @@ class Details_spatial(Frame):
 
         #Import messages
         self.Language = StringVar()
-        f = open("Files/Language", "r")
+        f = open("Files/Language", "r", encoding="utf-8")
         self.Language.set(f.read())
         self.LanguageO = self.Language.get()
         f.close()
@@ -623,7 +623,7 @@ class Details_spatial(Frame):
 
     def validate_borders(self, *args):
         #Validation of the borders selected by user (user pressed <Return> key after having selected the borders desired)
-        if self.add_pt[0]=="Borders" or self.add_pt[0]==self.Messages["List_elem_Ell"] or self.add_pt[0]==self.Messages["List_elem_Rect"] or self.add_pt[0]==self.Messages["List_elem_Poly"]:
+        if self.add_pt[0]=="Borders" or self.add_pt[0]=="Ellipse" or self.add_pt[0]=="Rectangle" or self.add_pt[0]=="Polygon":
             self.add_pt=[None,-1]
             self.show_mask = False
             self.show_img()
@@ -668,7 +668,7 @@ class Details_spatial(Frame):
 
     def add_ellipse(self):
         # In that case, user asked to add an ellipse
-        self.add_pt = [self.Messages["List_elem_Ell"], 1]
+        self.add_pt = ["Ellipse", 1]
         self.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="disabled")
         self.show_img()
         self.show_results()
@@ -676,7 +676,7 @@ class Details_spatial(Frame):
 
     def add_rectangle(self):
         # In that case, user asked to add a rectangle
-        self.add_pt = [self.Messages["List_elem_Rect"], 1]
+        self.add_pt = ["Rectangle", 1]
         self.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="disabled")
         self.show_img()
         self.show_results()
@@ -684,7 +684,7 @@ class Details_spatial(Frame):
 
     def add_poly(self):
         # In that case, user asked to add a polygon
-        self.add_pt = [self.Messages["List_elem_Poly"], 1]
+        self.add_pt = ["Polygon", 1]
         self.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="disabled")
         self.show_img()
         self.show_results()
@@ -791,10 +791,10 @@ class Details_spatial(Frame):
                     break
             self.show_img()
 
-        elif self.under_mouse==None and (self.add_pt[0]==self.Messages["List_elem_Ell"] or self.add_pt[0]==self.Messages["List_elem_Rect"] or self.add_pt[0]==self.Messages["List_elem_Poly"]):
+        elif self.under_mouse==None and (self.add_pt[0]=="Ellipse" or self.add_pt[0]=="Rectangle" or self.add_pt[0]=="Polygon"):
             # If the user wanted to add a shape (ellipse, rectangle or polygon)
             if self.add_pt[1]==1:#If it is the first point of this shape, we create the element in the list
-                self.main.Calc_speed.Areas[self.Area].append([self.add_pt[0], [(PtX,PtY)], DoubleVar(), self.add_pt[0]+"_"+str(len(self.main.Calc_speed.Areas[self.Area]))])
+                self.main.Calc_speed.Areas[self.Area].append([self.add_pt[0], [(PtX,PtY)], DoubleVar(), self.Messages["List_elem_"+self.add_pt[0]]+"_"+str(len(self.main.Calc_speed.Areas[self.Area]))])
                 self.add_pt[1] = 0
             else:# Else, we add the point to the existing element
                 self.main.Calc_speed.Areas[self.Area][len(self.main.Calc_speed.Areas[self.Area]) - 1][1].append((PtX,PtY))
@@ -901,7 +901,7 @@ class Details_spatial(Frame):
                 cv2.putText(self.image, str(ID), (bord[0][0] + 5, bord[0][1] - 5), cv2.FONT_HERSHEY_DUPLEX, fontScale=1,color=(75, 0, 0),thickness=5)
                 cv2.putText(self.image, str(ID), (bord[0][0] + 5, bord[0][1] - 5), cv2.FONT_HERSHEY_DUPLEX, fontScale=1,color=(255, 0, 0),thickness=2)
 
-            if shape[0]==self.Messages["List_elem_Ell"]:
+            if shape[0]=="Ellipse":
                 for pt in shape[1]:
                     cv2.circle(self.image, pt, 7, (0, 0, 0), -1)
                     cv2.circle(self.image, pt, 5, (0, 255, 0), -1)
@@ -912,7 +912,7 @@ class Details_spatial(Frame):
                 cv2.putText(self.image,str(ID), (pt[0]+5,pt[1]-5), cv2.FONT_HERSHEY_DUPLEX, fontScale=1, color=(0,75,0),thickness=5)
                 cv2.putText(self.image, str(ID), (pt[0] + 5, pt[1] - 5), cv2.FONT_HERSHEY_DUPLEX, fontScale=1,color=(0, 255, 0), thickness=2)
 
-            if shape[0]==self.Messages["List_elem_Rect"]:
+            if shape[0]=="Rectangle":
                 for pt in shape[1]:
                     cv2.circle(self.image, pt, 7, (0, 0, 0), -1)
                     cv2.circle(self.image, pt, 5, (0, 175, 175), -1)
@@ -924,7 +924,7 @@ class Details_spatial(Frame):
                 cv2.putText(self.image,str(ID), (pt[0]+5,pt[1]-5), cv2.FONT_HERSHEY_DUPLEX, fontScale=1, color=(0, 175, 175),thickness=2)
 
 
-            if shape[0]==self.Messages["List_elem_Poly"]:
+            if shape[0]=="Polygon":
                 for pt in shape[1]:
                     cv2.circle(self.image, pt, 7, (0, 0, 0), -1)
                     cv2.circle(self.image, pt, 5, (150, 150, 0), -1)
@@ -984,7 +984,7 @@ class Details_spatial(Frame):
                 new=Class_Shapes_rows.Row_Border(parent=self.Frame_for_results, main=self.main, boss=self, MArea=self.Area, Shape=shape, label=shape[3], Ind=self.Ind)
                 new.grid(sticky="w")
 
-            if shape[0]==self.Messages["List_elem_Ell"] or shape[0]==self.Messages["List_elem_Rect"] or shape[0]==self.Messages["List_elem_Poly"]:
+            if shape[0]=="Ellipse" or shape[0]=="Rectangle" or shape[0]=="Polygon":
                 new=Class_Shapes_rows.Row_Shape(parent=self.Frame_for_results, main=self.main, boss=self, MArea=self.Area, Shape=shape, label=shape[3], Ind=self.Ind)
                 new.grid(sticky="w")
 
@@ -1079,7 +1079,7 @@ class Details_explo(Frame):
 
         # Import messages
         self.Language = StringVar()
-        f = open("Files/Language", "r")
+        f = open("Files/Language", "r", encoding="utf-8")
         self.Language.set(f.read())
         self.LanguageO = self.Language.get()
         f.close()
@@ -1617,7 +1617,7 @@ class Details_inter(Frame):
 
         #Import messages
         self.Language = StringVar()
-        f = open("Files/Language", "r")
+        f = open("Files/Language", "r", encoding="utf-8")
         self.Language.set(f.read())
         self.LanguageO = self.Language.get()
         f.close()

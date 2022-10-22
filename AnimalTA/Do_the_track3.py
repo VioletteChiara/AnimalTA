@@ -40,7 +40,7 @@ def Do_tracking(parent, Vid, folder, portion=False, prev_row=None):
 
     # Language importation
     Language = StringVar()
-    f = open("Files/Language", "r")
+    f = open("Files/Language", "r", encoding="utf-8")
     Language.set(f.read())
     f.close()
     Messages = UserMessages.Mess[Language.get()]
@@ -117,7 +117,7 @@ def Do_tracking(parent, Vid, folder, portion=False, prev_row=None):
     Th_associate_cnts.start()
 
     while Th_associate_cnts.is_alive():
-        parent.timer=(AD.get()-start)/(end)
+        parent.timer=(AD.get()-start)/(end-start)
         parent.show_load()
         overload = check_memory_overload()#Avoid memory leak problems
         if overload:
@@ -133,14 +133,10 @@ def Do_tracking(parent, Vid, folder, portion=False, prev_row=None):
 
     Th_extract_cnts.join()
     Th_associate_cnts.join()
-    print(time.time() - deb)
 
     if not overload:
         return (True)
         del capture
-
-
-    print(time.time()-deb)
 
 
 def Treat_cnts(Vid, Arenas, start, end, prev_row, all_NA, Extracted_cnts, Too_much_frame, Th_extract_cnts, To_save, portion, one_every, AD):
@@ -154,7 +150,7 @@ def Treat_cnts(Vid, Arenas, start, end, prev_row, all_NA, Extracted_cnts, Too_mu
                 all_rows[0].append("Y_Arena" + str(ID_AR) + "_Ind" + str(ID_Ind))
     else:
         all_rows = []
-    with open(To_save, 'w', newline='') as file:
+    with open(To_save, 'w', newline='', encoding="utf-8") as file:
         writer = csv.writer(file, delimiter=";")
 
         while Th_extract_cnts.is_alive() or Extracted_cnts.qsize()>0:#While we are still loading images or there are some extracted images that have not been associated yet

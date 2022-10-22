@@ -29,7 +29,7 @@ class Interface(Frame):
 
         # Import language
         self.Language = StringVar()
-        f = open("Files/Language", "r")
+        f = open("Files/Language", "r", encoding="utf-8")
         self.Language.set(f.read())
         self.LanguageO = self.Language.get()
         f.close()
@@ -363,26 +363,26 @@ class Interface(Frame):
             if self.folder != None:
                 answer = messagebox.askyesnocancel(self.Messages["General8"], self.Messages["General9"])
                 if answer:
-                    f = open("Files/Language", "w")
+                    f = open("Files/Language", "w", encoding="utf-8")
                     f.write(self.Language.get())
                     f.close()
                     self.save()
                     self.fermer()
                 elif answer == False:
-                    f = open("Files/Language", "w")
+                    f = open("Files/Language", "w", encoding="utf-8")
                     f.write(self.Language.get())
                     f.close()
                     self.fermer()
                 else:
                     self.Language.set(self.LanguageO)
             else:
-                f = open("Files/Language", "w")
+                f = open("Files/Language", "w", encoding="utf-8")
                 f.write(self.Language.get())
                 f.close()
                 self.fermer()
 
         except:
-            f = open("Files/Language", "w")
+            f = open("Files/Language", "w", encoding="utf-8")
             f.write(self.Language.get())
             f.close()
             self.fermer()
@@ -515,10 +515,8 @@ class Interface(Frame):
             # Check that videos are still available
             for V in range(len(self.liste_of_videos)):
                 if not os.path.isfile(self.liste_of_videos[V].File_name):
-                    resp = messagebox.askyesno(self.Messages["GWarnT5"],
-                                               self.Messages["GWarn5"].format(self.liste_of_videos[V].File_name))
-                    if resp:
-                        self.liste_of_videos[V].clear_files()
+                    resp = messagebox.askyesno(self.Messages["GWarnT5"],self.Messages["GWarn5"].format(self.liste_of_videos[V].File_name))
+                    if resp and self.liste_of_videos[V].clear_files():
                         to_suppr.append(V)
                     else:
                         if len(to_suppr) > 0:
@@ -717,8 +715,7 @@ class Interface(Frame):
         if self.selected_vid != None:
             if self.selected_vid.Tracked:
                 response = messagebox.askyesno(message=self.Messages["GWarn1"])
-                if response:
-                    self.selected_vid.clear_files()
+                if response and self.selected_vid.clear_files():
                     self.Change_win(Interface_parameters_track.Param_definer(parent=self.canvas_main, main_frame=self,
                                                                              boss=self.parent,
                                                                              Video_file=self.selected_vid))
@@ -757,9 +754,8 @@ class Interface(Frame):
 
         if Vid_to_supr != None:
             answer = messagebox.askyesno(self.Messages["GWarnT2"], self.Messages["GWarn2"])
-            if answer:
+            if answer and self.selected_vid.clear_files():
                 # Supress associated files
-                self.selected_vid.clear_files()
                 pos_R = [index for index, Vid_L in enumerate(self.liste_of_videos) if Vid_L == Vid_to_supr]
                 self.liste_of_videos.pop(pos_R[0])
                 self.load_projects()

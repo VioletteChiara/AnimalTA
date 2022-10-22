@@ -24,7 +24,7 @@ class Extend(Frame):
 
         #Import messages
         self.Language = StringVar()
-        f = open("Files/Language", "r")
+        f = open("Files/Language", "r", encoding="utf-8")
         self.Language.set(f.read())
         self.LanguageO = self.Language.get()
         f.close()
@@ -101,61 +101,64 @@ class Extend(Frame):
         nb_items=len(list_item)
         item=0
         for V in list_item:
-            if self.type=="scale":
-                self.list_vid_minus[V].Scale[0]=self.value[0]
-                self.list_vid_minus[V].Scale[1] = self.value[1]
-            elif self.type=="mask":
-                self.list_vid_minus[V].Mask[0] = 1
-                self.list_vid_minus[V].Mask[1]=deepcopy(self.value)
-            elif self.type=="track":
-                self.list_vid_minus[V].Track[0] = 1
-                mask = Function_draw_mask.draw_mask(self.list_vid_minus[V])
-                Arenas, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-                nb_ar=len(Arenas)
-                self.list_vid_minus[V].Track[1]=deepcopy(self.value)
-                self.list_vid_minus[V].Track[1][6]=deepcopy(self.value)[6][0:nb_ar]
-                
-            elif self.type=="fps":
-                if self.list_vid_minus[V].Frame_rate[1]!=self.list_vid_minus[V].Frame_rate[0]/self.value:
-                    self.list_vid_minus[V].Frame_rate[1]=self.list_vid_minus[V].Frame_rate[0]/self.value
-                    self.list_vid_minus[V].Frame_nb[1] = math.floor(self.list_vid_minus[V].Frame_nb[0] / round(self.list_vid_minus[V].Frame_rate[0] / self.list_vid_minus[V].Frame_rate[1])) ######NEW
-
-            elif self.type=="stab":
-                if self.list_vid_minus[V].Stab[0]!=(1-self.value):
-                    self.list_vid_minus[V].Stab[0]=(1-self.value)
-
-            elif self.type=="back":
-                self.loading_bar.delete('all')
-                heigh = self.loading_bar.cget("height")
-                self.bouton.config(state="disable")
-                self.loading_bar.create_rectangle(0, 0, 400, heigh, fill="red")
-                self.loading_bar.create_rectangle(0, 0, ((item+1)/nb_items) * 400, heigh, fill="blue")
-                self.loading_bar.update()
-                self.loading_state.config(text=self.Messages["Video"] + ": {act}/{tot}".format(act=item+1, tot=nb_items))
-                self.list_vid_minus[V].make_back()
-
-            elif self.type=="analyses_smooth":
-                if self.list_vid_minus[V].Tracked:
-                    self.list_vid_minus[V].Smoothed = deepcopy(self.value)
-
-            elif self.type=="analyses_thresh":
-                if self.list_vid_minus[V].Tracked:
-                    self.list_vid_minus[V].Analyses[0] = deepcopy(self.value)
-
-            elif self.type=="analyses_explo":
-                if self.list_vid_minus[V].Tracked:
-                    self.list_vid_minus[V].Analyses[2] = deepcopy(self.value)
-
-            elif self.type=="analyses_inter":
-                if self.list_vid_minus[V].Tracked:
-                    if len(self.list_vid_minus[V].Analyses) < 4:
-                        self.list_vid_minus[V].Analyses.append(0)
-                    self.list_vid_minus[V].Analyses[3] = deepcopy(self.value)
-
-            #To finish, if the tracking parameters were changed we remove the existing trackings
+            #If the tracking parameters were changed we remove the existing trackings
+            cleared=True
             if self.list_vid_minus[V].Tracked and self.type!="analyses_smooth" and self.type!="analyses_thresh" and self.type!="analyses_explo" and self.type!="analyses_inter":
-                self.list_vid_minus[V].clear_files()
+                cleared=self.list_vid_minus[V].clear_files()
+            if cleared:
                 self.list_vid_minus[V].Tracked=False
+                if self.type == "scale":
+                    self.list_vid_minus[V].Scale[0] = self.value[0]
+                    self.list_vid_minus[V].Scale[1] = self.value[1]
+                elif self.type == "mask":
+                    self.list_vid_minus[V].Mask[0] = 1
+                    self.list_vid_minus[V].Mask[1] = deepcopy(self.value)
+                elif self.type == "track":
+                    self.list_vid_minus[V].Track[0] = 1
+                    mask = Function_draw_mask.draw_mask(self.list_vid_minus[V])
+                    Arenas, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+                    nb_ar = len(Arenas)
+                    self.list_vid_minus[V].Track[1] = deepcopy(self.value)
+                    self.list_vid_minus[V].Track[1][6] = deepcopy(self.value)[6][0:nb_ar]
+
+                elif self.type == "fps":
+                    if self.list_vid_minus[V].Frame_rate[1] != self.list_vid_minus[V].Frame_rate[0] / self.value:
+                        self.list_vid_minus[V].Frame_rate[1] = self.list_vid_minus[V].Frame_rate[0] / self.value
+                        self.list_vid_minus[V].Frame_nb[1] = math.floor(self.list_vid_minus[V].Frame_nb[0] / round(
+                            self.list_vid_minus[V].Frame_rate[0] / self.list_vid_minus[V].Frame_rate[1]))  ######NEW
+
+                elif self.type == "stab":
+                    if self.list_vid_minus[V].Stab[0] != (1 - self.value):
+                        self.list_vid_minus[V].Stab[0] = (1 - self.value)
+
+                elif self.type == "back":
+                    self.loading_bar.delete('all')
+                    heigh = self.loading_bar.cget("height")
+                    self.bouton.config(state="disable")
+                    self.loading_bar.create_rectangle(0, 0, 400, heigh, fill="red")
+                    self.loading_bar.create_rectangle(0, 0, ((item + 1) / nb_items) * 400, heigh, fill="blue")
+                    self.loading_bar.update()
+                    self.loading_state.config(
+                        text=self.Messages["Video"] + ": {act}/{tot}".format(act=item + 1, tot=nb_items))
+                    self.list_vid_minus[V].make_back()
+
+                elif self.type == "analyses_smooth":
+                    if self.list_vid_minus[V].Tracked:
+                        self.list_vid_minus[V].Smoothed = deepcopy(self.value)
+
+                elif self.type == "analyses_thresh":
+                    if self.list_vid_minus[V].Tracked:
+                        self.list_vid_minus[V].Analyses[0] = deepcopy(self.value)
+
+                elif self.type == "analyses_explo":
+                    if self.list_vid_minus[V].Tracked:
+                        self.list_vid_minus[V].Analyses[2] = deepcopy(self.value)
+
+                elif self.type == "analyses_inter":
+                    if self.list_vid_minus[V].Tracked:
+                        if len(self.list_vid_minus[V].Analyses) < 4:
+                            self.list_vid_minus[V].Analyses.append(0)
+                        self.list_vid_minus[V].Analyses[3] = deepcopy(self.value)
 
 
             item+=1

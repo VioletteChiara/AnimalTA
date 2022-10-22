@@ -20,7 +20,7 @@ class Show(Frame):
 
         #Import language
         self.Language = StringVar()
-        f = open("Files/Language", "r")
+        f = open("Files/Language", "r", encoding="utf-8")
         self.Language.set(f.read())
         self.LanguageO = self.Language.get()
         f.close()
@@ -63,8 +63,10 @@ class Show(Frame):
         self.B_change_mask.grid(row=2,column=0, columnspan=2, sticky="ew")
 
         #Background
+
         self.B_change_back=Button(self.User_buttons, text=self.Messages["Portion5"], command=self.change_back)
-        self.B_change_back.grid(row=3,column=0, columnspan=2, sticky="ew")
+        if self.Vid.Back[0]:
+            self.B_change_back.grid(row=3,column=0, columnspan=2, sticky="ew")
 
         #Tracking parameters
         self.B_change_params = Button(self.User_buttons, text=self.Messages["Portion6"], command=self.change_params)
@@ -110,7 +112,7 @@ class Show(Frame):
         point_pos = file_name.rfind(".")
         path=self.Folder + "/TMP_portion/" +file_name[:point_pos]+"_TMP_portion_Coordinates.csv"
         for ind in range(self.NB_ind):
-            with open(path) as csv_file:
+            with open(path, encoding="utf-8") as csv_file:
                 csv_reader = csv.reader(csv_file, delimiter=";")
                 Ind_Coos=[]
                 for row in csv_reader:
@@ -213,7 +215,7 @@ class Show(Frame):
     #back=background modification
     #params=tracking parameters
     def change_stab(self):
-        self.Vid.Stab[0]=1-self.Vid.Stab
+        self.Vid.Stab[0]=1-self.Vid.Stab[0]
         if self.Vid.Stab[0]:
             self.text_stab.set(self.Messages["Portion2"])
         else:

@@ -14,7 +14,7 @@ class Row_Ana(Frame):
         self.position = position
         self.value=value
 
-        f = open("Files/Language", "r")
+        f = open("Files/Language", "r", encoding="utf-8")
         Language = (f.read())
         f.close()
         Messages = UserMessages.Mess[Language]
@@ -29,8 +29,8 @@ class Row_Ana(Frame):
 
         self.main.Add_ana.update()
 
-        self.config(width=self.main.Add_ana.winfo_width()-2, height=50)
-        self.grid_propagate(False)
+        self.config(width=self.main.Add_ana.winfo_width()-2, height=150)
+        self.grid_propagate(True)
         checkB=Checkbutton(self, text=self.Ana_liste[value], variable=self.checkvar, onvalue=value, offvalue=0, wraplength=150, command=self.main.modif_image)
         checkB.grid(row=0, column=0, sticky="w")
 

@@ -3,15 +3,19 @@ import numpy as np
 import cv2
 from AnimalTA import UserMessages
 import os
+from PIL import ImageFont, ImageDraw, Image
 
 """ These functions are based on the work of members of the learnopencv team.
 https://github.com/spmallick/learnopencv/blob/master/VideoStabilization/video_stabilization.py"""
 
+
+
 #Import language
-f = open("Files/Language", "r")
+f = open("Files/Language", "r", encoding="utf-8")
 Language=f.read()
 f.close()
 Messages = UserMessages.Mess[Language]
+
 
 def find_pts(Vid, Prem_Im):
     '''
@@ -109,16 +113,38 @@ def find_best_position(Vid, Prem_Im, frame, show, scale=1):
         frame_stabilized=frame
 
     if show:#If we want to see the result as an image composition
+        fontpath = "./simsun.ttc"
+        decal=10
+        if scale<10:
+            font = ImageFont.truetype(fontpath, max(1, int(scale * 30)))
+            stroke_width=max(1, int(scale * 2))
+        else:
+            font = ImageFont.truetype(fontpath, 1)
+            stroke_width = 1
         first_im = np.copy(Prem_Im)
-        #Add the text in the top of the frames
-        cv2.putText(first_im, Messages["Stab3"], (max(1,int(scale*30)), max(1,int(scale*30))), cv2.FONT_HERSHEY_PLAIN, max(1,scale*2), (255, 255, 255), max(2,int(scale*5)))
-        cv2.putText(first_im, Messages["Stab3"], (max(1,int(scale*30)), max(1,int(scale*30))), cv2.FONT_HERSHEY_PLAIN, max(1,scale*2), (0, 0, 0), max(1,int(scale*3)))
 
-        cv2.putText(frame, Messages["Stab4"], (max(1,int(scale*30)), max(1,int(scale*30))), cv2.FONT_HERSHEY_PLAIN, max(1,scale*2), (255, 255, 255), max(2,int(scale*5)))
-        cv2.putText(frame, Messages["Stab4"], (max(1,int(scale*30)), max(1,int(scale*30))), cv2.FONT_HERSHEY_PLAIN, max(1,scale*2), (0, 0, 0), max(1,int(scale*3)))
+        cnt=0
+        Messages_S=[Messages["Stab3"],Messages["Stab4"],Messages["Stab5"]]
 
-        cv2.putText(frame_stabilized, Messages["Stab5"], (max(1,int(scale*30)), max(1,int(scale*30))), cv2.FONT_HERSHEY_PLAIN, max(1,scale*2), (255, 255, 255), max(2,int(scale*5)))
-        cv2.putText(frame_stabilized, Messages["Stab5"], (max(1,int(scale*30)), max(1,int(scale*30))), cv2.FONT_HERSHEY_PLAIN, max(1,scale*2), (0, 0, 0), max(1,int(scale*3)))
+        first_im = Image.fromarray(first_im)
+        draw = ImageDraw.Draw(first_im)
+        draw.text((max(1, int(scale * decal)) , max(1, int(scale * decal))) , Messages_S[cnt], font=font,fill=(255, 255, 255, 0),stroke_width=stroke_width)
+        draw.text((max(1,int(scale*decal)), max(1,int(scale*decal))), Messages_S[cnt], font=font, fill=(0,0,0,0))
+        first_im = np.array(first_im)
+
+        cnt = 1
+        frame = Image.fromarray(frame)
+        draw = ImageDraw.Draw(frame)
+        draw.text((max(1, int(scale * decal)) , max(1, int(scale * decal))) , Messages_S[cnt], font=font,fill=(255, 255, 255, 0),stroke_width=stroke_width)
+        draw.text((max(1,int(scale*decal)), max(1,int(scale*decal))), Messages_S[cnt], font=font, fill=(0,0,0,0))
+        frame = np.array(frame)
+
+        cnt = 2
+        frame_stabilized = Image.fromarray(frame_stabilized)
+        draw = ImageDraw.Draw(frame_stabilized)
+        draw.text((max(1, int(scale * decal)) , max(1, int(scale * decal))) , Messages_S[cnt], font=font,fill=(255, 255, 255, 0),stroke_width=stroke_width)
+        draw.text((max(1,int(scale*decal)), max(1,int(scale*decal))), Messages_S[cnt], font=font, fill=(0,0,0,0))
+        frame_stabilized = np.array(frame_stabilized)
 
         #Draw the points of interest
         for pt in range(len(prev_pts)):

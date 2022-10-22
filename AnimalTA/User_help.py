@@ -10,7 +10,7 @@ class Help_win(Frame):
 
         #Messages importation
         self.Language = StringVar()
-        f = open("Files/Language", "r")
+        f = open("Files/Language", "r", encoding="utf-8")
         self.Language.set(f.read())
         f.close()
         self.Messages = UserMessages.Mess[self.Language.get()]

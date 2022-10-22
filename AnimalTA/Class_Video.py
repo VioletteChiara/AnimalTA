@@ -1,8 +1,17 @@
 import cv2
 import numpy as np
 import ntpath
-from AnimalTA import Class_stabilise
+from AnimalTA import Class_stabilise, UserMessages
 import os
+from tkinter import messagebox
+from tkinter import *
+
+# Import language
+
+f = open("Files/Language", "r", encoding="utf-8")
+Language=(f.read())
+f.close()
+Messages = UserMessages.Mess[Language]
 
 
 class Video:
@@ -53,16 +62,32 @@ class Video:
         point_pos = self.Name.rfind(".")
         # Suppress coordinates from tracking
         file_tracked = self.Folder + "/coordinates/" + self.Name[:point_pos] + "_Coordinates.csv"
-        if os.path.isfile(file_tracked):
-            os.remove(file_tracked)
-        # Suppress corrected coordinates from tracking
         file_tracked_with_corr = self.Folder + "/corrected_coordinates/" + self.Name[:point_pos] + "_Corrected.csv"
-        if os.path.isfile(file_tracked_with_corr):
-            os.remove(file_tracked_with_corr)
 
-        self.Tracked=False
-        self.Smoothed=[0,0]
-        self.Analyses=[0,[[] for n in self.Track[1][6]],[0,1,2],0]#0 = movement threshold, 1=list of elements of interest, 2=exploration kind of measurement(2.0 = type, 2.1=area, 2.2=parameter for circular mesh), 3=inter-individual threshold
+        while True:
+            try:
+                if os.path.isfile(file_tracked):
+                    os.rename(file_tracked,file_tracked)
+
+                if os.path.isfile(file_tracked_with_corr):
+                    os.rename(file_tracked_with_corr, file_tracked_with_corr)
+
+                if os.path.isfile(file_tracked):
+                    os.remove(file_tracked)
+
+                if os.path.isfile(file_tracked_with_corr):
+                    os.remove(file_tracked_with_corr)
+
+                self.Tracked=False
+                self.Smoothed=[0,0]
+                self.Analyses=[0,[[] for n in self.Track[1][6]],[0,1,2],0]#0 = movement threshold, 1=list of elements of interest, 2=exploration kind of measurement(2.0 = type, 2.1=area, 2.2=parameter for circular mesh), 3=inter-individual threshold
+                return True
+
+            except PermissionError as e:
+                Response = messagebox.askretrycancel(title=Messages["TError"],message=Messages["Error_Permission"].format(e.filename))
+                if not Response:
+                    return False
+
 
 
     def make_back(self,  Nb_Back=10):

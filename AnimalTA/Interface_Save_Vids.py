@@ -7,6 +7,7 @@ import cv2
 import math
 from scipy.signal import savgol_filter
 from tkinter import filedialog
+from PIL import ImageFont, ImageDraw, Image
 
 class Lecteur(Frame):
     """This Frame allow the user to export a video that has been modified by AnimalTA.
@@ -29,7 +30,7 @@ class Lecteur(Frame):
 
         #Import messages
         self.Language = StringVar()
-        f = open("Files/Language", "r")
+        f = open("Files/Language", "r", encoding="utf-8")
         self.Language.set(f.read())
         self.LanguageO = self.Language.get()
         self.Messages = UserMessages.Mess[self.Language.get()]
@@ -231,8 +232,18 @@ class Lecteur(Frame):
                     if center[0] != "NA":
                         new_img = cv2.circle(new_img, (int(center[0]), int(center[1])),radius=max(int(4 * self.Vid_Lecteur.ratio), 1), color=color, thickness=-1)
                         if self.show_ID:
-                            new_img = cv2.putText(new_img, self.Vid.Identities[ind][1],(int(float(center[0])+10*self.Vid_Lecteur.ratio), int(float(center[1])+10*self.Vid_Lecteur.ratio)),cv2.FONT_HERSHEY_SIMPLEX, max(0.5, self.Vid_Lecteur.ratio), color,max(1, int(self.Vid_Lecteur.ratio * 3)))
-
+                            fontpath = "./simsun.ttc"
+                            if self.Vid_Lecteur.ratio < 10:
+                                font = ImageFont.truetype(fontpath, max(1, int(self.Vid_Lecteur.ratio * 30)))
+                                stroke_width = max(1, int(self.Vid_Lecteur.ratio * 1))
+                            else:
+                                font = ImageFont.truetype(fontpath, 1)
+                                stroke_width = 1
+                            new_img = Image.fromarray(new_img)
+                            draw = ImageDraw.Draw(new_img)
+                            draw.text((int(float(center[0])+10*self.Vid_Lecteur.ratio), int(float(center[1])+10*self.Vid_Lecteur.ratio)), self.Vid.Identities[ind][1], font=font, fill=(255, 255, 255, 0), stroke_width=stroke_width)
+                            draw.text((int(float(center[0])+10*self.Vid_Lecteur.ratio), int(float(center[1])+10*self.Vid_Lecteur.ratio)), self.Vid.Identities[ind][1], font=font, fill=(color ))
+                            new_img = np.array(new_img)
         if aff:
             self.Vid_Lecteur.afficher_img(new_img)
         else:
@@ -266,7 +277,7 @@ class Lecteur(Frame):
             path = file_tracked_not_corr
 
         for ind in range(self.NB_ind):
-            with open(path) as csv_file:
+            with open(path, encoding="utf-8") as csv_file:
                 csv_reader = csv.reader(csv_file, delimiter=";")
                 Ind_Coos=[]
                 first=True

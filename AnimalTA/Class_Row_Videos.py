@@ -26,7 +26,7 @@ class Row_Can(Canvas):
             self.width_show=600
 
             self.Language = StringVar()
-            f = open("Files/Language", "r")
+            f = open("Files/Language", "r", encoding="utf-8")
             self.Language.set(f.read())
             self.LanguageO = self.Language.get()
             f.close()
@@ -237,7 +237,7 @@ class Row_Can(Canvas):
         if self.Video.Tracked:
             response=messagebox.askyesno(message=self.Messages["GWarn1"])
             if response:
-                self.clear_data()
+                self.Video.clear_files()
             self.update()
 
     def resize_font(self, _):
@@ -303,10 +303,6 @@ class Row_Can(Canvas):
         else:
             self.main_frame.fusion_two_Vids(self.Video)
 
-    def clear_data(self):
-        # On supprime les fichiers associés à la video
-        self.Video.clear_files()
-
     def update_fps(self):
         # On change le frame rate affiché
         self.holder.set(round(self.Video.Frame_rate[1],2))
@@ -353,8 +349,7 @@ class Row_Can(Canvas):
         # Open the cropping window
         if self.Video.Tracked:
             response=messagebox.askyesno(message=self.Messages["GWarn1"])#Remove the
-            if response:
-                self.clear_data()
+            if response and self.Video.clear_files():
                 self.main_frame.Change_win(Interface_cropping.Cropping(parent=self.main_frame.canvas_main, boss=self, main_frame=self.main_frame, proj_pos=self.proj_pos, Video_file=self.Video))
         else:
             self.main_frame.Change_win(Interface_cropping.Cropping(parent=self.main_frame.canvas_main, boss=self, main_frame=self.main_frame, proj_pos=self.proj_pos, Video_file=self.Video))
@@ -402,12 +397,11 @@ class Row_Can(Canvas):
         # Add/Remove the stabilization
         if self.Video.Tracked:
             response=messagebox.askyesno(message=self.Messages["GWarn1"])
-            if response:
-                self.clear_data()
-                if self.Video.Stab[0]:
-                    self.Video.Stab[0]=False
-                else:
-                    self.Video.Stab[0]=True
+            if response and self.Video.clear_files():
+                    if self.Video.Stab[0]:
+                        self.Video.Stab[0]=False
+                    else:
+                        self.Video.Stab[0]=True
         else:
             if self.Video.Stab[0]:
                 self.Video.Stab[0] = False
@@ -428,8 +422,7 @@ class Row_Can(Canvas):
         # Create the automatique background or open the window to change an existing background
         if self.Video.Tracked:
             response=messagebox.askyesno(message=self.Messages["GWarn1"])
-            if response:
-                self.clear_data()
+            if response and self.Video.clear_files():
                 if not self.Video.Back[0]:
                     self.Video.make_back()
                     self.update_back()
@@ -473,8 +466,7 @@ class Row_Can(Canvas):
         # Remove existing background
         if self.Video.Tracked:
             response=messagebox.askyesno(message=self.Messages["GWarn1"])
-            if response:
-                self.clear_data()
+            if response and self.Video.clear_files():
                 self.Video.effacer_back()
                 self.update()
         else:
@@ -535,8 +527,7 @@ class Row_Can(Canvas):
         # Remove existing arenas
         if self.Video.Tracked:
             response=messagebox.askyesno(message=self.Messages["GWarn1"])
-            if response:
-                self.clear_data()
+            if response and self.Video.clear_files():
                 self.Video.effacer_mask()
                 self.update()
         else:
@@ -547,8 +538,7 @@ class Row_Can(Canvas):
         # Open the window to define the arenas in which the targets can be found
         if self.Video.Tracked:
             response=messagebox.askyesno(message=self.Messages["GWarn1"])
-            if response:
-                self.clear_data()
+            if response and self.Video.clear_files():
                 self.main_frame.Change_win(Interface_masking.Mask(parent=self.main_frame.canvas_main,
                                                                   boss=self, main_frame=self.main_frame, proj_pos=self.proj_pos, Video_file=self.Video))
                 self.update()
@@ -625,8 +615,7 @@ class Row_Can(Canvas):
         # Remove the scale associated with the video
         if self.Video.Tracked:
             response=messagebox.askyesno(message=self.Messages["GWarn1"])
-            if response:
-                self.clear_data()
+            if response and self.Video.clear_files():
                 self.Video.Scale[0] = 1
                 self.Video.Scale[1] = ""
                 self.update_scale()
@@ -639,8 +628,7 @@ class Row_Can(Canvas):
         # Open the window in which the scale can be defined
         if self.Video.Tracked:
             response=messagebox.askyesno(message=self.Messages["GWarn1"])
-            if response:
-                self.clear_data()
+            if response and self.Video.clear_files():
                 self.main_frame.Change_win(Interface_scaling.Scale(parent=self.main_frame.canvas_main, boss=self,
                                                                    main_frame=self.main_frame, Video_file=self.Video))
         else:

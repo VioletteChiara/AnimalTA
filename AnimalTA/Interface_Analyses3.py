@@ -34,7 +34,7 @@ class Analyse_track(Frame):
 
         # Messages importation
         self.Language = StringVar()
-        f = open("Files/Language", "r")
+        f = open("Files/Language", "r", encoding="utf-8")
         self.Language.set(f.read())
         self.LanguageO = self.Language.get()
         self.Messages = UserMessages.Mess[self.Language.get()]
@@ -416,7 +416,7 @@ class Analyse_track(Frame):
             path = file_tracked_not_corr
 
         for ind in range(self.NB_ind):
-            with open(path) as csv_file:
+            with open(path, encoding="utf-8") as csv_file:
                 csv_reader = csv.reader(csv_file, delimiter=";")
                 Ind_Coos = []
                 first = True

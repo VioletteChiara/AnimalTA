@@ -8,6 +8,7 @@ class Mainframe(Tk):
         Tk.__init__(self)
         self.open_AnimalTA()
 
+
     def open_AnimalTA(self) -> object:
         self.frame = Interface_pretracking.Interface(self)
         self.frame.grid(sticky="nsew")

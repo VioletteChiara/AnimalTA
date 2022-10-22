@@ -24,7 +24,7 @@ class Param_definer(Frame):
 
         #Importation of the messages
         self.Language = StringVar()
-        f = open("Files/Language", "r")
+        f = open("Files/Language", "r", encoding="utf-8")
         self.Language.set(f.read())
         self.LanguageO = self.Language.get()
         f.close()
@@ -112,7 +112,7 @@ class Param_definer(Frame):
         # Greyscaled image
         F_Grey = Frame(self.canvas_options, background="white")
         F_Grey.grid(sticky="wnse", columnspan=3)
-        Greyed_vis = Checkbutton(F_Grey, text="Gray image", variable=self.CheckVar,
+        Greyed_vis = Checkbutton(F_Grey, text=self.Messages["Track3"], variable=self.CheckVar,
                                    onvalue=1, offvalue=0, width=width_labels, command=self.modif_image, anchor="w",
                                    background="white")
 
