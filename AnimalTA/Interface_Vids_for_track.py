@@ -259,8 +259,14 @@ class Extend(Frame):
                                 Details.append(list(map(lambda x:round(x/self.Vid.Frame_rate[1],2), range(len(self.Coos[ID])))))
                                 Details.append(list(np.array(self.Coos[ID])[:,0]))#We will save here the detailed informations (for each frame)
                                 Details.append(list(np.array(self.Coos[ID])[:,1]))
-                                Details[1]=list(map(lambda x: float(x)/ float(self.Vid.Scale[0]),Details[1]))
-                                Details[2] = list(map(lambda x: float(x) / float(self.Vid.Scale[0]), Details[2]))
+
+                                def convert(x):
+                                    if x!="NA":
+                                        return float(x)/ float(self.Vid.Scale[0])
+                                    else:
+                                        return x
+                                Details[1]=list(map(convert,Details[1]))
+                                Details[2] = list(map(convert, Details[2]))
 
                                 #Time lost
                                 new_row.append(Calc_speed.calculate_lost(parent=self, ind=ID))
@@ -336,7 +342,10 @@ class Extend(Frame):
 
                                     elif Shape[0]=="Ellipse" or Shape[0] == "Rectangle" or Shape[0] == "Polygon":
                                         if len(Shape[1]) > 0:
-                                            empty = np.zeros([self.Vid.Back[1].shape[0], self.Vid.Back[1].shape[1], 1], np.uint8)
+                                            if self.Vid.Back[0]:
+                                                empty = np.zeros([self.Vid.Back[1].shape[0], self.Vid.Back[1].shape[1], 1], np.uint8)
+                                            else:
+                                                empty = np.zeros([self.Vid.shape[0], self.Vid.shape[1], 1], np.uint8)
                                             if Shape[0] == "Ellipse":
                                                 Function_draw_mask.Draw_elli(empty, [po[0] for po in Shape[1]],[po[1] for po in Shape[1]], 255, thick=-1)
                                             elif Shape[0] == "Rectangle":
@@ -495,7 +504,8 @@ class Extend(Frame):
                                     writer_det_ind.writerow(first_row)
                                     for row in range(len(Details[0])):
                                         new_row=[Details[Col][row] for Col in range(len(Details))]
-                                        new_row=new_row+[All_inter_dists[row][I][i] for i in range(len(All_inter_dists[row][I])) if i !=I]
+                                        if self.Vid.Track[1][6][Area] > 1:
+                                            new_row=new_row+[All_inter_dists[row][I][i] for i in range(len(All_inter_dists[row][I])) if i !=I]
                                         writer_det_ind.writerow(new_row)
 
 

@@ -179,7 +179,7 @@ class speed_calculations:
         speeds=self.get_all_speeds_ind(parent,ind, in_move=False, with_NA=True)
 
         state=[int(val>self.seuil_movement) for val in speeds if val!="NA"]
-        if len(speeds)>0:
+        if len(state)>0:
             val_s= (sum(state) / len(state))
         else:
             val_s="NA"
@@ -348,7 +348,10 @@ class speed_calculations:
 
         else:
             if len(Shape[1]) > 0:
-                empty = np.zeros([Vid.Back[1].shape[0], Vid.Back[1].shape[1], 1], np.uint8)
+                if Vid.Back[0]:
+                    empty = np.zeros([Vid.Back[1].shape[0], Vid.Back[1].shape[1], 1], np.uint8)
+                else:
+                    empty = np.zeros([Vid.shape[0], Vid.shape[1], 1], np.uint8)
                 if Shape[0] == "Ellipse":
                     Function_draw_mask.Draw_elli(empty, [po[0] for po in Shape[1]], [po[1] for po in Shape[1]], 255,
                                                  thick=-1)
