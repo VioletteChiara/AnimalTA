@@ -1,11 +1,21 @@
 from tkinter import *
-from AnimalTA import Interface_pretracking, UserMessages
+from AnimalTA.A_General_tools import UserMessages
+from AnimalTA.B_Project_organisation import Interface_pretracking
 from ctypes import windll
+from tkinter import ttk
+
+
+#How to run pyinstaller to have the exe file: pyinstaller cli.spec --noconsole --path="< Import path >"
 
 class Mainframe(Tk):
     #Launch the rest of animalTA
     def __init__(self):
         Tk.__init__(self)
+        style = ttk.Style(self)
+        aktualTheme = style.theme_use()
+        style.theme_create("dummy", parent=aktualTheme)
+        style.theme_use("dummy")
+        style.map('Treeview', background=[('selected', '#7ec9f7')], foreground=[("selected","black")])
         self.open_AnimalTA()
 
     def open_AnimalTA(self) -> object:
@@ -22,7 +32,6 @@ class Mainframe(Tk):
         root.wm_withdraw()
         root.after(10, lambda: root.wm_deiconify())
 
-
 GWL_EXSTYLE = -20
 WS_EX_APPWINDOW = 0x00040000
 WS_EX_TOOLWINDOW = 0x00000080
@@ -31,7 +40,7 @@ root=Mainframe()
 root.overrideredirect(1)
 root.geometry("1250x720")
 root.geometry("+100+100")
-img = PhotoImage(file='Files/Logo.png')
+img = PhotoImage(file=UserMessages.resource_path("AnimalTA/Files/Logo.png"))
 root.wm_iconphoto(True, img)
 root.after(10, lambda: root.set_appwindow(root=root))
 

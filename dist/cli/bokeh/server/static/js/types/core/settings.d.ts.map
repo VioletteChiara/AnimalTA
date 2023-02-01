@@ -1,0 +1,1 @@
+{"version":3,"file":"settings.d.ts","sourceRoot":"","sources":["../../../../src/lib/core/settings.ts"],"names":[],"mappings":"AAAA,qBAAa,QAAQ;IACnB,OAAO,CAAC,IAAI,CAAQ;IACpB,OAAO,CAAC,UAAU,CAAQ;IAE1B,IAAI,GAAG,CAAC,GAAG,EAAE,OAAO,EAEnB;IAED,IAAI,GAAG,IAAI,OAAO,CAEjB;IAED,IAAI,SAAS,CAAC,SAAS,EAAE,OAAO,EAE/B;IAED,IAAI,SAAS,IAAI,OAAO,CAEvB;CACF;AAED,eAAO,MAAM,QAAQ,UAAiB,CAAA"}
