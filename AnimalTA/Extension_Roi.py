@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 import scipy.signal
 
-from AnimalTA import UserMessages, Class_Lecteur, User_help
+from AnimalTA.A_General_tools import Class_Lecteur, UserMessages
 import math
 
 
@@ -23,7 +23,7 @@ class Light_changes(Frame):
 
 
         self.Language = StringVar()
-        f = open("Files/Language", "r", encoding="utf-8")
+        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
         self.Language.set(f.read())
         self.LanguageO = self.Language.get()
         f.close()
@@ -208,7 +208,6 @@ class Light_changes(Frame):
         self.loading_bar.destroy()
 
         self.unbind_all("<Button-1>")
-        self.boss.update()
         self.grab_release()
 
         self.main_frame.return_main()
