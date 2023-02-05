@@ -78,6 +78,7 @@ class Ask(Frame):
 
         self.boss.ready=False
         self.stay_on_top()
+        self.parent.protocol("WM_DELETE_WINDOW", self.validate)
 
 
     def update_ratio_scale(self, val):

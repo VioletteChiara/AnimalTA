@@ -87,11 +87,22 @@ class Lecteur(Frame):
         self.bouton_show_all_traj.grid(row=1,column=1, sticky="nsew")
 
 
-        #Button to look for NA values:
-        self.B_look_NA=Button(self.User_params_cont, text=self.Messages["Control17"], background="#ffa1a1", command=self.look_for_NA)
-        self.B_look_NA.grid(row=1,column=0,columnspan=3, sticky="ew")
+        F_NAs=Frame(self.User_params_cont, background="red")
+        F_NAs.grid(row=1,column=0, columnspan=3, sticky="ewns")
+        Grid.columnconfigure(F_NAs, 0, weight=100)
+        Grid.columnconfigure(F_NAs, 1, weight=1)
+
+        #Button to look for the next NA values:
+        self.B_look_NA=Button(F_NAs, text=self.Messages["Control17"], background="#ffa1a1", command=self.look_for_NA)
+        self.B_look_NA.grid(row=0,column=0, sticky="ew")
         self.B_look_NA.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Control19"]))
         self.B_look_NA.bind("<Leave>", self.HW.remove_tmp_message)
+
+        #Button to change values for NA
+        B_change_for_NA=Button(F_NAs, text=self.Messages["Control20"], command=self.change_for_NA)
+        B_change_for_NA.grid(row=0,column=1,sticky="ew")
+        B_change_for_NA.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Control21"]))
+        B_change_for_NA.bind("<Leave>", self.HW.remove_tmp_message)
 
         #This canvas is used to build a table in which the coordinate sof the targets as a function of time can be viewed
         self.container_table = Canvas(self.User_params_cont, heigh=300, width=300, bd=2, highlightthickness=1, relief='ridge' ,scrollregion=(0,0,500,500))
@@ -236,13 +247,14 @@ class Lecteur(Frame):
             self.TMP_Vid.Cropped[1][0] = int(self.first*self.Vid_Lecteur.one_every)
             self.TMP_Vid.Cropped[1][1] = int((self.last-1)*self.Vid_Lecteur.one_every)
 
-            new_Coos=self.Coos[:,(self.first- int(self.Vid.Cropped[1][0]/self.Vid_Lecteur.one_every) -1):(self.last- int(self.Vid.Cropped[1][0]/self.Vid_Lecteur.one_every)-1),:].copy()
+
+            new_Coos=self.Coos[:,(self.first- int(self.Vid.Cropped[1][0]/self.Vid_Lecteur.one_every)):(self.last- int(self.Vid.Cropped[1][0]/self.Vid_Lecteur.one_every)),:].copy()
             CoosLS.save(self.TMP_Vid, new_Coos, TMP=True)
 
             #We create a new coordinates file with only the selected frames:
             if self.Vid.Track[1][8]:
-                prev_row=[self.first-1, (self.first-1)/self.Vid_Lecteur.one_every]#We also check for the last known coordinates before the re-run to allow target's assigment.
                 if self.first > self.Vid.Cropped[1][0]/self.Vid_Lecteur.one_every:
+                    prev_row = [self.first - 1, (self.first - 1) / self.Vid_Lecteur.one_every]  # We also check for the last known coordinates before the re-run to allow target's assigment.
                     for ind in range(self.Coos.shape[0]):
                         prev_row = prev_row + list(self.Coos[ind,self.first - int(self.Vid.Cropped[1][0]/self.Vid_Lecteur.one_every) -1,:])
 
@@ -270,7 +282,7 @@ class Lecteur(Frame):
         self.Scrollbar=self.Vid_Lecteur.Scrollbar
 
         if self.Vid.Stab[0]:
-            self.prev_pts = Class_stabilise.find_pts(self.Vid, self.Vid_Lecteur.Prem_image_to_show, self.Vid.Stab[2][0], self.Vid.Stab[2][1], self.Vid.Stab[2][2], self.Vid.Stab[2][3])
+            self.prev_pts = self.Vid.Stab[1]
 
         self.Vid_Lecteur.canvas_video.update()
         self.Vid_Lecteur.update_image(self.Vid_Lecteur.to_sub)
@@ -301,20 +313,18 @@ class Lecteur(Frame):
             or_table = np.asarray(or_table)
             or_table[or_table == "NA"] = -1000
             or_table=or_table[1:,2:]
-            or_table=or_table.astype(dtype=int)
             for Ind in range(len(self.Vid.Identities)):
                 self.Coos[Ind,self.first - self.to_sub : self.first - self.to_sub +len(or_table[:,0]),:] = or_table[:,2 * Ind:2 * Ind + 2]
 
         self.redo_Lecteur()
         # We place the reader at the last corrected frame
-        self.Scrollbar.active_pos = int((self.first - self.Vid.Cropped[1][0]) / self.Vid_Lecteur.one_every)
+        self.Scrollbar.active_pos = int(( self.first +len(or_table[:,0])-1) / self.Vid_Lecteur.one_every)
         self.Scrollbar.refresh()
 
         self.last_shown=None
         self.afficher_table()
-        self.modif_image()
         os.remove(path)
-        self.Vid_Lecteur.update_image(self.first - self.Vid.Cropped[1][0])
+        self.Vid_Lecteur.update_image(self.Scrollbar.active_pos)
         self.look_for_NA(move_to=False)
 
     def save(self, follow=False):
@@ -418,7 +428,6 @@ class Lecteur(Frame):
             else:
                 end = deb + self.table_heigh
 
-
             Ind_to_show=self.who_is_here[deb + actual_pos - self.to_sub : end + actual_pos - self.to_sub]
             Ind_to_show=[val for sub in Ind_to_show for val in sub]
             Ind_to_show=list(set(Ind_to_show))
@@ -466,13 +475,13 @@ class Lecteur(Frame):
                 for ind in Ind_to_show:
                     if (ind == self.selected_ind and pos_in_coos==displayed_frame):
                         if self.Coos[ind,row+actual_pos-self.to_sub,0]!=-1000:
-                            Pos=Pos+["*" + str(self.Coos[ind,row+actual_pos-self.to_sub,0]) + " " + str(self.Coos[ind,row+actual_pos-self.to_sub,1]) + "*"]
+                            Pos=Pos+["*" + str(round(self.Coos[ind,row+actual_pos-self.to_sub,0],2)) + " " + str(round(self.Coos[ind,row+actual_pos-self.to_sub,1],2)) + "*"]
                         else:
                             Pos = Pos + ["*NA NA*"]
                             is_NA=True
                     else:
                         if self.Coos[ind, row + actual_pos - self.to_sub, 0] != -1000:
-                            Pos=Pos+[str(self.Coos[ind,row+actual_pos-self.to_sub,0])+" "+str(self.Coos[ind,row+actual_pos-self.to_sub,1])]
+                            Pos=Pos+[str(round(self.Coos[ind,row+actual_pos-self.to_sub,0],2))+" "+str(round(self.Coos[ind,row+actual_pos-self.to_sub,1],2))]
                         else:
                             Pos = Pos + ["NA NA"]
                             is_NA=True
@@ -561,6 +570,7 @@ class Lecteur(Frame):
             self.modif_image()
 
     def look_for_NA(self, move_to=True):
+        #If the user want to jump toward the next NA value
         Pos=np.where(self.Coos==-1000)
         lines=Pos[1]
         if len(lines)>0:
@@ -578,6 +588,12 @@ class Lecteur(Frame):
             self.B_look_NA.config(state="disable", activebackground="#8de3a4", background="#8de3a4", text=self.Messages["Control18"])
         else:
             self.B_look_NA.config(state="active",activebackground="#ffa1a1", background="#ffa1a1", text=self.Messages["Control17"])
+
+    def change_for_NA(self):
+        #If the user wants to attribute NA values:
+        self.Coos[self.selected_ind, self.selected_rows, :]=-1000
+        self.look_for_NA(move_to=False)
+        self.modif_image()
 
     def load_Vid(self, new_Vid):
         #Load a video
@@ -601,7 +617,7 @@ class Lecteur(Frame):
         self.Scrollbar=self.Vid_Lecteur.Scrollbar
 
         if self.Vid.Stab[0]:
-            self.prev_pts = Class_stabilise.find_pts(self.Vid, self.Vid_Lecteur.Prem_image_to_show, self.Vid.Stab[2][0], self.Vid.Stab[2][1], self.Vid.Stab[2][2], self.Vid.Stab[2][3])
+            self.prev_pts = self.Vid.Stab[1]
 
         #Difference in frame between the first frame of the video and the first frame of the table
         if self.Vid.Cropped[0]:
@@ -619,7 +635,6 @@ class Lecteur(Frame):
         self.vsb.grid(row=2, column=2, sticky="ns")
         self.vsb.bind("<ButtonRelease-1>", self.move_tree)
 
-
         #Representation of the tail
         if new_Vid!=None:
             self.Vid = new_Vid
@@ -627,7 +642,8 @@ class Lecteur(Frame):
 
         #We show the first frame:
         self.Vid_Lecteur.canvas_video.update()
-        self.Vid_Lecteur.update_image(self.Vid_Lecteur.to_sub)
+        self.Vid_Lecteur.update_image(self.to_sub)
+        self.Scrollbar.active_pos=self.to_sub
         self.Vid_Lecteur.bindings()
         self.Vid_Lecteur.Scrollbar.refresh()
 
@@ -706,11 +722,6 @@ class Lecteur(Frame):
             self.last_empty = np.copy(img)
             new_img = np.copy(img)
 
-        if self.Vid.Cropped[0]:
-            to_remove = int(round((self.Vid.Cropped[1][0])/self.Vid_Lecteur.one_every))
-        else:
-            to_remove=0
-
         if self.Vid.Stab[0]:
             new_img = Class_stabilise.find_best_position(Vid=self.Vid, Prem_Im=self.Vid_Lecteur.Prem_image_to_show, frame=new_img, show=False, prev_pts=self.prev_pts)
 
@@ -718,35 +729,35 @@ class Lecteur(Frame):
             if not self.Vid.Track[1][8]:
                 cv2.drawContours(new_img, self.Arenas,-1,(150,0,200),max(1,int(2*self.Vid_Lecteur.ratio)))
 
-            for ind in self.who_is_here[self.Scrollbar.active_pos - to_remove]:
+            for ind in self.who_is_here[self.Scrollbar.active_pos - self.to_sub]:
                 color=self.Vid.Identities[ind][2]
                 if not self.show_all:
-                    for prev in range(min(int(self.tail_size.get()*self.Vid.Frame_rate[1]), int(self.Scrollbar.active_pos - to_remove))):
+                    for prev in range(min(int(self.tail_size.get()*self.Vid.Frame_rate[1]), int(self.Scrollbar.active_pos - self.to_sub))):
                         if int(self.Scrollbar.active_pos - prev) > round(((self.Vid.Cropped[1][0])/self.Vid_Lecteur.one_every)) and int(self.Scrollbar.active_pos) <= round(((self.Vid.Cropped[1][1])/self.Vid_Lecteur.one_every)):
-                            if self.Coos[ind][int(self.Scrollbar.active_pos - 1 - prev - to_remove)][0] != -1000 and self.Coos[ind][int(self.Scrollbar.active_pos - prev - to_remove)][0] != -1000 :
-                                TMP_tail_1 = (int(self.Coos[ind,int(self.Scrollbar.active_pos - 1 - prev - to_remove),0]),
-                                              int(self.Coos[ind,int(self.Scrollbar.active_pos - 1 - prev - to_remove),1]))
+                            if self.Coos[ind][int(self.Scrollbar.active_pos - 1 - prev - self.to_sub)][0] != -1000 and self.Coos[ind][int(self.Scrollbar.active_pos - prev - self.to_sub)][0] != -1000 :
+                                TMP_tail_1 = (int(self.Coos[ind,int(self.Scrollbar.active_pos - 1 - prev - self.to_sub),0]),
+                                              int(self.Coos[ind,int(self.Scrollbar.active_pos - 1 - prev - self.to_sub),1]))
 
-                                TMP_tail_2 = (int(self.Coos[ind,int(self.Scrollbar.active_pos - prev - to_remove),0]),
-                                              int(self.Coos[ind,int(self.Scrollbar.active_pos - prev - to_remove),1]))
+                                TMP_tail_2 = (int(self.Coos[ind,int(self.Scrollbar.active_pos - prev - self.to_sub),0]),
+                                              int(self.Coos[ind,int(self.Scrollbar.active_pos - prev - self.to_sub),1]))
                                 new_img = cv2.line(new_img, TMP_tail_1, TMP_tail_2, color, max(int(3*self.Vid_Lecteur.ratio),1))
 
                 else:
                     for prev in range(1,int((self.Vid.Cropped[1][1]-self.Vid.Cropped[1][0])/self.Vid_Lecteur.one_every)):
-                        if self.Coos[ind,int(((self.Vid.Cropped[1][1]) / self.Vid_Lecteur.one_every) - 1 - prev - to_remove),0] != -1000 and \
-                                self.Coos[ind,int(((self.Vid.Cropped[1][1]) / self.Vid_Lecteur.one_every) - prev - to_remove),
+                        if self.Coos[ind,int(((self.Vid.Cropped[1][1]) / self.Vid_Lecteur.one_every) - 1 - prev - self.to_sub),0] != -1000 and \
+                                self.Coos[ind,int(((self.Vid.Cropped[1][1]) / self.Vid_Lecteur.one_every) - prev - self.to_sub),
                                     0] != -1000:
                             TMP_tail_1 = (
-                            int(self.Coos[ind,int(((self.Vid.Cropped[1][1]) / self.Vid_Lecteur.one_every) - 1 - prev - to_remove),0]),
-                            int(self.Coos[ind,int(((self.Vid.Cropped[1][1]) / self.Vid_Lecteur.one_every) - 1 - prev - to_remove),1]))
+                            int(self.Coos[ind,int(((self.Vid.Cropped[1][1]) / self.Vid_Lecteur.one_every) - 1 - prev - self.to_sub),0]),
+                            int(self.Coos[ind,int(((self.Vid.Cropped[1][1]) / self.Vid_Lecteur.one_every) - 1 - prev - self.to_sub),1]))
 
                             TMP_tail_2 = (
-                            int(self.Coos[ind,int(((self.Vid.Cropped[1][1]) / self.Vid_Lecteur.one_every) - prev - to_remove),0]),
-                            int(self.Coos[ind,int(((self.Vid.Cropped[1][1]) / self.Vid_Lecteur.one_every) - prev - to_remove),1]))
+                            int(self.Coos[ind,int(((self.Vid.Cropped[1][1]) / self.Vid_Lecteur.one_every) - prev - self.to_sub),0]),
+                            int(self.Coos[ind,int(((self.Vid.Cropped[1][1]) / self.Vid_Lecteur.one_every) - prev - self.to_sub),1]))
 
                             new_img = cv2.line(new_img, TMP_tail_1, TMP_tail_2, color, max(int(3*self.Vid_Lecteur.ratio),1))
 
-                center=self.Coos[ind,self.Scrollbar.active_pos - to_remove]
+                center=self.Coos[ind,self.Scrollbar.active_pos - self.to_sub]
                 if center[0]!=-1000:
                     if self.selected_ind==ind:
                         new_img = cv2.circle(new_img, (int(center[0]), int(center[1])), radius=max(int(5*self.Vid_Lecteur.ratio),5), color=(255,255,255),thickness=-1)
