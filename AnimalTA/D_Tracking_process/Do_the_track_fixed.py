@@ -28,7 +28,7 @@ def check_memory_overload():
     '''Some problems of memory leak were encountered with decord, these problems have been fixed but this is a security to control potential loss of memory.'''
     if psutil.virtual_memory()._asdict()["percent"] > 99.8:
         return 1
-    elif psutil.virtual_memory()._asdict()["percent"] >95:
+    elif psutil.virtual_memory()._asdict()["percent"] > 85:
         return 0
     else:
         return -1
@@ -89,6 +89,10 @@ def Do_tracking(parent, Vid, folder, portion=False, prev_row=None):
 
 
     global capture
+    global activate_protection
+    global first_protection
+    activate_protection=False
+    first_protection=False
     capture = decord.VideoReader( Vid.Fusion[Which_part][1])  # Open video
     Prem_image_to_show = capture[start - Vid.Fusion[Which_part][0]-1].asnumpy()  # Take the first image
     capture.seek(0)
@@ -143,7 +147,8 @@ def Do_tracking(parent, Vid, folder, portion=False, prev_row=None):
 
         overload = check_memory_overload()#Avoid memory leak problems
         if overload==0:
-            capture.seek(0)
+            activate_protection=True
+            first_protection=True
         elif overload==1:
             break
 
@@ -201,17 +206,16 @@ def Treat_cnts(Vid, Arenas, start, end, prev_row, all_NA, Extracted_cnts, Too_mu
                 for cnt in range(len(kept_cnts)):
                     cnt_M = cv2.moments(kept_cnts[cnt])
                     if cnt_M["m00"] > 0:
-                        cX = int(cnt_M["m10"] / cnt_M["m00"])
-                        cY = int(cnt_M["m01"] / cnt_M["m00"])
+                        cX = cnt_M["m10"] / cnt_M["m00"]
+                        cY = cnt_M["m01"] / cnt_M["m00"]
                     else:
-                        cX = int(cnt_M["m10"])
-                        cY = int(cnt_M["m01"])
+                        cX = cnt_M["m10"]
+                        cY = cnt_M["m01"]
                     result = cv2.pointPolygonTest(Arenas[Are], (cX, cY),
                                                   False)  # Is the center of the contour inside the arena?
                     if result >= 0:
                         Ar_cnts.append(
                             [kept_cnts[cnt], (cX, cY)])  # If yes, we save this contour and add it as part of the arena
-
                 if prev_row == None and (frame == start or all_NA[Are]):  # If its is the first row or if no positions were ever known
                     if len(Ar_cnts) > 0:  # If there is at least one contour
                         if len(Ar_cnts) >= Vid.Track[1][6][Are]:
@@ -223,7 +227,7 @@ def Treat_cnts(Vid, Arenas, start, end, prev_row, all_NA, Extracted_cnts, Too_mu
                             kmeans = KMeans(n_clusters=Vid.Track[1][6][Are], random_state=0, n_init=50).fit(array)
                             new_pos = kmeans.cluster_centers_
                             final_cnts = new_pos.tolist()
-                            final_cnts = [[[], (int(nf[0]), int(nf[1]))] for nf in final_cnts]
+                            final_cnts = [[[], (nf[0], nf[1])] for nf in final_cnts]
 
                         final_positions = [cnt_info[1] for cnt_info in final_cnts]  # Final list of contours
                         all_NA[Are] = False
@@ -240,7 +244,6 @@ def Treat_cnts(Vid, Arenas, start, end, prev_row, all_NA, Extracted_cnts, Too_mu
                         final_cnts = [["NA", "NA"]] * Vid.Track[1][6][Are]
                     else:  # Else, fill with "Not_Yet"
                         final_cnts = [["Not_yet"]] * Vid.Track[1][6][Are]
-
                         table_dists = []  # We make a table that will cross all distances between last known position and current targets' positions
                         for ind in range(Vid.Track[1][6][Are]):
                             row = []
@@ -273,7 +276,6 @@ def Treat_cnts(Vid, Arenas, start, end, prev_row, all_NA, Extracted_cnts, Too_mu
                         col_ind = np.delete(col_ind, to_del)
 
                         need_sep = [1] * len(Ar_cnts)
-
                         while ["Not_yet"] in final_cnts:  # If not all targets are associated to a contour
                             missing = final_cnts.index(["Not_yet"])
                             row_ind = np.append(row_ind, missing)
@@ -286,13 +288,17 @@ def Treat_cnts(Vid, Arenas, start, end, prev_row, all_NA, Extracted_cnts, Too_mu
                             else:
                                 col_ind = np.append(col_ind,-1)  # If there was no contour close enough from the last known target position, the position is considered as "NA"
                                 final_cnts[missing] = ["NA", "NA"]
-
                         if ["Waiting_sep"] in final_cnts:  # If there were some contours to be splitted
                             for Cnt in range(len(need_sep)):
                                 if need_sep[Cnt] > 1:
                                     array = np.vstack([Ar_cnts[Cnt][0]])
                                     array = array.reshape(array.shape[0], array.shape[2])
-                                    kmeans = KMeans(n_clusters=need_sep[Cnt], random_state=0, n_init=5).fit(array)  # This function split the contours
+                                    if len(array)<need_sep[Cnt]:#If the number of px to split is smaller than the number of targets, we will consider that some targets are missing
+                                        to_split=len(array)
+                                    else:
+                                        to_split=need_sep[Cnt]
+
+                                    kmeans = KMeans(n_clusters=to_split, random_state=0, n_init=5).fit(array)  # This function split the contours
                                     new_pos = kmeans.cluster_centers_
                                     inds = [ind for ind, cnt in enumerate(col_ind) if cnt == Cnt]  # Which individuals are sassociated to this contour
                                     table_dists_corr = []
@@ -313,7 +319,13 @@ def Treat_cnts(Vid, Arenas, start, end, prev_row, all_NA, Extracted_cnts, Too_mu
                                     row_ind2, col_ind2 = linear_sum_assignment(table_dists_corr)
 
                                     for i in range(len(row_ind2)):
-                                        final_cnts[row_ind[inds[i]]] = [int(val) for val in new_pos[col_ind2[i]]]
+                                        final_cnts[row_ind[inds[i]]] = [val for val in new_pos[col_ind2[i]]]
+
+                        #If some targets are not correctly asociated because sptlit was impossible:
+                        if ["Waiting_sep"] in final_cnts:
+                            for cnid in range(len(final_cnts)):
+                                if final_cnts[cnid]==["Waiting_sep"]:
+                                    final_cnts[cnid]=["NA","NA"]
 
                     final_positions = final_cnts.copy()
 
@@ -349,8 +361,10 @@ def Treat_cnts(Vid, Arenas, start, end, prev_row, all_NA, Extracted_cnts, Too_mu
 def Image_modif(Vid, start, end, one_every, Which_part, Prem_image_to_show, mask, or_bright, Extracted_cnts, Too_much_frame):
     global stop_threads
     global capture
+    global activate_protection
+    global first_protection
     if Vid.Stab[0]:
-        prev_pts = Class_stabilise.find_pts(Vid, Prem_image_to_show, Vid.Stab[2][0], Vid.Stab[2][1], Vid.Stab[2][2], Vid.Stab[2][3])
+        prev_pts = Vid.Stab[1]
     last_grey=None#We keep here the last grey image for flicker correction
     penult_grey=None
     for frame in range(start, end + one_every,one_every):  # We go frame by frame respecting the frame rate defined by user
@@ -367,8 +381,20 @@ def Image_modif(Vid, start, end, one_every, Which_part, Prem_image_to_show, mask
             Which_part += 1
             del capture
             capture = decord.VideoReader(Vid.Fusion[Which_part][1])
+            capture.seek(0)
+            activate_protection=False
+            first_protection=False
+
 
         img = capture[frame - Vid.Fusion[Which_part][0]].asnumpy()
+        if activate_protection:
+            if first_protection:
+                capture.seek(0)
+                del capture
+                capture = decord.VideoReader(Vid.Fusion[Which_part][1])
+                first_protection=False
+            capture.seek(0)
+
         if Vid.Cropped_sp[0]:
             img = img[Vid.Cropped_sp[1][0]:Vid.Cropped_sp[1][2],Vid.Cropped_sp[1][1]:Vid.Cropped_sp[1][3]]
 

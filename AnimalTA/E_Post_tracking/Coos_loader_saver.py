@@ -77,7 +77,7 @@ def load_variable(Vid, path):
         csv_reader = csv.reader(csv_file, delimiter=";")
         or_table = list(csv_reader)
 
-    Coos = np.full((len(Vid.Identities),(int((Vid.Cropped[1][1] - Vid.Cropped[1][0])/one_every) + 1),2),-1000, dtype=int)
+    Coos = np.full((len(Vid.Identities),(int((Vid.Cropped[1][1] - Vid.Cropped[1][0])/one_every) + 1),2),-1000, dtype=float)
     or_table = np.asarray(or_table)
     or_table[or_table=="NA"]=-1000
     who_is_here = [[] for x in range(int((Vid.Cropped[1][1] - Vid.Cropped[1][0])/one_every) + 1)]
@@ -107,7 +107,7 @@ def load_fixed(Vid, path):
         or_table = list(csv_reader)
     or_table = np.array(or_table)
     one_every = int(round(round(Vid.Frame_rate[0], 2) / Vid.Frame_rate[1]))
-    Coos = np.full((len(Vid.Identities), (int((Vid.Cropped[1][1] - Vid.Cropped[1][0]) / one_every) + 1), 2), -1000,dtype=int)
+    Coos = np.full((len(Vid.Identities), (int((Vid.Cropped[1][1] - Vid.Cropped[1][0]) / one_every) + 1), 2), -1000,dtype=float)
     or_table = np.asarray(or_table)
     or_table[or_table == "NA"] = -1000
     for Ind in range(len(Vid.Identities)):

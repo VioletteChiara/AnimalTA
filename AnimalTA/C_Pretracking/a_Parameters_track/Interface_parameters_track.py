@@ -343,9 +343,6 @@ class Param_definer(Frame):
         self.Vid_Lecteur.speed.set(speed)
         self.Vid_Lecteur.change_speed()
         self.Scrollbar=self.Vid_Lecteur.Scrollbar
-        if self.Vid.Stab[0]:
-            self.prev_pts= Class_stabilise.find_pts(self.Vid, self.Vid_Lecteur.Prem_image_to_show, self.Vid.Stab[2][0], self.Vid.Stab[2][1], self.Vid.Stab[2][2], self.Vid.Stab[2][3])
-
         self.Vid_Lecteur.canvas_video.update()
         self.Vid_Lecteur.update_image(self.Vid_Lecteur.to_sub)
         self.Vid_Lecteur.bindings()
@@ -465,7 +462,7 @@ class Param_definer(Frame):
 
         #Stabilisation
         if self.Vid.Stab[0]:
-            img = Class_stabilise.find_best_position(Vid=self.Vid, Prem_Im=self.Vid_Lecteur.Prem_image_to_show, frame=img, show=False, prev_pts=self.prev_pts)
+            img = Class_stabilise.find_best_position(Vid=self.Vid, Prem_Im=self.Vid_Lecteur.Prem_image_to_show, frame=img, show=False, prev_pts=self.Vid.Stab[1])
 
         TMP_image_to_show2 = np.copy(img)
         #Convert to greyscale

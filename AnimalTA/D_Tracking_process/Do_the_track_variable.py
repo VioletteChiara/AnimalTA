@@ -383,7 +383,7 @@ def Image_modif(Vid, start, end, one_every, Which_part, Prem_image_to_show, mask
     last_grey=None#We keep here the last grey image for flicker correction
     penult_grey=None
     if Vid.Stab[0]:
-        prev_pts = Class_stabilise.find_pts(Vid, Prem_image_to_show, Vid.Stab[2][0], Vid.Stab[2][1], Vid.Stab[2][2], Vid.Stab[2][3])
+        prev_pts = Vid.Stab[1]
 
     for frame in range(start, end + one_every, one_every):  # We go frame by frame respecting the frame rate defined by user
         if Extracted_cnts.qsize() >= 500:

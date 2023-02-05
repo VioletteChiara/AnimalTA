@@ -17,6 +17,7 @@ class Row_Can(Canvas):
     '''
     def __init__(self, Video_file, main_boss,proj_pos, parent=None, **kw):
             Frame.__init__(self, parent, kw)
+
             self.Video=Video_file
             self.main_frame=main_boss
             self.parent=parent
@@ -92,17 +93,18 @@ class Row_Can(Canvas):
             #Add three buttons:
             Three_buttons=Frame(self.subcanvas_First)
             Three_buttons.grid(row=1,column=0,columnspan=2)
+
             #Suppress the video
-            sBsupr=Button(Three_buttons, image=self.Supr_im, command=partial(self.main_frame.supr_video, self.Video), width=22, height=22)
-            sBsupr.grid(row=0,column=0)
-            sBsupr.bind("<Enter>", partial(self.main_frame.HW.change_tmp_message, self.Messages["GButton8"]))
-            sBsupr.bind("<Leave>", self.main_frame.HW.remove_tmp_message)
+            self.sBsupr=Button(Three_buttons, image=self.Supr_im, command=partial(self.main_frame.supr_video, self.Video), width=22, height=22)
+            self.sBsupr.grid(row=0,column=0)
+            self.sBsupr.bind("<Enter>", partial(self.main_frame.HW.change_tmp_message, self.Messages["GButton8"]))
+            self.sBsupr.bind("<Leave>", self.main_frame.HW.remove_tmp_message)
 
             #Duplicate the video
-            Bcopy=Button(Three_buttons, image=self.Copy_im, command=partial(self.main_frame.dupli_video, self.Video), width=22, height=22)
-            Bcopy.grid(row=0,column=1)
-            Bcopy.bind("<Enter>", partial(self.main_frame.HW.change_tmp_message, self.Messages["General21"]))
-            Bcopy.bind("<Leave>", self.main_frame.HW.remove_tmp_message)
+            self.Bcopy=Button(Three_buttons, image=self.Copy_im, command=partial(self.main_frame.dupli_video, self.Video), width=22, height=22)
+            self.Bcopy.grid(row=0,column=1)
+            self.Bcopy.bind("<Enter>", partial(self.main_frame.HW.change_tmp_message, self.Messages["General21"]))
+            self.Bcopy.bind("<Leave>", self.main_frame.HW.remove_tmp_message)
 
             #Concatenate the video
             Bconcat=Button(Three_buttons, image=self.Concat_im, command=self.concat, width=22, height=22)
@@ -135,21 +137,28 @@ class Row_Can(Canvas):
             self.Frame_rate_status=Label(self.subcanvas_Fr_rate,text=self.Messages["RowL11"])
             self.Frame_rate_status.grid(row=0,column=0, sticky="we")
 
-            original_fps=self.Video.Frame_rate[0]
-            self.List_poss_FrRate =[self.Messages["RowL12"]+ " " +str(round(original_fps,2))]
-            value=original_fps
+
+
+            self.Fr_rate=[60,60]
+            if self.Video!=None:
+                self.Fr_rate[0]=self.Video.Frame_rate[0]
+                self.Fr_rate[1] = self.Video.Frame_rate[1]
+
+            self.List_poss_FrRate =[self.Messages["RowL12"]+ " " +str(round(self.Fr_rate[0],2))]
+            value=self.Fr_rate[0]
             while value > 1:
                 value=value/2
                 self.List_poss_FrRate.append(round(value,2))
             self.holder=StringVar()
-            if self.Video.Frame_rate[1]==self.Video.Frame_rate[0]:
-                self.holder.set(self.Messages["RowL12"]+ " " +str(round(original_fps,2)))
+
+            if self.Fr_rate[0]==self.Fr_rate[1]:
+                self.holder.set(self.Messages["RowL12"]+ " " +str(round(self.Fr_rate[0],2)))
             else:
-                self.holder.set(self.Video.Frame_rate[1])
+                self.holder.set(self.Fr_rate[1])
             self.bouton_Fr_rate = OptionMenu(self.subcanvas_Fr_rate, self.holder, *self.List_poss_FrRate, command=self.change_fps)
             self.bouton_Fr_rate.grid(row=1, column=0, sticky="we")
             self.bouton_Fr_rate.bind("<Button-1>",self.ask_clear_data)
-            self.bouton_Fr_rate.bind("<Enter>", partial(self.main_frame.HW.change_tmp_message, self.Messages["Row0"].format(round(self.Video.Frame_rate[1],2))))
+            self.bouton_Fr_rate.bind("<Enter>", partial(self.main_frame.HW.change_tmp_message, self.Messages["Row0"].format(round(self.Fr_rate[1],2))))
             self.bouton_Fr_rate.bind("<Leave>", self.main_frame.HW.remove_tmp_message)
 
             self.bouton_extend_Fr_rate=Button(self.subcanvas_Fr_rate, text=self.Messages["Row0_ExB"], command=self.extend_change_fps)
@@ -198,7 +207,7 @@ class Row_Can(Canvas):
             self.check_stab_button.bind("<Leave>", self.main_frame.HW.remove_tmp_message)
             self.extend_stab_button=Button(self.subcanvas_Stab, text=self.Messages["RowB17"], command=self.extend_stab)
             self.extend_stab_button.grid(row=2, columnspan=2, sticky="we")
-            if self.Video.Stab[0]:
+            if self.Video!=None and self.Video.Stab[0]:
                 self.extend_stab_button.config(text=self.Messages["RowB18"])
 
             Pos_col+=2
@@ -277,20 +286,27 @@ class Row_Can(Canvas):
             for row in range(Pos_col):
                 self.canvas_main.grid_columnconfigure(row, minsize=20)
 
-            self.update_mask()
-            self.update_repre()
-            self.update_crop()
-            self.update_stab()
-            self.update_back()
-            self.update_scale()
-            self.update_size()
-            self.update_fps()
-            self.update_name()
+            if self.Video!=None:
+                self.update_mask()
+                self.update_repre()
+                self.update_crop()
+                self.update_stab()
+                self.update_back()
+                self.update_scale()
+                self.update_size()
+                self.update_fps()
+                self.update_name()
 
             self.File_name_ent.bind('<Configure>', self.resize_font)
 
 
-
+    def change_vid(self,new_vid,proj_pos):
+        self.Video = new_vid
+        self.proj_pos = proj_pos
+        self.sBsupr.config(command=partial(self.main_frame.supr_video, self.Video))
+        self.Bcopy.config(command=partial(self.main_frame.dupli_video, self.Video))
+        self.File_name_var.set(self.Video.User_Name)
+        self.update()
 
     def concat(self):
         self.main_frame.selected_vid=self.Video
@@ -378,8 +394,29 @@ class Row_Can(Canvas):
             self.main_frame.update_selections()
 
     def update_fps(self):
-        # On change le frame rate affiché
-        self.holder.set(round(self.Video.Frame_rate[1],2))
+        # We change the displayed fps
+        self.Fr_rate = [-1, -1]
+        if self.Video != None:
+            self.Fr_rate[0] = self.Video.Frame_rate[0]
+            self.Fr_rate[1] = self.Video.Frame_rate[1]
+
+        self.List_poss_FrRate = [self.Messages["RowL12"] + " " + str(round(self.Fr_rate[0], 2))]
+        value = self.Fr_rate[0]
+        while value > 1:
+            value = value / 2
+            self.List_poss_FrRate.append(round(value, 2))
+
+        menu = self.bouton_Fr_rate["menu"]
+        menu.delete(0, "end")
+        for elem in self.List_poss_FrRate:
+            menu.add_command(label=elem, command=lambda value=elem: self.change_fps(value))
+
+        self.bouton_Fr_rate.bind("<Enter>", partial(self.main_frame.HW.change_tmp_message,self.Messages["Row0"].format(round(self.Fr_rate[1], 2))))
+
+        if self.Fr_rate[0] == self.Fr_rate[1]:
+            self.holder.set(self.Messages["RowL12"] + " " + str(round(self.Fr_rate[0], 2)))
+        else:
+            self.holder.set(self.Fr_rate[1])
 
     def change_fps(self, choice):
         # On change le frame rate
@@ -469,13 +506,13 @@ class Row_Can(Canvas):
             self.text_stab.set(self.Messages["RowL3"])
             self.stab_it.set(self.Messages["RowB9"])
             self.check_stab_button.config(state="active")
-            self.extend_stab_button.config(text=self.Messages["RowB18"])
+            self.extend_stab_button.config(text=self.Messages["RowB17"])
         else:
             self.stab_button.config(bg="#ff8a33")
             self.text_stab.set(self.Messages["RowL4"])
             self.stab_it.set(self.Messages["RowB10"])
             self.check_stab_button.config(state="disable")
-            self.extend_stab_button.config(text=self.Messages["RowB17"])
+            self.extend_stab_button.config(text=self.Messages["RowB18"])
 
         if self.Video.Tracked:
             self.stab_button.config(bg="SystemButtonFace")
@@ -512,7 +549,7 @@ class Row_Can(Canvas):
     def extend_stab(self):
         # Open a window to expend the stabilization to other videos
         newWindow = Toplevel(self.parent.master)
-        interface = Interface_extend.Extend(parent=newWindow, value=self.Video.Stab[0], boss=self.main_frame, Video_file=self.Video, do_self=True, type="stab")
+        interface = Interface_extend.Extend(parent=newWindow, value=self.Video.Stab, boss=self.main_frame, Video_file=self.Video, do_self=False, type="stab")
 
     def back_vid(self):
         # Create the automatique background or open the window to change an existing background

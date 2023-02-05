@@ -25,7 +25,7 @@ class Video_Loader():
             return im
         else:
             try:
-                self.capture.set(cv2.CAP_PROP_POS_FRAMES, i - 1)
+                self.capture.set(cv2.CAP_PROP_POS_FRAMES, i)
                 res, frame = self.capture.read()
                 frame=cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
                 if self.is_crop and self.Vid.Cropped_sp[0]:

@@ -274,8 +274,6 @@ def match_shapes(cnt1,cnt2, pts):
         return(True, new_pts)
     else:
         return (False, None)
-        print("Not the same number of points")
-
 
 '''
 img1=cv2.imread("E:/Post-doc/TRacking_software/test_arenas1.png")

@@ -96,8 +96,9 @@ class Show(Frame):
         self.Vid_Lecteur.grid(row=0, column=0, sticky="nsew")
         self.Scrollbar = self.Vid_Lecteur.Scrollbar
         self.Vid_Lecteur.canvas_video.update()
-        self.Vid_Lecteur.update_image(self.Vid_Lecteur.to_sub)
+        self.Vid_Lecteur.update_image(self.Vid_Lecteur.to_sub+1)
         self.Vid_Lecteur.bindings()
+        self.Scrollbar.refresh()
 
         self.parent.protocol("WM_DELETE_WINDOW", self.leave)
 
@@ -119,7 +120,6 @@ class Show(Frame):
         self.boss.PortionWin.destroy()
         self.boss.change_for_corrected()
         self.destroy()
-
 
     def redo_track(self):
         #Re-run the tracking
@@ -149,8 +149,9 @@ class Show(Frame):
         self.Vid_Lecteur.grid(row=0, column=0, sticky="nsew")
         self.Scrollbar = self.Vid_Lecteur.Scrollbar
         self.Vid_Lecteur.canvas_video.update()
-        self.Vid_Lecteur.update_image(self.Vid_Lecteur.to_sub)
+        self.Vid_Lecteur.update_image(self.Vid_Lecteur.to_sub+1)
         self.Vid_Lecteur.bindings()
+        self.Scrollbar.refresh()
 
 
     def show_load(self):

@@ -1,5 +1,5 @@
 from tkinter import *
-from AnimalTA.A_General_tools import Function_draw_mask, UserMessages
+from AnimalTA.A_General_tools import Function_draw_mask, UserMessages, Class_stabilise
 import math
 import cv2
 from copy import deepcopy
@@ -15,6 +15,7 @@ class Extend(Frame):
         Frame.__init__(self, parent, bd=5, **kwargs)
         self.parent=parent
         self.boss=boss
+        self.boss.unbind_all("<MouseWheel>")#We don't want the mouse wheel to move the project behind
         self.grid(sticky="nsew")
         self.Vid = Video_file
         self.type=type
@@ -83,6 +84,8 @@ class Extend(Frame):
 
         self.grab_set()
 
+        self.parent.protocol("WM_DELETE_WINDOW", self.rebind)
+
     def select_all(self):
         if not self.all_sel: #Select all the videos from the list
             self.Liste.select_set(0, END)
@@ -95,7 +98,7 @@ class Extend(Frame):
 
     def validate(self):
         #Apply the parameters to the selected videos and close the window
-        if self.type=="back": #There is only in the case of background that the process is slow (we don't show loading bar for other kind of parameters).
+        if self.type=="back" or self.type=="stab": #There is only in the case of background that the process is slow (we don't show loading bar for other kind of parameters).
             self.loading_canvas.grid(row=3, column=0, columnspan=2)
 
         list_item = self.Liste.curselection()
@@ -130,8 +133,31 @@ class Extend(Frame):
                             self.list_vid_minus[V].Frame_rate[0] / self.list_vid_minus[V].Frame_rate[1]))  ######NEW
 
                 elif self.type == "stab":
-                    if self.list_vid_minus[V].Stab[0] != (1 - self.value):
-                        self.list_vid_minus[V].Stab[0] = (1 - self.value)
+                    self.loading_bar.delete('all')
+                    heigh = self.loading_bar.cget("height")
+                    self.bouton.config(state="disable")
+                    self.loading_bar.create_rectangle(0, 0, 400, heigh, fill="red")
+                    self.loading_bar.create_rectangle(0, 0, ((item + 1) / nb_items) * 400, heigh, fill="blue")
+                    self.loading_bar.update()
+                    self.loading_state.config(
+                        text=self.Messages["Video"] + ": {act}/{tot}".format(act=item + 1, tot=nb_items))
+                    self.list_vid_minus[V].make_back()
+
+                    self.list_vid_minus[V].Stab[0] = self.value[0]
+                    self.list_vid_minus[V].Stab[2] = self.value[2].copy()
+
+                    Which_part = [index for index, Fu_inf in enumerate(self.list_vid_minus[V].Fusion) if Fu_inf[0] <= self.list_vid_minus[V].Cropped[1][0]][-1]
+                    Capture = cv2.VideoCapture(self.list_vid_minus[V].Fusion[Which_part][1])
+
+                    Capture.set(cv2.CAP_PROP_POS_FRAMES, int(self.list_vid_minus[V].Cropped[1][0] - self.list_vid_minus[V].Fusion[Which_part][0]))
+                    _, Prem_im=Capture.read()
+                    if self.list_vid_minus[V].Cropped_sp[0]:
+                        Prem_im = Prem_im[self.list_vid_minus[V].Cropped_sp[1][0]:self.list_vid_minus[V].Cropped_sp[1][2],self.list_vid_minus[V].Cropped_sp[1][1]:self.list_vid_minus[V].Cropped_sp[1][3]]
+                    Capture.release()
+                    self.list_vid_minus[V].Stab[1] = Class_stabilise.find_pts(self.list_vid_minus[V], Prem_im,
+                                                                minDistance=self.list_vid_minus[V].Stab[2][0], blockSize=self.list_vid_minus[V].Stab[2][1],
+                                                                quality=self.list_vid_minus[V].Stab[2][2], maxCorners=self.list_vid_minus[V].Stab[2][3])
+
 
                 elif self.type == "crop":
                     if self.value[0][0]:
@@ -186,6 +212,15 @@ class Extend(Frame):
                         self.list_vid_minus[V].Cropped_sp[0]=False
                     else:
                         self.list_vid_minus[V].Cropped_sp[0]=True
+
+                    if self.list_vid_minus[V].Cropped_sp[0]:
+                        new_shape=(self.list_vid_minus[V].Cropped_sp[1][2] - self.list_vid_minus[V].Cropped_sp[1][0],self.list_vid_minus[V].Cropped_sp[1][3] - self.list_vid_minus[V].Cropped_sp[1][1])
+                        if self.list_vid_minus[V].shape!=new_shape:
+                            self.list_vid_minus[V].Back = [False, []]
+                            self.list_vid_minus[V].Track[1][6] = [1]
+                            self.list_vid_minus[V].Mask[0] = False
+                        self.list_vid_minus[V].shape=(self.list_vid_minus[V].Cropped_sp[1][2] - self.list_vid_minus[V].Cropped_sp[1][0],self.list_vid_minus[V].Cropped_sp[1][3] - self.list_vid_minus[V].Cropped_sp[1][1])
+
 
                 elif self.type == "back":
                     self.loading_bar.delete('all')
@@ -242,9 +277,12 @@ class Extend(Frame):
 
 
         self.boss.update_projects()
+        self.boss.bind_all("<MouseWheel>", self.boss.on_mousewheel)
         self.parent.destroy()
 
-
+    def rebind(self):
+        self.parent.destroy()
+        self.boss.bind_all("<MouseWheel>", self.boss.on_mousewheel)
 
 """
 root = Tk()

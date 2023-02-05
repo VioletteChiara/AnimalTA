@@ -96,6 +96,7 @@ class Lecteur(Frame):
         self.ratio = 1
 
 
+
     def update_ratio(self, *args):
         '''Calculate the ratio between the original size of the video and the displayed image'''
         self.ratio = max((self.zoom_sq[2]-self.zoom_sq[0])/self.canvas_video.winfo_width(),(self.zoom_sq[3]-self.zoom_sq[1])/self.canvas_video.winfo_height())
@@ -176,13 +177,9 @@ class Lecteur(Frame):
                 self.capture = VL.Video_Loader(self.Vid, self.Vid.Fusion[self.current_part][1], type(self.parent).__name__!="Cropping")
                 TMP_image_to_show = self.capture[int(self.Scrollbar.active_pos * self.one_every) - self.Vid.Fusion[self.current_part][0]]
 
-
             if select:# Only for view and correct tracks
                 self.parent.selected_rows=list(range(begin,self.Scrollbar.active_pos-self.to_sub+1))
-
             return(self.parent.modif_image(TMP_image_to_show, aff=aff))
-
-
 
     def play(self, select=False, begin=0):
         '''play the video'''
