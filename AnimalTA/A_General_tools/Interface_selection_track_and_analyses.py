@@ -21,6 +21,7 @@ class Extend(Frame):
         Frame.__init__(self, parent, bd=5)
         self.parent=parent
         self.boss=boss
+        self.boss.unbind_all("<MouseWheel>")#We don't want the mouse wheel to move the project behind
         self.grid()
         self.list_vid=self.boss.liste_of_videos
         self.grab_set()
@@ -177,29 +178,39 @@ class Extend(Frame):
                 if self.urgent_close:
                     break
 
-                print(str(self.list_vid_minus[V].User_Name) + ": " + str(time.time()-deb))
 
         if self.type=="Analyses":
             Shapes_infos=dict()
             Time_inside = []
 
             general = self.list_vid_minus[0].Folder + str("/Results")
-            Cleared=True
+            Cleared1 = True
             if os.path.isdir(general):
-                Cleared=False
-                while not Cleared:
+                Cleared1=False
+                while not Cleared1:
                     try:
                         os.rename(general, general)
                         shutil.rmtree(general)
-                        Cleared=True
+                        Cleared1=True
 
                     except PermissionError as e:
                         Response = messagebox.askretrycancel(title=self.Messages["TError"],message=self.Messages["Error_Permission"].format(e.filename))
                         if not Response:
                             break
 
-            if Cleared:
-                os.makedirs(general)
+            if Cleared1:
+                Cleared2=False
+                while not Cleared2:
+                    try:
+                        os.makedirs(general)
+                        Cleared2=True
+
+                    except PermissionError as e:
+                        Response = messagebox.askretrycancel(title=self.Messages["TError"],message=self.Messages["Error_Permission"].format(e.filename))
+                        if not Response:
+                            break
+
+            if Cleared1 and Cleared2:
                 details=general+"/Detailed_data"
                 os.makedirs(details)
                 #We first do the analyses by inds:
@@ -216,8 +227,7 @@ class Extend(Frame):
                         pos += 1
                         self.Vid=self.list_vid_minus[V]
                         #We create the calculation class:
-                        Calc_speed = Analyses_Speed.speed_calculations()
-                        Calc_speed.seuil_movement=self.Vid.Analyses[0]
+                        Calc_speed = Functions_Analyses_Speed.speed_calculations(seuil_movement=self.Vid.Analyses[0])
                         self.Coos,_=CoosLS.load_coos(self.Vid)
                         self.NB_ind = len(self.Vid.Identities)
                         if self.Vid.Smoothed[0] != 0:
@@ -244,7 +254,6 @@ class Extend(Frame):
                                 Pts_coos = []
                                 for ind in range(self.Vid.Track[1][6][Area]):
                                     Pts_coos.append(self.Coos[ind + Passed_fish])
-
 
                                 self.timer = (1.1 / 10 * (Area+1)) / len(self.Vid.Analyses[1])
                                 self.show_load()
@@ -373,7 +382,8 @@ class Extend(Frame):
                                 Details.append(all_dat)  # We save the distance traveled of ID for each frame
 
                                 #Traveled distance while moving:
-                                new_row.append(Calc_speed.calculate_dist(parent=self, ind=ID, in_move=True))
+                                Val=Calc_speed.calculate_dist(parent=self, ind=ID, in_move=True)
+                                new_row.append(Val)
 
                                 #Spatial:
                                 SHID=0
@@ -468,7 +478,6 @@ class Extend(Frame):
                                     No_NA_Coos = np.array(self.Coos[ID])
                                     No_NA_Coos = No_NA_Coos[np.all(No_NA_Coos != -1000, axis=1)]
                                     No_NA_Coos = No_NA_Coos.astype('float')
-                                    No_NA_Coos = No_NA_Coos.astype('int32')
 
                                     largeur = math.sqrt(float(self.Vid.Analyses[2][1]) * float(self.Vid.Scale[0]) ** 2)
                                     nb_squares_v = math.ceil((max(self.Arenas[Area][:, :, 0]) - min(self.Arenas[Area][:, :, 0])) / largeur)
@@ -495,7 +504,6 @@ class Extend(Frame):
                                     No_NA_Coos = np.array(self.Coos[ID])
                                     No_NA_Coos = No_NA_Coos[np.all(No_NA_Coos != -1000, axis=1)]
                                     No_NA_Coos = No_NA_Coos.astype('float')
-                                    No_NA_Coos = No_NA_Coos.astype('int32')
 
 
                                     M = cv2.moments(self.Arenas[Area])
@@ -624,7 +632,7 @@ class Extend(Frame):
                                 writer.writerow(Ind_infos)
 
                         elif Shapes_infos[Shape_name][0] == "Line":
-                            _, _, _, vertical = Calc_speed.calculate_intersect(self,Shape[1],ind=ID)
+                            _, _, _, vertical = Calc_speed.calculate_intersect(self,Shapes_infos[Shape_name][1][0],ind=ID)
                             if vertical:
                                 TLBR="Nb_crosses_Top_Bot"
                                 BRTL = "Nb_crosses_Bot_Top"
@@ -675,6 +683,7 @@ class Extend(Frame):
         self.boss.update_projects()
         self.boss.update_selections()
         self.boss.focus_set()
+        self.boss.bind_all("<MouseWheel>", self.boss.on_mousewheel)
         self.bouton.config(state="active")
         self.bouton_sel_all.config(state="active")
         self.grab_release()
@@ -729,7 +738,6 @@ class Extend(Frame):
             ind_coo = ind_coo.astype(np.str)
             ind_coo[np.where(ind_coo == "nan")] = -1000
             ind_coo = ind_coo.astype(dtype=float)
-            ind_coo=ind_coo.astype(dtype=int)
             self.Coos[ind] = ind_coo
 
     def random_color(self, ite=1):
@@ -751,6 +759,8 @@ class Extend(Frame):
         elif self.running=="Variable":
             self.urgent_close = True
             Do_the_track_variable.urgent_close(self.list_vid_minus[self.curr_vid])
+
+        self.boss.bind_all("<MouseWheel>", self.boss.on_mousewheel)
 
 
 """

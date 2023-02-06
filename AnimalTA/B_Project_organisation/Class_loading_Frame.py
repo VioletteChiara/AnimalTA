@@ -3,6 +3,7 @@ from AnimalTA.A_General_tools import UserMessages
 
 
 class Loading(Frame):
+    #A loading bar
     def __init__(self, parent):
         Frame.__init__(self, parent, bd=5)
         self.grid()
@@ -15,7 +16,6 @@ class Loading(Frame):
         f.close()
 
         self.Messages = UserMessages.Mess[self.Language.get()]
-
 
         self.loading_canvas = Frame(self)
         self.loading_canvas.grid(row=4, columnspan=2)

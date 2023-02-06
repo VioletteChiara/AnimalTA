@@ -19,13 +19,13 @@ def calculate_dist_one_pt_Line(Ligne, Pt, Scale="NA", between_Pt_dist="NA", get_
 
     if between_Pt_dist == "NA":
         between_Pt_dist = math.sqrt((Ligne[1][0] - Ligne[0][0]) ** 2 + (Ligne[1][1] - Ligne[0][1]) ** 2)
+
     t = None
     dx = Ligne[0][0] - Ligne[1][0]
     dy = Ligne[0][1] - Ligne[1][1]
     prod = (float(Pt[0]) - Ligne[1][0]) * dx + (float(Pt[1]) - Ligne[1][1]) * dy
     if prod >= 0 and prod <= (dx * dx + dy * dy) and between_Pt_dist > 0:
-        dist = abs((Ligne[1][0] - Ligne[0][0]) * (Ligne[0][1] - float(Pt[1])) - (Ligne[0][0] - float(Pt[0])) * (
-                    Ligne[1][1] - Ligne[0][1])) / between_Pt_dist
+        dist = abs((Ligne[1][0] - Ligne[0][0]) * (Ligne[0][1] - float(Pt[1])) - (Ligne[0][0] - float(Pt[0])) * (Ligne[1][1] - Ligne[0][1])) / between_Pt_dist
         if get_proj:
             if (Ligne[1][0] - Ligne[0][0])==0:
                 t = [Ligne[1][0], Pt[1]]
@@ -48,7 +48,6 @@ def calculate_dist_one_pt_Line(Ligne, Pt, Scale="NA", between_Pt_dist="NA", get_
 
     if Scale != "NA": dist = dist / Scale
     return (dist, t)
-
 
 def change_NA(val):
     """If the value is 'NA', return np.nan, else return the original value as a float."""
@@ -250,7 +249,6 @@ class speed_calculations:
         if return_vals: dists = []
         Sdists=0
         nb_dists=0
-        dists=[]
         last=[-1000,-1000]
         for ligne in range(len(parent.Coos[ind])):
             if ligne > 0 and parent.Coos[ind,ligne,0] != -1000:
@@ -529,14 +527,13 @@ class speed_calculations:
         if len(Points)==2:
             Sdists=0
             nb=0
-            between_Pt_dist = math.sqrt((Points[1][0] - Points[0][0]) ** 2 + (Points[1][1] - Points[0][1]) ** 2)
             if return_vals: dists=[]
-
-            for ligne in range(len(parent.Coos[ind])):
-                if parent.Coos[ind,ligne,0] != "NA":
-                    dist,_=calculate_dist_one_pt_Line(Points, Pt=parent.Coos[ind,ligne],between_Pt_dist=between_Pt_dist, Scale=float(parent.Vid.Scale[0]))
+            for ligne in range(len(parent.Coos[ind,:,0])):
+                if parent.Coos[ind,ligne,0] != -1000:
+                    dist,_=calculate_dist_one_pt_Line(Points, Pt=parent.Coos[ind,ligne],Scale=float(parent.Vid.Scale[0]))
                     if return_vals: dists.append(dist)
                     Sdists+=dist
+
                     nb+=1
                 elif return_vals:
                     dists.append("NA")
@@ -545,6 +542,7 @@ class speed_calculations:
                 Mean_dist=Sdists/nb
             else:
                 Mean_dist="NA"
+
 
             if not return_vals:
                 return (Mean_dist)
@@ -614,8 +612,6 @@ class speed_calculations:
         else:
             return("NA")
 
-
-
     def calculate_dist_sep_border(self, parent, shape, ind, return_vals=False):
         """Idem than calculate_dist_border, but with only a part of the borders (defined by user and stored in "shape")
         """
@@ -655,9 +651,6 @@ class speed_calculations:
             return (Mean_dist, Prop_inside, Latency)
         else:
             return (Mean_dist, Prop_inside, Latency,dists)
-
-
-
 
     def calculate_time_inside(self, parent, cnt, ind, return_vals=False):
         """Calculate the proportion of time a target spent in a given shape (cnt) and the latency to enter

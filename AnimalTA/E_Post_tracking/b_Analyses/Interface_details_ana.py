@@ -754,7 +754,7 @@ class Details_spatial(Frame):
                         self.main.Calc_speed.Areas[self.Area].append(["Line", [self.list_of_pts[pt]], DoubleVar(), self.Messages["List_elem_Line"]+str(len(self.main.Calc_speed.Areas[self.Area]))])
                         self.add_pt[1] -= 1
                     elif self.add_pt[1]==0:
-                        self.main.Calc_speed.Areas[self.Area][len(self.main.Calc_speed.Areas[self.Area]) - 1][1].append(pt)
+                        self.main.Calc_speed.Areas[self.Area][len(self.main.Calc_speed.Areas[self.Area]) - 1][1].append(self.list_of_pts[pt])
                         self.add_pt = [None, -1]
                         self.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="active")
                         self.HW.change_default_message(self.Messages["Analyses_details_sp00"])
@@ -776,6 +776,7 @@ class Details_spatial(Frame):
                         self.show_mask = False
                         self.show_results()
                     break #Useless to do the whole loop if we found a first point
+
             self.show_img()
 
         elif self.under_mouse==None and self.add_pt[0]=="Borders":#If the user wanted to add a border
@@ -820,7 +821,6 @@ class Details_spatial(Frame):
     def draw_shapes(self, *args):
         #Draw all the elements of interest.
         self.image=np.copy(self.image_clean)
-
         if self.show_mask: #We also highlight the borders and corners if we are expecting the user to select one of them (line stick to border or borders selection)
             self.list_of_pts=[]
             approx = cv2.approxPolyDP(self.Arena_pts, 0.025 * cv2.arcLength(self.Arena_pts, True), True)
@@ -1328,7 +1328,7 @@ class Details_explo(Frame):
 
         self.image = np.copy(self.image_clean)
         No_NA_Coos = np.asarray(self.main.Coos[self.Ind])
-        No_NA_Coos = No_NA_Coos[np.all(No_NA_Coos != "NA", axis=1)]
+        No_NA_Coos = No_NA_Coos[np.all(No_NA_Coos != -1000, axis=1)]
         No_NA_Coos = No_NA_Coos.astype('float')
 
         M=cv2.moments(self.Arena_pts)
@@ -1490,6 +1490,7 @@ class Details_explo(Frame):
         self.image_to_show2 = PIL.ImageTk.PhotoImage(image=PIL.Image.fromarray(image_to_show1))
         self.Canvas_for_video.create_image(0, 0, image=self.image_to_show2, anchor=NW)
         self.Canvas_for_video.config(width=self.final_width, height=int(self.final_width * (self.Size[0] / self.Size[1])))
+
 
 
     def change_ind(self, *arg):
