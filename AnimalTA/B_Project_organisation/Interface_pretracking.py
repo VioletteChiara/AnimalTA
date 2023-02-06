@@ -17,8 +17,60 @@ from win32api import GetMonitorInfo, MonitorFromPoint
 import math
 import decord
 from copy import deepcopy
+import webbrowser
 
 os.system("")  # enables ansi escape characters in terminal
+
+class Information_panel(Frame):
+    def __init__(self, parent, **kwargs):
+        Frame.__init__(self, parent, bd=5, **kwargs)
+        self.grid(sticky="nsew")
+
+        Grid.columnconfigure(parent, 0, weight=1)
+        Grid.rowconfigure(parent, 0, weight=1)
+
+        Grid.rowconfigure(self, 0, weight=1)
+        Grid.rowconfigure(self, 1, weight=1)
+        Grid.rowconfigure(self, 2, weight=100)
+        Grid.rowconfigure(self, 3, weight=1)
+        Grid.rowconfigure(self, 4, weight=1)
+        Grid.rowconfigure(self, 5, weight=1)
+
+        Grid.columnconfigure(self, 0, weight=1)
+        Grid.columnconfigure(self, 1, weight=100)
+
+        #Short summary about current version, how to cite and how to find guidelines.
+        Lab_version=Label(self, text="AnimalTA. v2.1.0", font=("Arial", "14", "bold"))
+        Lab_version.grid(row=0, column=0,columnspan=2, sticky="nsw")
+
+        Lab_cite=Label(self, text="How to cite:")
+        Lab_cite.grid(row=2, column=0,columnspan=2, sticky="nsw")
+        Citation= Text(self, height=5, width=75, wrap=WORD)
+        Citation.grid(row=3, column=0,columnspan=2, sticky="nswe")
+        Citation.insert("1.0", "Chiara V. & Kim S.Y. (2023). AnimalTA: a highly flexible and easy-to-use program for tracking and analyzing animal movement in different environments. Manuscript submitted for publication.")
+        Citation.configure(state="disabled")
+
+        Lab_contact=Label(self, text="Contact:")
+        Lab_contact.grid(row=5, column=0, sticky="nsw")
+        mail= Text(self, height=1, width=30)
+        mail.insert("1.0", "contact.AnimalTA@vchiara.eu")
+        mail.configure(state="disabled")
+        mail.grid(row=5, column=1, sticky="nsw")
+
+        Lab_Help=Label(self, text="Need help? Go check the guidelines:")
+        Lab_Help.grid(row=7, column=0,columnspan=2, sticky="nsew")
+        link = Label(self, text="http://vchiara.eu/index.php/animalta", fg="#b448cd", cursor="hand2")
+        link.grid(row=8, column=0,columnspan=2, sticky="nsew")
+        link.bind("<Button-1>", self.send_link)
+
+
+        self.rowconfigure(1, minsize=20)
+        self.rowconfigure(4, minsize=30)
+        self.rowconfigure(6, minsize=30)
+
+    def send_link(self, event):
+        webbrowser.open_new_tab("http://vchiara.eu/index.php/animalta")
+
 
 
 class Interface(Frame):
@@ -47,7 +99,6 @@ class Interface(Frame):
         self.fullscreen_status = False
         self.pressed_bord = [None, None] #To allow user to change the window size
         self.changing = False# A flag to determine whether the user is changing the size of the window or not
-
 
         self.selected_vid = None
         self.Current_capture=None
@@ -175,6 +226,10 @@ class Interface(Frame):
         self.Nom_Logiciel = Label(self.canvas_title_bar, fg="white", text="AnimalTA", bg="purple",
                                   font=("courier new", 12))
         self.Nom_Logiciel.grid(row=0, column=0, sticky="w")
+        #More information about AnimalTA:
+        B_info=Button(self.canvas_title_bar, text="?",command=self.show_infos)
+        B_info.grid(row=0, column=1, sticky="w")
+
         #Create new project
         self.bouton_New = Button(self.canvas_title_bar, text=self.Messages["GButton1"], command=self.new_project)
         self.bouton_New.grid(row=0, column=2, sticky="e")
@@ -232,6 +287,12 @@ class Interface(Frame):
         #The info panle will blin when AnimalTA is opened
         self.HW.get_attention(0)
 
+
+    ##Information about versio, citation and guidelines
+    def show_infos(self):
+        info_win=Toplevel(self.parent)
+        info_win.title("Information")
+        interface = Information_panel(parent=info_win)
 
 
     ##Window management
@@ -468,12 +529,26 @@ class Interface(Frame):
     def save(self):
         # Save the project
         try:
-            with open(self.file_to_save, 'wb') as fp:
+            shutil.copyfile(self.file_to_save, self.file_to_save+"old")
+            #This is a security to ensure that the old file will not be deleted before ensurong the new one can be proprly saved
+
+            with open(self.file_to_save , 'wb') as fp:
                 data_to_save = dict(Project_name=self.project_name.get(), Folder=self.folder,
                                     Videos=self.liste_of_videos)
                 pickle.dump(data_to_save, fp)
+
+            #If there was no problem during the save, we delete the security copy
+            os.remove(self.file_to_save+"old")
+
+
         except Exception as e:
+            #If the program was not properly saved, we restore the security copy
+            if os.path.isfile(self.file_to_save+"old"):
+                os.remove(self.file_to_save)
+                os.rename(self.file_to_save+"old",self.file_to_save)
+
             messagebox.showinfo(message=self.Messages["GWarn3"], title=self.Messages["GWarnT3"])
+
 
     def close_file(self):
         # Ask if teh user wants to save the project and then close it
@@ -491,9 +566,6 @@ class Interface(Frame):
         # Close the project
         self.project_name.set("Untitled")
         self.liste_of_videos = []
-        for P in self.list_projects:
-            P.destroy()
-        self.list_projects = []
         self.folder = None
 
         self.afficher_projects()
@@ -536,6 +608,17 @@ class Interface(Frame):
                 self.project_name.set(data_to_load["Project_name"])
                 self.folder = data_to_load["Folder"]
                 self.liste_of_videos = data_to_load["Videos"]
+
+            try:
+                self.list_projects
+            except:
+                self.list_projects = []
+                for row in range(20):
+                    self.list_projects.append(Class_Row_Videos.Row_Can(parent=self.Visualise_vids, main_boss=self,
+                                                                       Video_file=None,
+                                                                       proj_pos=row, bd=2, highlightthickness=1,
+                                                                       relief='ridge'))
+
             to_suppr = []
             # Check that videos are still available
             for V in range(len(self.liste_of_videos)):
@@ -644,7 +727,7 @@ class Interface(Frame):
             answer = messagebox.askyesnocancel(self.Messages["General17"], self.Messages["General18"])
             if answer:
                 self.save()
-                self.new_project2()
+                self.new_project2(prev_save=True)
             elif answer == False:
                 self.new_project2()
             else:
@@ -652,8 +735,11 @@ class Interface(Frame):
         else:
             self.new_project2()
 
-    def new_project2(self):
+    def new_project2(self,prev_save=False):
         #Create a new project
+        if prev_save:
+            messagebox.showinfo(self.Messages["GInfoT1"],self.Messages["GInfo1"])
+
         try:
             self.file_to_save = filedialog.asksaveasfilename(defaultextension=".ata",
                                                              initialfile="Untitled_project.ata",
@@ -671,6 +757,16 @@ class Interface(Frame):
                 self.HW.default_message = self.Messages["General0"]
                 self.HW.remove_tmp_message()
                 self.liste_of_videos = []
+                try:
+                    self.list_projects
+                except:
+                    self.list_projects = []
+                    for row in range(20):
+                        self.list_projects.append(Class_Row_Videos.Row_Can(parent=self.Visualise_vids, main_boss=self,
+                                                                           Video_file=None,
+                                                                           proj_pos=row, bd=2, highlightthickness=1,
+                                                                           relief='ridge'))
+
                 self.load_projects()
                 self.rows_optns.grid(row=0, column=0, sticky="sewn")
                 with open(self.file_to_save, 'wb') as fp:
@@ -682,7 +778,6 @@ class Interface(Frame):
             print(e)
 
     def load_projects(self):
-        self.list_projects = []
         self.afficher_projects()
 
     def afficher_projects(self, *arg):
@@ -698,39 +793,34 @@ class Interface(Frame):
 
         try:
             if len(self.liste_of_videos) > 0:
-                Ypos = 0
+
                 central = int(self.vsv.get())
                 nb_visibles = self.canvas_show.winfo_height() / (130)
                 self.vsv.config(to=len(self.liste_of_videos) - 1)
+
                 for P in self.list_projects:
-                    P.destroy()
-                self.list_projects=[]
+                    P.grid_forget()
 
                 Pos=0
                 for who in range(central, min(len(self.liste_of_videos), int(central + round(nb_visibles)) + 1)):
-                    self.list_projects.append(Class_Row_Videos.Row_Can(parent=self.Visualise_vids, main_boss=self,
-                                                                       Video_file=self.liste_of_videos[who],
-                                                                       proj_pos=Ypos - 1, bd=2, highlightthickness=1,
-                                                                       relief='ridge'))
-
-                    self.list_projects[Pos].grid(row=Ypos, column=0, sticky="we")
+                    self.list_projects[Pos].change_vid(self.liste_of_videos[who],Pos - 1)
+                    self.list_projects[Pos].grid(row=Pos, column=0, sticky="we")
                     self.list_projects[Pos].update_selection()
-
                     Pos+=1
 
-                    Ypos += 1
+
                 self.canvas_show.update()
 
         except Exception as e:
             print(e)
-            print("D")
 
         self.moveX()  # Keep the Xscrollbar position
 
     def update_projects(self):
         # Update the displayed rows
         for Row in self.list_projects:
-            Row.update()
+            if Row.Video!=None:
+                Row.update()
 
     """
     Not to be distributed
@@ -765,7 +855,7 @@ class Interface(Frame):
             newWindow = Toplevel(self.parent)
             interface = Interface_selection_track_and_analyses.Extend(parent=newWindow, boss=self, type="Analyses")
         else:
-            messagebox.showinfo(message="You must before process to video tracking", title="Error, no video ready")
+            messagebox.showinfo(message=self.Messages["GWarn7"], title=self.Messages["GWarnT7"])
 
     def export_vid(self):
         #Open a window for video exportation
@@ -912,7 +1002,6 @@ class Interface(Frame):
         self.load_projects()
         self.update_selections()
 
-
     def fus_video(self):
         #When user press the "concatenate" button
         if self.wait_for_vid:# If the button was already activated, we deactivate it
@@ -921,7 +1010,6 @@ class Interface(Frame):
             self.HW.change_tmp_message(self.Messages["General1"])
         else:# If not we activate and wait for a  second vidoe to be selected
             self.wait_for_vid = True
-
 
     def remove_Fus(self, event):
         #If the user clicks on anything else than a video or the concatenate button, we cancel the concatenation

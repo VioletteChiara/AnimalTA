@@ -5,7 +5,7 @@ from AnimalTA.E_Post_tracking import Coos_loader_saver as CoosLS
 from AnimalTA.E_Post_tracking.b_Analyses import Functions_Analyses_Speed, Class_rows_analyses, Interface_smooth_param
 from AnimalTA.A_General_tools import Class_change_vid_menu, Class_Lecteur, Function_draw_mask, Interface_extend, \
     UserMessages, User_help, Class_stabilise
-
+import copy
 import math
 from scipy.signal import savgol_filter
 
@@ -223,6 +223,7 @@ class Analyse_track(Frame):
             self.modif_image()
 
     def smooth_coos(self):
+        self.Coos=self.Coos.astype(dtype=float)
         """Apply the savgol_filter to smoothen the trajectories"""
         for ind in range(self.NB_ind):
             ind_coo = [[np.nan if val == -1000 else val for val in row] for row in self.Coos_brutes[ind]]
@@ -254,10 +255,10 @@ class Analyse_track(Frame):
                                                        self.window_length,
                                                        self.polyorder, deriv=0, delta=1.0, axis=- 1,
                                                        mode='interp', cval=0.0)
-            ind_coo = ind_coo.astype(np.str)
-            ind_coo[np.where(ind_coo == "nan")] = -1000
+
+
+            ind_coo[np.where(np.isnan(ind_coo))] = -1000
             ind_coo = ind_coo.astype(dtype=float)
-            ind_coo=ind_coo.astype(dtype=int)
             self.Coos[ind] = ind_coo.copy()
 
     def smooth_button(self):
@@ -307,25 +308,20 @@ class Analyse_track(Frame):
 
     def save(self):
         # Save the parameters
-        self.Vid.Analyses = [0, [], []]
+        self.Vid.Analyses = [0, [], [], 0]
         self.Vid.Analyses[0] = self.Calc_speed.seuil_movement  # We save the movement threshold
 
         # Pickle does not accept tkinter DoubleVar:
         for Ar in self.Calc_speed.Areas:
             for shape in Ar:
                 shape[2] = float(shape[2].get())
-        self.Vid.Analyses[1] = self.Calc_speed.Areas
+        self.Vid.Analyses[1] = copy.deepcopy(self.Calc_speed.Areas)
         if self.Check_Smoothed.get():
             self.Vid.Smoothed = [self.window_length, self.polyorder]  # We save smooth
         else:
             self.Vid.Smoothed = [0, 0]  # We save smooth
 
         self.Vid.Analyses[2] = self.Infos_explo  # We save the movement threshold
-
-        if len(self.Vid.Analyses) < 5:
-            self.Vid.Analyses.append(0)
-            if len(self.Vid.Analyses) < 5:
-                self.Vid.Analyses.append(0)
         self.Vid.Analyses[3] = self.Infos_inter  # We save the movement threshold
 
     #What happen when the user interacts with the frame canvas
@@ -355,7 +351,7 @@ class Analyse_track(Frame):
         try:
             self.Calc_speed.seuil_movement = self.Vid.Analyses[0]
             if len(self.Vid.Analyses[1]) > 0:
-                self.Calc_speed.Areas = self.Vid.Analyses[1]
+                self.Calc_speed.Areas = copy.deepcopy(self.Vid.Analyses[1])
                 # Pickle does not accept tkinter DoubleVar:
                 for Ar in self.Calc_speed.Areas:
                     for shape in Ar:
@@ -381,8 +377,7 @@ class Analyse_track(Frame):
         self.Vid_Lecteur.change_speed()
         self.Scrollbar = self.Vid_Lecteur.Scrollbar
         if self.Vid.Stab[0]:
-            self.prev_pts = Class_stabilise.find_pts(self.Vid, self.Vid_Lecteur.Prem_image_to_show, self.Vid.Stab[2][0], self.Vid.Stab[2][1], self.Vid.Stab[2][2], self.Vid.Stab[2][3])
-
+            self.prev_pts = self.Vid.Stab[1]
 
         if self.Vid.Cropped[0]:
             self.to_sub = round(((self.Vid.Cropped[1][0]) / self.Vid_Lecteur.one_every))
@@ -540,7 +535,6 @@ class Analyse_track(Frame):
         #We finally display the image
         self.Vid_Lecteur.afficher_img(new_img)
 
-
     def create_overlay(self, img):
         #We crate an image that will be used as a transparent in which we see all the elements of interest
         overlay = np.zeros([img.shape[0], img.shape[1], 3], np.uint8)
@@ -685,7 +679,6 @@ class Analyse_track(Frame):
         #Add the transparent elements
         img[self.mask] = cv2.addWeighted(img, 0.5, self.overlay, 0.5, 0)[self.mask]
         return (img)
-
 
     def draw_explo(self, img, to_remove):
         if self.Infos_explo[0] == 0:#If we use the modern method

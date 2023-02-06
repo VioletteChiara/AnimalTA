@@ -2,9 +2,12 @@ from tkinter import *
 from tkinter import messagebox
 from AnimalTA.E_Post_tracking.b_Analyses import Function_extend_elements
 from AnimalTA.A_General_tools import Function_draw_mask, UserMessages
+from AnimalTA.B_Project_organisation import Class_loading_Frame
 import cv2
 import numpy as np
 import PIL
+import copy
+
 
 class Lists(Frame):
     """ This Frame displays a list of the videos and their arenas from the project that have been tracked.
@@ -45,7 +48,8 @@ class Lists(Frame):
         self.Liste_objects=Listbox(self, selectmode = "multiple", width=50, height=20, exportselection=0, yscrollcommand=self.yscrollbar.set)
         self.yscrollbar.config(command=self.Liste_objects.yview)
         ID = 0
-        for Shape in Current_Vid.Analyses[1][Current_Area]:
+
+        for Shape in self.boss.main.Calc_speed.Areas[Current_Area]:
             self.Liste_objects.insert(END, Shape[3])
             ID += 1
 
@@ -82,7 +86,7 @@ class Lists(Frame):
 
                 AID = 0
                 Ar_cur_vid=1
-                for Arena in Vid.Analyses[1]:
+                for Arena in self.boss.main.Calc_speed.Areas:
                     if not (AID==Current_Area and Vid == Current_Vid):
                         if Vid == Current_Vid:
                             self.Liste_Vids.insert(Ar_cur_vid, "  -" + self.Messages["Arena"] + "_" + str(AID))
@@ -150,9 +154,11 @@ class Lists(Frame):
         self.boss.ready=True
 
     def validate(self):
+        Load_show=Class_loading_Frame.Loading(self)
+        Load_show.grid(row=6,column=0,columnspan=6)
+
         #Extend the elements to other arenas
-        list_of_shapes=[self.Current_Vid.Analyses[1][self.Current_Area][i] for i in self.Liste_objects.curselection()]
-        Show_warn=False#Flag to determine whether the user should be aware of a remplacement of existing elements
+        list_of_shapes=[self.boss.main.Calc_speed.Areas[self.Current_Area][i] for i in self.Liste_objects.curselection()]
 
         mask = Function_draw_mask.draw_mask(self.Current_Vid)
         Or_Arenas, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -162,10 +168,16 @@ class Lists(Frame):
         list_of_vids =[]
         for Vid in Np_style_pts[:,0]:#Look for all videos with at least one selected arena
             if Vid not in list_of_vids:
+
+                print(Vid.User_Name)
                 list_of_vids.append(Vid)
 
+        nb_V=0
+
         for Vid in list_of_vids:#For each of these videos, we look for the arenas
+            Load_show.show_load(nb_V/len(list_of_vids))#Show the progress
             mask = Function_draw_mask.draw_mask(Vid)
+            nb_V+=1
             Arenas, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
             Arenas = Function_draw_mask.Organise_Ars(Arenas)
 
@@ -181,33 +193,41 @@ class Lists(Frame):
                                 for bd in shape[1]:
                                     list_of_points = list_of_points + bd
                             elif shape[0] == "All_borders":
-                                if Vid == self.Current_Vid:
-                                    Shape2= DoubleVar(value=shape[2].get())
-                                else:
-                                    Shape2=shape[2].get()
+                                Shape2=shape[2].get()
 
-                                if shape[3] not in [Ars[3] for Ars in Vid.Analyses[1][Area]]:#If this shape does not exist yet
-                                    Vid.Analyses[1][Area].append(["All_borders", [], Shape2, shape[3]])
+                                if Vid == self.Current_Vid:
+                                    if shape[3] not in [Ars[3] for Ars in self.boss.main.Calc_speed.Areas[Area]]:#If this shape does not exist yet
+                                        self.boss.main.Calc_speed.Areas[Area].append(["All_borders", [], Shape2, shape[3]])
+                                    else:
+                                        position=[Ars[3] for Ars in self.boss.main.Calc_speed.Areas[Area]].index(shape[3])#If this shape already exists inside the arena, we remplace it
+                                        self.boss.main.Calc_speed.Areas[Area][position]=["All_borders", [], Shape2, shape[3]]
                                 else:
-                                    position=[Ars[3] for Ars in Vid.Analyses[1][Area]].index(shape[3])#If this shape already exists inside the arena, we remplace it and a warning will be displayed
-                                    Vid.Analyses[1][Area][position]=["All_borders", [], Shape2, shape[3]]
-                                    Show_warn = True
+                                    if shape[3] not in [Ars[3] for Ars in Vid.Analyses[1][Area]]:#If this shape does not exist yet
+                                        Vid.Analyses[1][Area].append(["All_borders", [], Shape2, shape[3]])
+                                    else:
+                                        position=[Ars[3] for Ars in Vid.Analyses[1][Area]].index(shape[3])#If this shape already exists inside the arena, we remplace it
+                                        Vid.Analyses[1][Area][position]=["All_borders", [], Shape2, shape[3]]
 
                         if len(list_of_points) > 0:
                             work, new_pts = Function_extend_elements.match_shapes(Arenas[Area], Or_Arenas[self.Current_Area], list_of_points)
                             if work:
                                 for shape in list_of_shapes:
                                     if shape[0]!="Borders" and shape[0]!="All_borders":
-                                        if Vid == self.Current_Vid:#If it is the current shape, we keep it the way it was
-                                            Shape2= DoubleVar(value=shape[2].get())
-                                        else:#If not, we must change and change DoubleVar to flaot (pickle does not accept DoubleVar)
-                                            Shape2=shape[2].get()
-                                        if shape[3] not in [Ars[3] for Ars in Vid.Analyses[1][Area]]:  # if this element did not exist
-                                            Vid.Analyses[1][Area].append([shape[0], new_pts[0:len(shape[1])],Shape2, shape[3]])
+                                        Shape2=shape[2].get()
+
+                                        if Vid == self.Current_Vid:
+                                            if shape[3] not in [Ars[3] for Ars in self.boss.main.Calc_speed.Areas[Area]]:  # if this element did not exist
+                                                self.boss.main.Calc_speed.Areas[Area].append([shape[0], new_pts[0:len(shape[1])], Shape2, shape[3]])
+                                            else:
+                                                position = [Ars[3] for Ars in self.boss.main.Calc_speed.Areas[Area]].index(shape[3])  # if an element with similar name was already present in the arena, we replace it and throw a warning.
+                                                self.boss.main.Calc_speed.Areas[Area][position] = [shape[0], new_pts[0:len(shape[1])],Shape2, shape[3]]
+
                                         else:
-                                            position = [Ars[3] for Ars in Vid.Analyses[1][Area]].index(shape[3])  # if an element with similar name was already present in the arena, we replace it and throw a warning.
-                                            Vid.Analyses[1][Area][position] = [shape[0], new_pts[0:len(shape[1])],Shape2, shape[3]]
-                                            Show_warn = True
+                                            if shape[3] not in [Ars[3] for Ars in Vid.Analyses[1][Area]]:  # if this element did not exist
+                                                Vid.Analyses[1][Area].append([shape[0], new_pts[0:len(shape[1])],Shape2, shape[3]])
+                                            else:
+                                                position = [Ars[3] for Ars in Vid.Analyses[1][Area]].index(shape[3])  # if an element with similar name was already present in the arena, we replace it and throw a warning.
+                                                Vid.Analyses[1][Area][position] = [shape[0], new_pts[0:len(shape[1])],Shape2, shape[3]]
 
                                         del new_pts[0:len(shape[1])]
 
@@ -216,23 +236,40 @@ class Lists(Frame):
                                         for bd in shape[1]:
                                             new_shape2.append(new_pts[0:len(bd)])
                                             del new_pts[0:len(bd)]
-                                        if Vid == self.Current_Vid:
-                                            Shape2=DoubleVar(value=shape[2].get())
-                                        else:
                                             Shape2=shape[2].get()
-                                        if shape[3] not in [Ars[3] for Ars in Vid.Analyses[1][Area]]:
-                                            Vid.Analyses[1][Area].append([shape[0], new_shape2, Shape2, shape[3]])
+
+                                        if Vid == self.Current_Vid:
+                                            if shape[3] not in [Ars[3] for Ars in self.boss.main.Calc_speed.Areas[Area]]:
+                                                self.boss.main.Calc_speed.Areas[Area].append([shape[0], new_shape2, Shape2, shape[3]])
+                                            else:
+                                                position = [Ars[3] for Ars in self.boss.main.Calc_speed.Areas[Area]].index(shape[3])
+                                                self.boss.main.Calc_speed.Areas[Area][position] = [shape[0], new_shape2, Shape2, shape[3]]
+
                                         else:
-                                            position = [Ars[3] for Ars in Vid.Analyses[1][Area]].index(shape[3])
-                                            Vid.Analyses[1][Area][position] = [shape[0], new_shape2, Shape2, shape[3]]
-                                            Show_warn = True
+                                            if shape[3] not in [Ars[3] for Ars in Vid.Analyses[1][Area]]:
+                                                Vid.Analyses[1][Area].append([shape[0], new_shape2, Shape2, shape[3]])
+                                            else:
+                                                position = [Ars[3] for Ars in Vid.Analyses[1][Area]].index(shape[3])
+                                                Vid.Analyses[1][Area][position] = [shape[0], new_shape2, Shape2, shape[3]]
+
+        for Ar in self.boss.main.Calc_speed.Areas:
+            for shape in Ar:
+                try:#If it is already a float
+                    shape[2] = float(shape[2].get())
+                except:
+                    pass
+        self.Current_Vid.Analyses[1] = copy.deepcopy(self.boss.main.Calc_speed.Areas)
+
+        for Ar in self.boss.main.Calc_speed.Areas:
+            for shape in Ar:
+                shape[2] = DoubleVar(value=shape[2])
 
         self.parent.destroy()
         self.boss.ready=True
 
         #If some elements were replaced in the selected arenas.
-        if Show_warn:
-            messagebox.showinfo(message=self.Messages["GError1"], title=self.Messages["GErrorT1"])
+        #if Show_warn:
+            #messagebox.showinfo(message=self.Messages["GError1"], title=self.Messages["GErrorT1"])
 
     def check_button(self, *arg):
         #The user can validate only if at least one element and one arena were selected
