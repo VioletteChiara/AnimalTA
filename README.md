@@ -1,6 +1,6 @@
-# AnimalTA (2.1.0)
+# AnimalTA (2.2.0)
 
-This is the 2.1.0 release version of AnimalTA, an easy to use video tracking program.
+This is the 2.2.0 release version of AnimalTA, an easy to use video tracking program.
 AnimalTA is intended for use under the Windows operating system.
 
 To download the latest release, click the "releases" buttun in GitHub.
