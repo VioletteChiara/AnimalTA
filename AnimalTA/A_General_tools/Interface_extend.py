@@ -1,4 +1,5 @@
 from tkinter import *
+import os
 from AnimalTA.A_General_tools import Function_draw_mask, UserMessages, Class_stabilise
 import math
 import cv2
@@ -26,7 +27,7 @@ class Extend(Frame):
 
         #Import messages
         self.Language = StringVar()
-        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
+        f = open(UserMessages.resource_path(os.path.join("AnimalTA","Files","Language")), "r", encoding="utf-8")
         self.Language.set(f.read())
         self.LanguageO = self.Language.get()
         f.close()
@@ -67,10 +68,10 @@ class Extend(Frame):
         for i in range(len(self.list_vid)):
             if self.list_vid[i]!=self.Vid or self.do_self:
                 #The untracked videos will not be displayed if we want to share analyses parameters
-                if not (type=="analyses_smooth" or type=="analyses_thresh" or type=="analyses_explo" or type=="analyses_inter") or (self.list_vid[i].Tracked):
+                if not (type=="analyses_smooth" or type=="analyses_thresh" or type=="analyses_explo" or type=="analyses_inter" or type=="analyses_deform") or (self.list_vid[i].Tracked):
                     self.list_vid_minus.append(self.list_vid[i])
                     self.Liste.insert(i, self.list_vid[i].User_Name)
-                    if self.list_vid[i].Tracked and not (type=="analyses_smooth" or type=="analyses_thresh" or type=="analyses_explo" or type=="analyses_inter"):
+                    if self.list_vid[i].Tracked and not (type=="analyses_smooth" or type=="analyses_thresh" or type=="analyses_explo" or type=="analyses_inter" or type=="analyses_deform"):
                         self.Liste.itemconfig(self.Liste.size()-1, {'fg': 'red'})
                         #The tracked videos will appear in red if they were already tracked (except for changes in analyses parameters).
                         #Indeed, changing a parameter of these videos will remove the trackings.
@@ -108,7 +109,7 @@ class Extend(Frame):
         for V in list_item:
             #If the tracking parameters were changed we remove the existing trackings
             cleared=True
-            if self.list_vid_minus[V].Tracked and self.type!="analyses_smooth" and self.type!="analyses_thresh" and self.type!="analyses_explo" and self.type!="analyses_inter":
+            if self.list_vid_minus[V].Tracked and self.type!="analyses_smooth" and self.type!="analyses_thresh" and self.type!="analyses_explo" and self.type!="analyses_inter" and self.type!="analyses_deform":
                 cleared=self.list_vid_minus[V].clear_files()
                 self.list_vid_minus[V].Tracked = False
             if cleared:
@@ -161,14 +162,16 @@ class Extend(Frame):
 
                 elif self.type == "crop":
                     if self.value[0][0]:
+                        one_every = int(round(round(self.list_vid_minus[V].Frame_rate[0], 2) / self.list_vid_minus[V].Frame_rate[1]))
                         if self.value[0][1][0]<=self.list_vid_minus[V].Frame_nb[0]-1:
                             self.list_vid_minus[V].Cropped[0]=True
-                            self.list_vid_minus[V].Cropped[1][0] = self.value[0][1][0]
+                            self.list_vid_minus[V].Cropped[1][0] = int(math.floor(self.value[0][1][0] / one_every) * one_every)
                         else:
                             problems.append([V,True])
 
                         if self.value[0][1][1] <= self.list_vid_minus[V].Frame_nb[0]-1:
-                            self.list_vid_minus[V].Cropped[1][1] = self.value[0][1][1]
+                            self.list_vid_minus[V].Cropped[1][1] = int(math.floor(self.value[0][1][1] / one_every) * one_every)  # Avoid to try to open un-existing frames after changes in frame-rate
+
                         else:
                             self.list_vid_minus[V].Cropped[1][1]=self.list_vid_minus[V].Frame_nb[0]-1
                             problems.append([V,True])
@@ -250,6 +253,10 @@ class Extend(Frame):
                         if len(self.list_vid_minus[V].Analyses) < 4:
                             self.list_vid_minus[V].Analyses.append(0)
                         self.list_vid_minus[V].Analyses[3] = deepcopy(self.value)
+
+                elif self.type == "analyses_deform":
+                    if self.list_vid_minus[V].Tracked:
+                        self.list_vid_minus[V].Analyses[4] = deepcopy(self.value)
 
 
             item+=1

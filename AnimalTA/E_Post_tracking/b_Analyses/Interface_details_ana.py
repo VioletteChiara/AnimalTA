@@ -1,6 +1,6 @@
 from tkinter import *
 from AnimalTA.A_General_tools import Function_draw_mask, UserMessages, User_help
-from AnimalTA.E_Post_tracking.b_Analyses import Class_Shapes_rows, Interface_border_portion, Interface_extend_elements
+from AnimalTA.E_Post_tracking.b_Analyses import Class_Shapes_rows, Interface_border_portion, Interface_extend_elements, Functions_deformation
 import numpy as np
 import PIL
 import math
@@ -21,6 +21,7 @@ class Details_basics(Frame):
     def __init__(self, parent, main, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
         self.parent=parent
+        self.parent.geometry("1050x620")
         self.main=main
         self.grid(sticky="nsew")
         self.ready=False
@@ -106,9 +107,9 @@ class Details_basics(Frame):
         self.Prop_lost=StringVar()
         self.Prop_lost.set("0.0")
         self.Label_Prop_lost=Label(Frame_for_results, text=self.Messages["Analyses_details_Lab1"])
-        self.Label_Prop_lost.grid(row=0, column=0, sticky="e")
+        self.Label_Prop_lost.grid(row=1, column=0, sticky="e")
         self.Show_Prop_lost=Label(Frame_for_results, textvariable=self.Prop_lost)
-        self.Show_Prop_lost.grid(row=0, column=1, sticky="w")
+        self.Show_Prop_lost.grid(row=1, column=1, sticky="w")
         self.Show_Prop_lost.grid()
         self.Label_Prop_lost.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Analyses_details1"]))
         self.Label_Prop_lost.bind("<Leave>", self.HW.remove_tmp_message)
@@ -117,9 +118,9 @@ class Details_basics(Frame):
         self.Mean_Speed=StringVar()
         self.Mean_Speed.set("0.0")
         self.Label_mean=Label(Frame_for_results, text=self.Messages["Analyses_details_Lab2"])
-        self.Label_mean.grid(row=1, column=0, sticky="e")
+        self.Label_mean.grid(row=2, column=0, sticky="e")
         self.Show_mean=Label(Frame_for_results, textvariable=self.Mean_Speed)
-        self.Show_mean.grid(row=1, column=1, sticky="w")
+        self.Show_mean.grid(row=2, column=1, sticky="w")
         self.Label_mean.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Analyses_details2"]))
         self.Label_mean.bind("<Leave>", self.HW.remove_tmp_message)
 
@@ -127,9 +128,9 @@ class Details_basics(Frame):
         self.Mean_Speed_Move=StringVar()
         self.Mean_Speed_Move.set("0.0")
         self.Label_mean_move=Label(Frame_for_results, text=self.Messages["Analyses_details_Lab3"])
-        self.Label_mean_move.grid(row=2, column=0, sticky="e")
+        self.Label_mean_move.grid(row=3, column=0, sticky="e")
         self.Show_mean_move=Label(Frame_for_results, textvariable=self.Mean_Speed_Move)
-        self.Show_mean_move.grid(row=2, column=1, sticky="w")
+        self.Show_mean_move.grid(row=3, column=1, sticky="w")
         self.Show_mean_move.grid()
         self.Label_mean_move.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Analyses_details3"]))
         self.Label_mean_move.bind("<Leave>", self.HW.remove_tmp_message)
@@ -138,9 +139,9 @@ class Details_basics(Frame):
         self.Prop_move=StringVar()
         self.Prop_move.set("0.0")
         self.Label_Prop_move=Label(Frame_for_results, text=self.Messages["Analyses_details_Lab4"])
-        self.Label_Prop_move.grid(row=3, column=0, sticky="e")
+        self.Label_Prop_move.grid(row=4, column=0, sticky="e")
         self.Show_Prop_move=Label(Frame_for_results, textvariable=self.Prop_move)
-        self.Show_Prop_move.grid(row=3, column=1, sticky="w")
+        self.Show_Prop_move.grid(row=4, column=1, sticky="w")
         self.Show_Prop_move.grid()
         self.Label_Prop_move.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Analyses_details4"]))
         self.Label_Prop_move.bind("<Leave>", self.HW.remove_tmp_message)
@@ -149,9 +150,9 @@ class Details_basics(Frame):
         self.Dist_total=StringVar()
         self.Dist_total.set("0.0")
         self.Label_Dist_total=Label(Frame_for_results, text=self.Messages["Analyses_details_Lab5"])
-        self.Label_Dist_total.grid(row=4, column=0, sticky="e")
+        self.Label_Dist_total.grid(row=5, column=0, sticky="e")
         self.Show_Dist_total=Label(Frame_for_results, textvariable=self.Dist_total)
-        self.Show_Dist_total.grid(row=4, column=1, sticky="w")
+        self.Show_Dist_total.grid(row=5, column=1, sticky="w")
         self.Show_Dist_total.grid()
         self.Label_Dist_total.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Analyses_details5"]))
         self.Label_Dist_total.bind("<Leave>", self.HW.remove_tmp_message)
@@ -160,19 +161,31 @@ class Details_basics(Frame):
         self.Dist_total_move=StringVar()
         self.Dist_total_move.set("0.0")
         self.Label_Dist_total_move=Label(Frame_for_results, text=self.Messages["Analyses_details_Lab6"])
-        self.Label_Dist_total_move.grid(row=5, column=0, sticky="e")
+        self.Label_Dist_total_move.grid(row=6, column=0, sticky="e")
         self.Show_Dist_total_move=Label(Frame_for_results, textvariable=self.Dist_total_move)
-        self.Show_Dist_total_move.grid(row=5, column=1, sticky="w")
+        self.Show_Dist_total_move.grid(row=6, column=1, sticky="w")
         self.Show_Dist_total_move.grid()
         self.Label_Dist_total_move.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Analyses_details6"]))
         self.Label_Dist_total_move.bind("<Leave>", self.HW.remove_tmp_message)
 
         #Close the Frame/window
         self.Quit_button=Button(self, text=self.Messages["Analyses_details_B1"], command=self.parent.destroy, background="#6AED35")
-        self.Quit_button.grid(row=6, column=0, columnspan=2, sticky="sew")
+        self.Quit_button.grid(row=7, column=0, columnspan=2, sticky="sew")
 
         #Show the results for the selected target
         self.update_vals()
+
+
+        #Entry to modify manually the threshold:
+
+        Lab_ent_thresh=Label(Frame_for_results, text=self.Messages["Names6"])
+        Lab_ent_thresh.grid(row=0, column=0, sticky="e")
+        verif_E_float = (self.register(self.update_threshold), '%P', '%V')
+        tmp_var=StringVar()
+        tmp_var.set("")
+        self.Ent_threshold=Entry(Frame_for_results, textvariable=tmp_var, validatecommand=verif_E_float, validate="all")
+        self.Ent_threshold.grid(row=0, column=1, sticky="e")
+
 
     def update_vals(self):
         # Show the results values for the selected target
@@ -228,7 +241,7 @@ class Details_basics(Frame):
     # Distance traveled
     def show_calculate_dist(self):
         Ind = list(self.List_inds_names.values()).index(self.Ind_name.get())
-        new_val = self.main.Calc_speed.calculate_dist(parent=self.main, ind=Ind, in_move=False)
+        new_val, meander = self.main.Calc_speed.calculate_dist(parent=self.main, ind=Ind, in_move=False)
         if new_val != "NA":
             self.Dist_total.set(str(round(new_val, 3)))
         else:
@@ -237,7 +250,7 @@ class Details_basics(Frame):
     # Distance traveled while moving
     def show_calculate_dist_move(self):
         Ind = list(self.List_inds_names.values()).index(self.Ind_name.get())
-        new_val = self.main.Calc_speed.calculate_dist(parent=self.main, ind=Ind, in_move=True)
+        new_val, meander = self.main.Calc_speed.calculate_dist(parent=self.main, ind=Ind, in_move=True)
         if new_val != "NA":
             self.Dist_total_move.set(str(round(new_val, 3)))
         else:
@@ -352,12 +365,33 @@ class Details_basics(Frame):
             if self.moving:
                 self.Graph.delete(self.seuil_line)
                 if event.widget.canvasy(event.y)>self.ecart and event.widget.canvasy(event.y)<(self.Height-self.ecart):
-                    self.main.Calc_speed.seuil_movement=((self.Height-event.widget.canvasy(event.y)-self.ecart)/self.Ratio_Ys)
-                self.add_seuil()
-                self.update_vals_flex()
+                    self.main.Calc_speed.seuil_movement=round((self.Height-event.widget.canvasy(event.y)-self.ecart)/self.Ratio_Ys,3)
+
+                self.Ent_threshold.delete(0, END)  # deletes the current value
+                self.Ent_threshold.insert(0, str(round(self.main.Calc_speed.seuil_movement,3)))  # inserts new value assigned by 2nd parameter
                 self.HW.change_default_message(self.Messages["Analyses_details0"].format(round(self.main.Calc_speed.seuil_movement,3),self.main.Vid.Scale[1]))
         except:
             print("Overflow")
+
+
+    def update_threshold(self, new_val, method):
+        # Avoid user to writting non numerical values in the Entry box
+        if new_val == "" and method != "focusout":
+            return True
+        elif new_val != "" :
+            try:
+                new_val = float(new_val)
+                self.main.Calc_speed.seuil_movement=new_val
+                self.Graph.delete(self.seuil_line)
+                self.add_seuil()
+                self.update_vals_flex()
+                self.HW.change_default_message(self.Messages["Analyses_details0"].format(round(self.main.Calc_speed.seuil_movement,3),self.main.Vid.Scale[1]))
+                return True
+            except Exception as e:
+                print(e)
+                return False
+        else:
+            return False
 
 class Details_spatial(Frame):
     """
@@ -367,6 +401,7 @@ class Details_spatial(Frame):
     def __init__(self, parent, main, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
         self.parent=parent
+        self.parent.geometry("1050x620")
         self.main=main
         self.grid(sticky="news")
         self.ready=False
@@ -552,6 +587,14 @@ class Details_spatial(Frame):
         Arenas, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         Arenas = Function_draw_mask.Organise_Ars(Arenas)
         self.Arena_pts = Arenas[self.Area]
+
+        if len(self.main.Vid.Analyses[4][0])>0:
+            self.Arena_pts=self.Arena_pts[:, 0, :]
+            self.Arena_pts = np.array([self.Arena_pts], dtype=np.float32)
+            self.Arena_pts = cv2.perspectiveTransform(self.Arena_pts, self.main.Vid.Analyses[4][0])
+            self.Arena_pts=cv2.convexHull(self.Arena_pts.astype(np.int32))
+
+
 
     def load_img(self,*args):
         #Load the image and hilight the position of the current arena
@@ -910,7 +953,6 @@ class Details_spatial(Frame):
                 cv2.putText(self.image, str(ID), (pt[0] + 5, pt[1] - 5), cv2.FONT_HERSHEY_DUPLEX, fontScale=1,color=(0, 50, 50), thickness=5)
                 cv2.putText(self.image,str(ID), (pt[0]+5,pt[1]-5), cv2.FONT_HERSHEY_DUPLEX, fontScale=1, color=(0, 175, 175),thickness=2)
 
-
             if shape[0]=="Polygon":
                 for pt in shape[1]:
                     cv2.circle(self.image, pt, 7, (0, 0, 0), -1)
@@ -1053,6 +1095,7 @@ class Details_explo(Frame):
     def __init__(self, parent, main, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
         self.parent = parent
+        self.parent.geometry("1050x620")
         self.main = main
         self.grid(sticky="news")
         self.ready = False
@@ -1459,6 +1502,12 @@ class Details_explo(Frame):
         Arenas = Function_draw_mask.Organise_Ars(Arenas)
         self.Arena_pts = Arenas[self.Area]
 
+        if len(self.main.Vid.Analyses[4][0])>0:
+            self.Arena_pts=self.Arena_pts[:, 0, :]
+            self.Arena_pts = np.array([self.Arena_pts], dtype=np.float32)
+            self.Arena_pts = cv2.perspectiveTransform(self.Arena_pts, self.main.Vid.Analyses[4][0])
+            self.Arena_pts=cv2.convexHull(self.Arena_pts.astype(np.int32))
+
     def load_img(self,*args):
         #Load the image to be displayed
         self.Ind = list(self.List_inds_names.values()).index(self.Ind_name.get())
@@ -1602,6 +1651,7 @@ class Details_inter(Frame):
     def __init__(self, parent, main, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
         self.parent=parent
+        self.parent.geometry("1050x620")
         self.main=main
         self.grid(sticky="nsew")
         Grid.columnconfigure(self.parent, 0, weight=1)  ########NEW
@@ -1782,6 +1832,7 @@ class Details_inter(Frame):
         self.image_clean1 = self.main.img_no_shapes
         mask = np.zeros([self.image_clean1.shape[0], self.image_clean1.shape[1], 1], np.uint8)
         mask = cv2.drawContours(mask, [self.Arena_pts], -1, (255, 255, 255), -1)
+        mask = Functions_deformation.transform(mask, self.main.Vid.Analyses[4][1], self.main.Vid.Analyses[4][2])
 
         #Application of the mask so it appears as a black veil everywhere except where the arena is
         self.image_clean_trans = cv2.bitwise_and(self.image_clean1, self.image_clean1, mask=mask)

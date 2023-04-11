@@ -1,8 +1,7 @@
 from tkinter import *
 from tkinter import messagebox
 from AnimalTA.E_Post_tracking.b_Analyses import Function_extend_elements
-from AnimalTA.A_General_tools import Function_draw_mask, UserMessages
-from AnimalTA.B_Project_organisation import Class_loading_Frame
+from AnimalTA.A_General_tools import Function_draw_mask, UserMessages, Class_loading_Frame
 import cv2
 import numpy as np
 import PIL
@@ -86,7 +85,7 @@ class Lists(Frame):
 
                 AID = 0
                 Ar_cur_vid=1
-                for Arena in self.boss.main.Calc_speed.Areas:
+                for Arena in Vid.Analyses[1]:
                     if not (AID==Current_Area and Vid == Current_Vid):
                         if Vid == Current_Vid:
                             self.Liste_Vids.insert(Ar_cur_vid, "  -" + self.Messages["Arena"] + "_" + str(AID))

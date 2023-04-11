@@ -1,4 +1,5 @@
 from tkinter import *
+import os
 from AnimalTA.A_General_tools import UserMessages
 
 
@@ -11,7 +12,7 @@ class Help_win(Frame):
 
         #Messages importation
         self.Language = StringVar()
-        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
+        f = open(UserMessages.resource_path(os.path.join("AnimalTA","Files","Language")), "r", encoding="utf-8")
         self.Language.set(f.read())
         f.close()
         self.Messages = UserMessages.Mess[self.Language.get()]

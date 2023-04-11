@@ -7,9 +7,9 @@ def convert_to_avi(parent, file, folder):
 
     file_name=os.path.basename(file)
     point_pos=file_name.rfind(".")
-    if not os.path.isdir(folder+str("/converted_vids")):#Create a new directory if was not existing
-        os.makedirs(folder+str("/converted_vids"))
-    new_file= folder + "/converted_vids/" +file_name[:point_pos]+".avi"
+    if not os.path.isdir(os.path.join(folder,str("converted_vids"))):#Create a new directory if was not existing
+        os.makedirs(os.path.join(folder,str("converted_vids")))
+    new_file= os.path.join(folder, "converted_vids", file_name[:point_pos]+".avi")
 
     try:
         cap = cv2.VideoCapture(file)
@@ -31,6 +31,7 @@ def convert_to_avi(parent, file, folder):
                 result.write(frame)
                 nb_fr+=1
             else:
+                print("end")
                 break
 
         cap.release()

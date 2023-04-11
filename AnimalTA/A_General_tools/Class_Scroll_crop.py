@@ -108,7 +108,7 @@ class Pers_Scroll(Canvas):
         '''
         width=self.parent.winfo_width()
         largscroll = width - 60
-        if event.x>self.decalage and event.x<largscroll+self.decalage and event.y>0 and event.y<20:
+        if event.x>self.decalage and event.x<largscroll+self.decalage:
             self.active_pos=int(self.debut + round((event.x-self.decalage) * self.video_length / largscroll))
             self.refresh()
             self.Top.update_image(self.active_pos)

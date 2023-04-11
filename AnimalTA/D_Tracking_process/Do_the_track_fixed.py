@@ -62,16 +62,16 @@ def Do_tracking(parent, Vid, folder, portion=False, prev_row=None):
         file_name = Vid.User_Name
 
     if not portion:
-        if not os.path.isdir(folder + str("/coordinates")):
-            os.makedirs(folder + str("/coordinates"))
+        if not os.path.isdir(os.path.join(folder,"coordinates")):
+            os.makedirs(os.path.join(folder, "coordinates"))
     else:
-        if not os.path.isdir(folder + str("/TMP_portion")):
-            os.makedirs(folder + str("/TMP_portion"))
+        if not os.path.isdir(os.path.join(folder,"TMP_portion")):
+            os.makedirs(os.path.join(folder,"TMP_portion"))
 
     if portion:
-        To_save = folder + "/TMP_portion/" + file_name + "_TMP_portion_Coordinates.csv"
+        To_save = os.path.join(folder, "TMP_portion", file_name + "_TMP_portion_Coordinates.csv")
     else:
-        To_save = folder + "/Coordinates/" + file_name + "_Coordinates.csv"
+        To_save = os.path.join(folder, "Coordinates", file_name + "_Coordinates.csv")
 
     # if the user choose to reduce the frame rate.
     one_every = int(round(round(Vid.Frame_rate[0], 2) / Vid.Frame_rate[1]))
@@ -94,7 +94,7 @@ def Do_tracking(parent, Vid, folder, portion=False, prev_row=None):
     activate_protection=False
     first_protection=False
     capture = decord.VideoReader( Vid.Fusion[Which_part][1])  # Open video
-    Prem_image_to_show = capture[start - Vid.Fusion[Which_part][0]-1].asnumpy()  # Take the first image
+    Prem_image_to_show = capture[start - Vid.Fusion[Which_part][0]].asnumpy()  # Take the first image
     capture.seek(0)
     if Vid.Cropped_sp[0]:
         Prem_image_to_show = Prem_image_to_show[Vid.Cropped_sp[1][0]:Vid.Cropped_sp[1][2],Vid.Cropped_sp[1][1]:Vid.Cropped_sp[1][3]]
@@ -108,8 +108,7 @@ def Do_tracking(parent, Vid, folder, portion=False, prev_row=None):
             else:
                 grey = Vid.Back[1].copy()
 
-            if Vid.Mask[
-                0]:  # If there were arenas defined by the user, we do the correction only for what happen inside these arenas.
+            if Vid.Mask[0]:  # If there were arenas defined by the user, we do the correction only for what happen inside these arenas.
                 maskT = mask[:, :, 0].astype(bool)
                 or_bright = np.sum(grey[maskT]) / (255 * grey[maskT].size)  # Mean value
             else:
@@ -368,7 +367,6 @@ def Image_modif(Vid, start, end, one_every, Which_part, Prem_image_to_show, mask
     last_grey=None#We keep here the last grey image for flicker correction
     penult_grey=None
     for frame in range(start, end + one_every,one_every):  # We go frame by frame respecting the frame rate defined by user
-        deb = time.time()
         if Extracted_cnts.qsize()>=500:
             Too_much_frame.clear()
             Too_much_frame.wait()
@@ -384,7 +382,6 @@ def Image_modif(Vid, start, end, one_every, Which_part, Prem_image_to_show, mask
             capture.seek(0)
             activate_protection=False
             first_protection=False
-
 
         img = capture[frame - Vid.Fusion[Which_part][0]].asnumpy()
         if activate_protection:
@@ -402,6 +399,7 @@ def Image_modif(Vid, start, end, one_every, Which_part, Prem_image_to_show, mask
         # Stabilisation
         if Vid.Stab[0]:
             img = Class_stabilise.find_best_position(Vid=Vid, Prem_Im=Prem_image_to_show, frame=img, show=False, prev_pts=prev_pts)
+
 
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
@@ -438,8 +436,8 @@ def Image_modif(Vid, start, end, one_every, Which_part, Prem_image_to_show, mask
             _, img = cv2.threshold(img, Vid.Track[1][0], 255, cv2.THRESH_BINARY)
         else:
             odd_val = int(Vid.Track[1][0]) + (1 - (int(Vid.Track[1][0]) % 2))
-            img = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, odd_val,
-                                        10)
+            img = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, odd_val,10)
+
 
         # Mask
         if Vid.Mask[0]:
@@ -455,6 +453,8 @@ def Image_modif(Vid, start, end, one_every, Which_part, Prem_image_to_show, mask
 
         # Find contours:
         cnts, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+
         kept_cnts = []  # We make a list of the contours that fit in the limitations defined by user
         for cnt in cnts:
             cnt_area = cv2.contourArea(cnt)

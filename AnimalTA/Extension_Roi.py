@@ -23,7 +23,7 @@ class Light_changes(Frame):
 
 
         self.Language = StringVar()
-        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
+        f = open(UserMessages.resource_path(os.path.join("AnimalTA","Files","Language")), "r", encoding="utf-8")
         self.Language.set(f.read())
         self.LanguageO = self.Language.get()
         f.close()
@@ -225,7 +225,7 @@ class Light_changes(Frame):
                         self.clicked = True
                     self.modif_image(self.last_empty)
 
-    def moved_can(self, Pt):
+    def moved_can(self, Pt, Shift):
         if self.clicked and Pt[0]>=0 and Pt[1]>=0 and Pt[0]<=self.Vid.shape[1] and Pt[1]<=self.Vid.shape[0]:
             self.pts[self.selected_ind]=[Pt[0],Pt[1]]
             self.modif_image(self.last_empty)

@@ -1,16 +1,17 @@
 from tkinter import *
+import os
 import numpy as np
 import cv2
 from AnimalTA.A_General_tools import UserMessages
 from PIL import ImageFont, ImageDraw, Image
 
+
 """ These functions are based on the work of members of the learnopencv team.
 https://github.com/spmallick/learnopencv/blob/master/VideoStabilization/video_stabilization.py"""
 
 
-
 #Import language
-f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
+f = open(UserMessages.resource_path(os.path.join("AnimalTA","Files","Language")), "r", encoding="utf-8")
 Language=f.read()
 f.close()
 Messages = UserMessages.Mess[Language]
@@ -110,7 +111,7 @@ def find_best_position(Vid, Prem_Im, frame, show, scale=1, prev_pts=None):
         frame_stabilized=frame
 
     if show:#If we want to see the result as an image composition
-        fontpath = "./simsun.ttc"
+        fontpath = os.path.join(".","simsun.ttc")
         decal=10
         if scale<10:
             font = ImageFont.truetype(fontpath, max(1, int(scale * 30)))
@@ -127,6 +128,7 @@ def find_best_position(Vid, Prem_Im, frame, show, scale=1, prev_pts=None):
         draw = ImageDraw.Draw(first_im)
         draw.text((max(1, int(scale * decal)) , max(1, int(scale * decal))) , Messages_S[cnt], font=font,fill=(255, 255, 255, 0),stroke_width=stroke_width)
         draw.text((max(1,int(scale*decal)), max(1,int(scale*decal))), Messages_S[cnt], font=font, fill=(0,0,0,0))
+
         first_im = np.array(first_im)
 
         cnt = 1
@@ -145,12 +147,12 @@ def find_best_position(Vid, Prem_Im, frame, show, scale=1, prev_pts=None):
 
         #Draw the points of interest
         for pt in range(len(prev_pts)):
-            cv2.circle(first_im, (int(prev_pts[pt][0][0]), int(prev_pts[pt][0][1])), max(1,int(scale*3)), (255,0,0), -1)
-            cv2.putText(first_im,str(pt),(int(prev_pts[pt][0][0])+max(1,int(scale*3)), int(prev_pts[pt][0][1])-max(1,int(scale*3))),cv2.FONT_HERSHEY_PLAIN,max(1,scale*1.5),(255,0,0),max(1,int(scale*2)))
+            cv2.circle(first_im, (int(prev_pts[pt][0][0]), int(prev_pts[pt][0][1])), max(1,int(scale*2)), (255,0,0), -1)
+            cv2.putText(first_im,str(pt),(int(prev_pts[pt][0][0])+max(1,int(scale*3)), int(prev_pts[pt][0][1])-max(1,int(scale*3))),cv2.FONT_HERSHEY_PLAIN,max(1,scale*1),(255,0,0),max(1,int(scale*1.5)))
 
         for pt in range(len(curr_pts)):
-            cv2.circle(frame, (int(curr_pts[pt][0][0]), int(curr_pts[pt][0][1])), max(1,int(scale*3)), (100,255,100), -1)
-            cv2.putText(frame, str(pt), (int(curr_pts[pt][0][0])+max(1,int(scale*3)), int(curr_pts[pt][0][1])-max(1,int(scale*3))), cv2.FONT_HERSHEY_PLAIN, max(1,scale*1.5), (100, 255, 100),max(1,int(scale*2)))
+            cv2.circle(frame, (int(curr_pts[pt][0][0]), int(curr_pts[pt][0][1])), max(1,int(scale*2)), (100,255,100), -1)
+            cv2.putText(frame, str(pt), (int(curr_pts[pt][0][0])+max(1,int(scale*3)), int(curr_pts[pt][0][1])-max(1,int(scale*3))), cv2.FONT_HERSHEY_PLAIN, max(1,scale*1), (100, 255, 100),max(1,int(scale*1.5)))
 
 
         #Concatenate the three images

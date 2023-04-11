@@ -1,4 +1,5 @@
 from tkinter import *
+import os
 import cv2
 import PIL.Image, PIL.ImageTk
 from AnimalTA.A_General_tools import Video_loader as VL, UserMessages, User_help
@@ -24,7 +25,7 @@ class Background(Frame):
 
         # Messages importation
         self.Language = StringVar()
-        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
+        f = open(UserMessages.resource_path(os.path.join("AnimalTA","Files","Language")), "r", encoding="utf-8")
         self.Language.set(f.read())
         self.LanguageO = self.Language.get()
         f.close()

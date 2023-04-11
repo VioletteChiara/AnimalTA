@@ -7,7 +7,7 @@ from tkinter import messagebox
 
 # Import language
 
-f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
+f = open(UserMessages.resource_path(os.path.join("AnimalTA","Files","Language")), "r", encoding="utf-8")
 Language=(f.read())
 f.close()
 Messages = UserMessages.Mess[Language]
@@ -51,15 +51,15 @@ class Video:
         self.Track=[False,[50,0,0,[0.0001,5000],[0,1],500,[1], False, False, False]]
         #0 Tresh , 1 Erosion ,2 Dilation ,3 Area ,4 Compact ,5 Distance (px), 6 number of targets, 7 Apply light correction, 8 Is fixed number of targets, 9 flickering correction (0 apply or not, 1 how much frame to use)
         self.Smoothed=[0,0]
-        self.Analyses=[0,[[] for n in self.Track[1][6]],[0,1,2],0]#0 = seuil de mouvement, 1=list of elements of interest (one [] per arena at the implementation), 2=style d'exploration(2.0 = type, 2.1=surface, 2.2=parametres pour cercles, 3=dist_nei)
+        self.Analyses=[0,[[] for n in self.Track[1][6]],[0,1,2],0,[[],[],[]]]#0 = seuil de mouvement, 1=list of elements of interest (one [] per arena at the implementation), 2=style d'exploration(2.0 = type, 2.1=surface, 2.2=parametres pour cercles, 3=dist_nei, 4=Correction of deformation: 4.0= deformation matrix, 4.1=points in ref image, 4.2=points position after correction)
 
         self.Color_profiles="default.CPR"
 
     def check_coos(self):
         point_pos = self.Name.rfind(".")
         # We check if the video has already been tracked:
-        file_tracked = self.Folder + "/coordinates/" + self.Name[:point_pos] + "_Coordinates.csv"
-        file_trackedP = self.Folder + "/coordinates/" + self.User_Name + "_Coordinates.csv"
+        file_tracked = os.path.join(self.Folder, "coordinates", self.Name[:point_pos] + "_Coordinates.csv")
+        file_trackedP = os.path.join(self.Folder, "coordinates", self.User_Name + "_Coordinates.csv")
 
         if os.path.isfile(file_tracked) or os.path.isfile(file_trackedP):
             self.Tracked = True
@@ -81,8 +81,8 @@ class Video:
 
         # Suppress coordinates from tracking
         files_tracked = [
-            self.Folder + "/coordinates/" + file_name + "_Coordinates.csv",
-            self.Folder + "/corrected_coordinates/" + file_name + "_Corrected.csv"
+            os.path.join(self.Folder, "coordinates", file_name + "_Coordinates.csv"),
+            os.path.join(self.Folder, "corrected_coordinates", file_name + "_Corrected.csv")
         ]
 
 
@@ -96,7 +96,7 @@ class Video:
 
                 self.Tracked=False
                 self.Smoothed=[0,0]
-                self.Analyses=[0,[[] for n in self.Track[1][6]],[0,1,2],0]#0 = movement threshold, 1=list of elements of interest, 2=exploration kind of measurement(2.0 = type, 2.1=area, 2.2=parameter for circular mesh), 3=inter-individual threshold
+                self.Analyses=[0,[[] for n in self.Track[1][6]],[0,1,2],0,[[],[],[]]]#0 = movement threshold, 1=list of elements of interest, 2=exploration kind of measurement(2.0 = type, 2.1=area, 2.2=parameter for circular mesh), 3=inter-individual threshold
                 self.Identities=[]
                 try:
                     if not self.Track[1][8]:#If the number of targets was unknown, we remove put it back to 0

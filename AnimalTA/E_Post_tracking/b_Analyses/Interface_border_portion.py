@@ -84,7 +84,7 @@ class Ask(Frame):
     def update_ratio_scale(self, val):
         #If the value is modified using the scale
         val=float(val)
-        self.UnitsB.set(round(self.length - (val * self.length), 3))
+        self.UnitsB.set(round(self.length - (val), 3))
         self.Ratio.set(round(val/self.length,2))
 
     def stay_on_top(self):

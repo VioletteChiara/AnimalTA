@@ -12,6 +12,7 @@ from sklearn.cluster import KMeans
 from scipy.optimize import linear_sum_assignment
 import threading
 import queue
+import psutil
 
 '''
 To improve the speed of the tracking, we will separate the work in 3 threads.
@@ -23,6 +24,16 @@ To improve the speed of the tracking, we will separate the work in 3 threads.
 stop_threads = False
 capture = None
 
+def check_memory_overload():
+    '''Some problems of memory leak were encountered with decord, these problems have been fixed but this is a security to control potential loss of memory.'''
+    if psutil.virtual_memory()._asdict()["percent"] > 99.8:
+        return 1
+    elif psutil.virtual_memory()._asdict()["percent"] > 85:
+        return 0
+    else:
+        return -1
+
+
 
 def Do_tracking(parent, Vid, folder, portion=False, prev_row=None):
     '''This is the main tracking function of the program.
@@ -31,7 +42,6 @@ def Do_tracking(parent, Vid, folder, portion=False, prev_row=None):
     portion= True if it is a rerun of the tracking over a short part of the video (for corrections)
     prev_row=If portion is True, this correspond to the last known coordinates of the targets.
     '''
-    global capture
     global stop_threads
     stop_threads=False
 
@@ -54,16 +64,16 @@ def Do_tracking(parent, Vid, folder, portion=False, prev_row=None):
         file_name = Vid.User_Name
 
     if not portion:
-        if not os.path.isdir(folder + str("/coordinates")):
-            os.makedirs(folder + str("/coordinates"))
+        if not os.path.isdir(os.path.join(folder, "coordinates")):
+            os.makedirs(os.path.join(folder, "coordinates"))
     else:
-        if not os.path.isdir(folder + str("/TMP_portion")):
-            os.makedirs(folder + str("/TMP_portion"))
+        if not os.path.isdir(os.path.join(folder, "TMP_portion")):
+            os.makedirs(os.path.join(folder, "TMP_portion"))
 
     if portion:
-        To_save = folder + "/TMP_portion/" + file_name + "_TMP_portion_Coordinates.csv"
+        To_save = os.path.join(folder, "TMP_portion", file_name + "_TMP_portion_Coordinates.csv")
     else:
-        To_save = folder + "/Coordinates/" + file_name + "_Coordinates.csv"
+        To_save = os.path.join(folder, "Coordinates", file_name + "_Coordinates.csv")
 
     # if the user choose to reduce the frame rate.
     one_every = int(round(round(Vid.Frame_rate[0], 2) / Vid.Frame_rate[1]))
@@ -78,14 +88,20 @@ def Do_tracking(parent, Vid, folder, portion=False, prev_row=None):
         if len(Vid.Fusion) > 1:  # If the video results from concatenated videos
             Which_part = [index for index, Fu_inf in enumerate(Vid.Fusion) if Fu_inf[0] <= start][-1]
 
-    capture = decord.VideoReader(Vid.Fusion[Which_part][1])  # Open video
-    Prem_image_to_show = capture[start - Vid.Fusion[Which_part][0]-1].asnumpy()  # Take the first image
-    capture.seek(0)
 
+
+    global capture
+    global activate_protection
+    global first_protection
+    activate_protection=False
+    first_protection=False
+    capture = decord.VideoReader( Vid.Fusion[Which_part][1])  # Open video
+    Prem_image_to_show = capture[start - Vid.Fusion[Which_part][0]].asnumpy()  # Take the first image
+    capture.seek(0)
     if Vid.Cropped_sp[0]:
         Prem_image_to_show = Prem_image_to_show[Vid.Cropped_sp[1][0]:Vid.Cropped_sp[1][2],Vid.Cropped_sp[1][1]:Vid.Cropped_sp[1][3]]
 
-
+    old_mask = None
     try:  # Old version of AnimalTA did not had the option for lightness correction, so Vid.Track[1][7] would result in error in case of old .ata files.
         if Vid.Track[1][7]:  # If True, the user chose to correct the lightness, this code allows to take the average lightness value of the first frame and to calculate the first and third quartiles of lightness values.
             if not Vid.Back[0]:
@@ -132,8 +148,7 @@ def Do_tracking(parent, Vid, folder, portion=False, prev_row=None):
     Extracted_cnts = queue.Queue()
     Too_much_frame = threading.Event()
 
-    Th_extract_cnts = threading.Thread(target=Image_modif, args=(
-    Vid, start, end, one_every, Which_part, Prem_image_to_show, mask, old_mask, or_bright, Extracted_cnts, Too_much_frame))
+    Th_extract_cnts = threading.Thread(target=Image_modif, args=(Vid, start, end, one_every, Which_part, Prem_image_to_show, mask, old_mask, or_bright, Extracted_cnts, Too_much_frame))
     AD = IntVar()
     Th_associate_cnts = threading.Thread(target=Treat_cnts, args=(
     Vid, Arenas, Main_Arenas_Bimage, start, end, prev_row, all_NA, Extracted_cnts, Too_much_frame, Th_extract_cnts, To_save, portion,
@@ -143,17 +158,18 @@ def Do_tracking(parent, Vid, folder, portion=False, prev_row=None):
     Th_associate_cnts.start()
 
     while Th_associate_cnts.is_alive():
-        parent.timer = (AD.get() - start) / (end - start)
+        parent.timer=(AD.get()-start)/(end-start)
         parent.show_load()
-        overload = Do_the_track_fixed.check_memory_overload()  # Avoid memory leak problems
+
+        overload = check_memory_overload()#Avoid memory leak problems
         if overload==0:
-            capture.seek(0)
+            activate_protection=True
+            first_protection=True
         elif overload==1:
             break
 
-    if overload>0:  # To prevent the effects of memory leak.
+    if overload==1:  # To prevent the effects of memory leak.
         stop_threads = True
-        Vid.Tracked = False
         messagebox.showinfo(Messages["TError_memory"], Messages["Error_memory"])
         del capture
         return (False, _)
@@ -161,13 +177,13 @@ def Do_tracking(parent, Vid, folder, portion=False, prev_row=None):
     Th_extract_cnts.join()
     Th_associate_cnts.join()
 
-
-    if not overload>0:
+    if overload!=1:
         del capture
         if stop_threads:
             return (False, _)
         else:
             return (True, ID_kepts)
+
 
 
 def urgent_close(Vid):
@@ -360,6 +376,8 @@ def Treat_cnts(Vid, Arenas, Main_Arenas_Bimage, start, end, prev_row, all_NA, Ex
                                     ID_kepts[Are].append(IDs[Are][id])
                             if final_cnts[id][0][0]!="NA":
                                 last_row[Are][id]=final_cnts[id]
+                            else:
+                                last_row[Are][id][2]+=1
                         elif final_cnts[id][0]=="Out":
                             IDs[Are].pop(id)
                             last_row[Are].pop(id)
@@ -377,41 +395,52 @@ def Treat_cnts(Vid, Arenas, Main_Arenas_Bimage, start, end, prev_row, all_NA, Ex
             for row in all_rows:
                 writer.writerow(row)
 
+
 def Image_modif(Vid, start, end, one_every, Which_part, Prem_image_to_show, mask, old_mask, or_bright, Extracted_cnts, Too_much_frame):
     global stop_threads
     global capture
-    last_grey=None#We keep here the last grey image for flicker correction
-    penult_grey=None
+    global activate_protection
+    global first_protection
     if Vid.Stab[0]:
         prev_pts = Vid.Stab[1]
-
-    for frame in range(start, end + one_every, one_every):  # We go frame by frame respecting the frame rate defined by user
-        if Extracted_cnts.qsize() >= 500:
+    last_grey=None#We keep here the last grey image for flicker correction
+    penult_grey=None
+    for frame in range(start, end + one_every,one_every):  # We go frame by frame respecting the frame rate defined by user
+        if Extracted_cnts.qsize()>=500:
             Too_much_frame.clear()
             Too_much_frame.wait()
 
         if stop_threads:
             break
 
-        # parent.timer = (frame - start) / (end - start - 1)
-        # parent.show_load()  # To show the loading bar to the user
         if len(Vid.Fusion) > 1 and Which_part < (len(Vid.Fusion) - 1) and frame >= (
                 Vid.Fusion[Which_part + 1][0]):
             Which_part += 1
             del capture
             capture = decord.VideoReader(Vid.Fusion[Which_part][1])
             capture.seek(0)
+            activate_protection=False
+            first_protection=False
 
         img = capture[frame - Vid.Fusion[Which_part][0]].asnumpy()
-        capture.seek(0)
+
+        if activate_protection:
+            if first_protection:
+                capture.seek(0)
+                del capture
+                capture = decord.VideoReader(Vid.Fusion[Which_part][1])
+                first_protection=False
+            capture.seek(0)
+
         if Vid.Cropped_sp[0]:
             img = img[Vid.Cropped_sp[1][0]:Vid.Cropped_sp[1][2],Vid.Cropped_sp[1][1]:Vid.Cropped_sp[1][3]]
 
         kernel = np.ones((3, 3), np.uint8)
-
         # Stabilisation
         if Vid.Stab[0]:
-            img = Class_stabilise.find_best_position(Vid, Prem_image_to_show, img, False, prev_pts=prev_pts)
+            img = Class_stabilise.find_best_position(Vid=Vid, Prem_Im=Prem_image_to_show, frame=img, show=False, prev_pts=prev_pts)
+
+
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
         # Correct flicker
@@ -427,19 +456,17 @@ def Image_modif(Vid, start, end, one_every, Which_part, Prem_image_to_show, mask
                 penult_grey = last_grey.copy()
                 last_grey = img.copy()
 
-
         # If we want to apply light correction:
         if Vid.Track[1][7]:
             grey = np.copy(img)
-
             if Vid.Mask[0]:
                 bool_mask = old_mask[:, :, 0].astype(bool)
             else:
                 bool_mask = np.full(grey.shape, True)
-
             grey2 = grey[bool_mask]
-            brightness = np.sum(grey2) / (255 * grey2.size)  # Mean value
+
             # Inspired from: https://stackoverflow.com/questions/57030125/automatically-adjusting-brightness-of-image-with-opencv
+            brightness = np.sum(grey2) / (255 * grey2.size)  # Mean value
             ratio = brightness / or_bright
             img = cv2.convertScaleAbs(grey, alpha=1 / ratio, beta=0)
 
@@ -449,7 +476,8 @@ def Image_modif(Vid, start, end, one_every, Which_part, Prem_image_to_show, mask
             _, img = cv2.threshold(img, Vid.Track[1][0], 255, cv2.THRESH_BINARY)
         else:
             odd_val = int(Vid.Track[1][0]) + (1 - (int(Vid.Track[1][0]) % 2))
-            img = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, odd_val, 10)
+            img = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, odd_val,10)
+
 
         # Mask
         if Vid.Mask[0]:
@@ -463,10 +491,10 @@ def Image_modif(Vid, start, end, one_every, Which_part, Prem_image_to_show, mask
         if Vid.Track[1][2] > 0:
             img = cv2.dilate(img, kernel, iterations=Vid.Track[1][2])
 
-
-
         # Find contours:
         cnts, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+
         kept_cnts = []  # We make a list of the contours that fit in the limitations defined by user
         for cnt in cnts:
             cnt_area = cv2.contourArea(cnt)
@@ -479,5 +507,4 @@ def Image_modif(Vid, start, end, one_every, Which_part, Prem_image_to_show, mask
 
             # Contours are sorted by area
             kept_cnts = sorted(kept_cnts, key=lambda x: cv2.contourArea(x), reverse=True)
-
-        Extracted_cnts.put([frame, kept_cnts])
+        Extracted_cnts.put([frame,kept_cnts])

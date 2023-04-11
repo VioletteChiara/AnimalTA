@@ -1,4 +1,5 @@
 from tkinter import *
+import os
 import cv2
 import numpy as np
 from AnimalTA.A_General_tools import Class_change_vid_menu, Class_Lecteur, UserMessages, User_help
@@ -16,9 +17,10 @@ class Cropping(Frame):
         self.Vid = Video_file
         self.moving = None#If the user is moving something on the frame
         self.CSp=self.Vid.Cropped_sp[1].copy()#Where to draw the cropping lines
+        self.CSp=[int(val) for val in self.CSp]
         #Importation of the messages
         self.Language = StringVar()
-        f = open(UserMessages.resource_path(UserMessages.resource_path("AnimalTA/Files/Language")), "r", encoding="utf-8")
+        f = open(UserMessages.resource_path(UserMessages.resource_path(os.path.join("AnimalTA","Files","Language"))), "r", encoding="utf-8")
         self.Language.set(f.read())
         self.LanguageO = self.Language.get()
         f.close()
@@ -341,16 +343,12 @@ class Cropping(Frame):
             self.Vid.Mask[0] = False
 
         if self.Vid.or_shape[0]==self.CSp[2]-self.CSp[0] and self.Vid.or_shape[1]==self.CSp[3]-self.CSp[1]:
-            self.Vid.Cropped_sp[0]=False
+            self.Vid.Cropped_sp=[False,[0,0,self.Vid.or_shape[0],self.Vid.or_shape[1]]]
+            self.Vid.shape = self.Vid.or_shape
         else:
             self.Vid.Cropped_sp[0] = True
-
-        if self.Vid.Cropped_sp[0]:
             self.Vid.Cropped_sp[1]=self.CSp.copy()
             self.Vid.shape=(self.Vid.Cropped_sp[1][2]-self.Vid.Cropped_sp[1][0],self.Vid.Cropped_sp[1][3]-self.Vid.Cropped_sp[1][1])
-
-
-
 
         if follow and self.Vid != self.main_frame.liste_of_videos[-1]:
             for i in range(len(self.main_frame.liste_of_videos)):
@@ -388,20 +386,20 @@ class Cropping(Frame):
             self.moving=2
 
 
-    def moved_can(self, Pt):
+    def moved_can(self, Pt, Shift):
         if self.moving!=None:
             if self.moving==0 or self.moving==2:
-                self.CSp[self.moving]=Pt[1]
+                self.CSp[self.moving]=int(Pt[1])
             elif self.moving==1 or self.moving==3:
-                self.CSp[self.moving]=Pt[0]
+                self.CSp[self.moving]=int(Pt[0])
             self.modif_image(self.last_empty)
 
     def released_can(self, Pt):
         TMP=self.CSp.copy()
-        self.CSp[0]=min([TMP[0],TMP[2]])
-        self.CSp[1] = min([TMP[1], TMP[3]])
-        self.CSp[2]=max([TMP[0],TMP[2]])
-        self.CSp[3] = max([TMP[1], TMP[3]])
+        self.CSp[0]=min([int(TMP[0]),int(TMP[2])])
+        self.CSp[1] = min([int(TMP[1]), int(TMP[3])])
+        self.CSp[2]=max([int(TMP[0]),int(TMP[2])])
+        self.CSp[3] = max([int(TMP[1]), int(TMP[3])])
         self.modif_image(self.last_empty)
         self.moving=None
 

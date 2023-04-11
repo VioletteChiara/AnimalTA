@@ -22,6 +22,7 @@ class Video_Loader():
             if self.is_crop and self.Vid.Cropped_sp[0]:
                 im=im[self.Vid.Cropped_sp[1][0]:self.Vid.Cropped_sp[1][2], self.Vid.Cropped_sp[1][1]:self.Vid.Cropped_sp[1][3]]
             self.capture.seek(0)
+
             return im
         else:
             try:

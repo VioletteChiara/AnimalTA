@@ -3,7 +3,7 @@ from tkinter import messagebox
 from AnimalTA.D_Tracking_process import Do_the_track_variable, Do_the_track_fixed
 from AnimalTA.A_General_tools import Function_draw_mask, UserMessages
 from AnimalTA.E_Post_tracking import Coos_loader_saver as CoosLS
-from AnimalTA.E_Post_tracking.b_Analyses import Functions_Analyses_Speed
+from AnimalTA.E_Post_tracking.b_Analyses import Functions_Analyses_Speed, Interface_Analyses
 import os
 import csv
 import numpy as np
@@ -31,7 +31,7 @@ class Extend(Frame):
 
         #Import messages
         self.Language = StringVar()
-        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
+        f = open(UserMessages.resource_path(os.path.join("AnimalTA","Files","Language")), "r", encoding="utf-8")
         self.Language.set(f.read())
         self.LanguageO = self.Language.get()
         f.close()
@@ -165,10 +165,15 @@ class Extend(Frame):
 
                                 self.list_vid_minus[V].Tracked = True
                                 self.list_vid_minus[V].Identities = []
+                                min_1=False
                                 for Ar_inds in range(len(self.list_vid_minus[V].Track[1][6])):
                                     self.list_vid_minus[V].Track[1][6][Ar_inds]=len(Nb_targets[Ar_inds])
                                     for num in Nb_targets[Ar_inds]:
+                                        min_1=True
                                         self.list_vid_minus[V].Identities.append([Ar_inds, "Ind" + str(num),self.random_color()[0]])  # 0: identity of target, from 0 to N, 1: in which arene, 2:Name of the target, 3:Color of the target
+                                if not min_1:
+                                    self.list_vid_minus[V].Identities.append([0, "Ind" + str(0), self.random_color()[0]])
+
                             else:
                                 self.list_vid_minus[V].clear_files()
                                 self.list_vid_minus[V].Tracked=False
@@ -183,7 +188,7 @@ class Extend(Frame):
             Shapes_infos=dict()
             Time_inside = []
 
-            general = self.list_vid_minus[0].Folder + str("/Results")
+            general = os.path.join(self.list_vid_minus[0].Folder, "Results")
             Cleared1 = True
             if os.path.isdir(general):
                 Cleared1=False
@@ -211,15 +216,15 @@ class Extend(Frame):
                             break
 
             if Cleared1 and Cleared2:
-                details=general+"/Detailed_data"
+                details=os.path.join(general, "Detailed_data")
                 os.makedirs(details)
                 #We first do the analyses by inds:
                 rows_inter_dists=[]
-                with open(self.list_vid_minus[0].Folder+str("/Results/Results_by_ind.csv"), 'w', newline='', encoding="utf-8") as file:
+                with open(os.path.join(self.list_vid_minus[0].Folder,"Results","Results_by_ind.csv"), 'w', newline='', encoding="utf-8") as file:
                     writer = csv.writer(file, delimiter=";")
                     writer.writerow(["Video", "Arena", "Individual", "Prop_time_lost", "Smoothing_filter_window","Smoothing_Polyorder",
-                                     "Moving_threshold", "Prop_time_moving", "Average_Speed", "Average_Speed_Moving", "Traveled_Dist",
-                                     "Traveled_Dist_Moving","Exploration_value","Exploration_method","Exploration_area","Exploration_aspect_param",
+                                     "Moving_threshold", "Prop_time_moving", "Average_Speed", "Average_Speed_Moving", "Traveled_Dist", "Meander",
+                                     "Traveled_Dist_Moving", "Meander_moving","Exploration_value","Exploration_method","Exploration_area","Exploration_aspect_param",
                                      "Mean_nb_neighbours", "Prop_time_with_at_least_one_neighbour", "Mean_shortest_dist_neighbour", "Mean_sum_distances_to_neighbours"])
                     pos=0
                     for V in list_item:
@@ -230,12 +235,23 @@ class Extend(Frame):
                         Calc_speed = Functions_Analyses_Speed.speed_calculations(seuil_movement=self.Vid.Analyses[0])
                         self.Coos,_=CoosLS.load_coos(self.Vid)
                         self.NB_ind = len(self.Vid.Identities)
-                        if self.Vid.Smoothed[0] != 0:
-                            self.smooth_coos(window_length=self.Vid.Smoothed[0], polyorder=self.Vid.Smoothed[1])
 
                         mask = Function_draw_mask.draw_mask(self.Vid)
                         Arenas, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
                         self.Arenas = Function_draw_mask.Organise_Ars(Arenas)
+
+                        if len(self.Vid.Analyses[4][0]) > 0:
+                            self.deform_coos(self.Vid.Analyses[4][0])
+                            for Ar in range(len(self.Arenas)):
+                                Arena_pts = self.Arenas[Ar]
+                                Arena_pts = Arena_pts[:, 0, :]
+                                Arena_pts = np.array([Arena_pts], dtype=np.float32)
+                                Arena_pts = cv2.perspectiveTransform(Arena_pts, self.Vid.Analyses[4][0])
+                                Arena_pts = cv2.convexHull(Arena_pts.astype(np.int32))
+                                self.Arenas[Ar] = Arena_pts
+
+                        if self.Vid.Smoothed[0] != 0:
+                            self.smooth_coos(window_length=self.Vid.Smoothed[0], polyorder=self.Vid.Smoothed[1])
 
                         Ind=0
                         Ind_done = 0
@@ -274,16 +290,16 @@ class Extend(Frame):
                                 self.timer = (1.3 / 10 * (Area+1)) / len(self.Vid.Analyses[1])
                                 self.show_load()
 
-                                main_folder=self.Vid.Folder + str("/Results/InterInd")
+                                main_folder=os.path.join(self.Vid.Folder, "Results","InterInd")
                                 if not os.path.isdir(main_folder):
                                     os.makedirs(main_folder)
 
-                                vid_folder=main_folder + "/"+ self.Vid.User_Name
+                                vid_folder=os.path.join(main_folder, self.Vid.User_Name)
                                 if not os.path.isdir(vid_folder):
                                     os.makedirs(vid_folder)
 
                                 Name= "Video_" + str(self.Vid.User_Name) + "__" + "Arena_" + str(Area) + "__Distances"
-                                with open(vid_folder + "/" +Name+".csv", 'w',newline='', encoding="utf-8") as file:
+                                with open(os.path.join(vid_folder, Name+".csv"), 'w',newline='', encoding="utf-8") as file:
                                     writerb = csv.writer(file, delimiter=";")
                                     writerb.writerow(["X"]+list_inds)
                                     for row in range(len(table_all_dists)):
@@ -295,7 +311,7 @@ class Extend(Frame):
                                 self.show_load()
 
                                 Name= "Video_" + str(self.Vid.User_Name) + "__" + "Arena_" + str(Area) + "__PropTime"
-                                with open(vid_folder + "/" +Name+".csv", 'w',newline='', encoding="utf-8") as file:
+                                with open(os.path.join(vid_folder, Name+".csv"), 'w',newline='', encoding="utf-8") as file:
                                     writerb = csv.writer(file, delimiter=";")
                                     writerb.writerow(["X"]+list_inds)
                                     for row in range(len(table_is_close)):
@@ -304,7 +320,7 @@ class Extend(Frame):
                                         writerb.writerow(First_cell+Row)
 
                                 Name= "Video_" + str(self.Vid.User_Name) + "__" + "Arena_" + str(Area) + "__Contact_occurences"
-                                with open(vid_folder + "/" +Name+".csv", 'w',newline='', encoding="utf-8") as file:
+                                with open(os.path.join(vid_folder, Name+".csv"), 'w',newline='', encoding="utf-8") as file:
                                     writerb = csv.writer(file, delimiter=";")
                                     writerb.writerow(["X"]+list_inds)
                                     for row in range(len(table_nb_contacts)):
@@ -313,7 +329,7 @@ class Extend(Frame):
                                         writerb.writerow(First_cell+Row)
 
                                 Name= "Video_" + str(self.Vid.User_Name) + "__" + "Arena_" + str(Area) + "__Contact_events"
-                                with open(vid_folder + "/" +Name+".csv", 'w',newline='', encoding="utf-8") as file:
+                                with open(os.path.join(vid_folder, Name+".csv"), 'w',newline='', encoding="utf-8") as file:
                                     writerb = csv.writer(file, delimiter=";")
                                     writerb.writerow(["Ind_P1","Ind_P2","Duration","Beginning"])
                                     cn=0
@@ -377,13 +393,15 @@ class Extend(Frame):
                                 new_row.append(Calc_speed.calculate_mean_speed(parent=self, ind=ID, in_move=True))
 
                                 #Traveled distance:
-                                Val,all_dat=(Calc_speed.calculate_dist(parent=self, ind=ID, in_move=False,return_vals=True))
+                                Val,all_dat,meander=(Calc_speed.calculate_dist(parent=self, ind=ID, in_move=False,return_vals=True))
                                 new_row.append(Val)
+                                new_row.append(meander)
                                 Details.append(all_dat)  # We save the distance traveled of ID for each frame
 
                                 #Traveled distance while moving:
-                                Val=Calc_speed.calculate_dist(parent=self, ind=ID, in_move=True)
+                                Val,meander=Calc_speed.calculate_dist(parent=self, ind=ID, in_move=True)
                                 new_row.append(Val)
+                                new_row.append(meander)
 
                                 #Spatial:
                                 SHID=0
@@ -401,9 +419,9 @@ class Extend(Frame):
                                         Mean_dist, all_dat = Calc_speed.calculate_dist_line(self, Shape[1],ind=ID, return_vals=True)
                                         Nb_cross, Nb_cross_TL_BR, Lat_cross, vertical = Calc_speed.calculate_intersect(self, Shape[1], ind=ID)
                                         if (Shape[3]) in Shapes_infos:
-                                            Shapes_infos[Shape[3]].append([self.Vid.User_Name, Area, list_inds[I], Mean_dist,Nb_cross, Nb_cross_TL_BR,Nb_cross-Nb_cross_TL_BR,Lat_cross])
+                                            Shapes_infos[Shape[3]].append([self.Vid.User_Name, Area, list_inds[I], Mean_dist,Nb_cross, Nb_cross_TL_BR,Nb_cross-Nb_cross_TL_BR,Lat_cross,Shape[1]])
                                         else:
-                                            Shapes_infos[Shape[3]]=[Shape[0],[self.Vid.User_Name, Area, list_inds[I], Mean_dist,Nb_cross, Nb_cross_TL_BR,Nb_cross-Nb_cross_TL_BR,Lat_cross]]
+                                            Shapes_infos[Shape[3]]=[Shape[0],[self.Vid.User_Name, Area, list_inds[I], Mean_dist,Nb_cross, Nb_cross_TL_BR,Nb_cross-Nb_cross_TL_BR,Lat_cross,Shape[1]]]
                                         Details.append(all_dat)
 
                                     elif Shape[0]=="All_borders":
@@ -566,11 +584,11 @@ class Extend(Frame):
                                 writer.writerow(new_row)#We add a line with the summary of the individual
 
                                 #We create a new file, in which all the trajectories and characteristics will be saved for this individual
-                                vid_folder=details + "/"+ self.Vid.User_Name
+                                vid_folder=os.path.join(details, self.Vid.User_Name)
                                 if not os.path.isdir(vid_folder):
                                     os.makedirs(vid_folder)
 
-                                with open(vid_folder + "/" +str("Arena_" + str(Area) + list_inds[I] + ".csv"), 'w', newline='', encoding="utf-8") as file_detind:
+                                with open(os.path.join(vid_folder, str("Arena_" + str(Area) + list_inds[I] + ".csv")), 'w', newline='', encoding="utf-8") as file_detind:
                                     writer_det_ind = csv.writer(file_detind, delimiter=";")
                                     first_row=["Time"]
                                     if self.Vid.Smoothed[0]:
@@ -609,12 +627,12 @@ class Extend(Frame):
                             self.show_load()
                 #Analyses related to areas:
                 pos=0
-                if not os.path.isdir(self.list_vid_minus[0].Folder + str("/Results/Spatial")):
-                    os.makedirs(self.list_vid_minus[0].Folder + str("/Results/Spatial"))
+                if not os.path.isdir(os.path.join(self.list_vid_minus[0].Folder,"Results","Spatial")):
+                    os.makedirs(os.path.join(self.list_vid_minus[0].Folder,"Results","Spatial"))
                 else:
-                    files = os.listdir(self.list_vid_minus[0].Folder + str("/Results/Spatial"))
+                    files = os.listdir(os.path.join(self.list_vid_minus[0].Folder, "Results","Spatial"))
                     for file in range(len(files)):
-                        os.remove(self.list_vid_minus[0].Folder + str("/Results/Spatial") + '/' + files[file])
+                        os.remove(os.path.join(self.list_vid_minus[0].Folder,"Results","Spatial", files[file]))
 
                 count=0
                 for Shape_name in Shapes_infos:
@@ -624,7 +642,7 @@ class Extend(Frame):
                     self.show_load()
                     pos += 1
 
-                    with open(self.list_vid_minus[0].Folder + str("/Results/Spatial/Element"+"_" + Shape_name +".csv"), 'w', newline='', encoding="utf-8") as file:
+                    with open(os.path.join(self.list_vid_minus[0].Folder, "Results","Spatial","Element" + "_" + Shape_name +".csv"), 'w', newline='', encoding="utf-8") as file:
                         writer = csv.writer(file, delimiter=";")
                         if Shapes_infos[Shape_name][0] == "Point":
                             writer.writerow(["Video", "Arena", "Individual", "Mean_Distance", "Latency", "Prop_time_inside"])
@@ -632,9 +650,14 @@ class Extend(Frame):
                                 writer.writerow(Ind_infos)
 
                         elif Shapes_infos[Shape_name][0] == "Line":
-                            _, _, _, vertical = Calc_speed.calculate_intersect(self,Shapes_infos[Shape_name][1][0],ind=ID)
+                            Points=Shapes_infos[Shape_name][1][(len(Shapes_infos[Shape_name][1])-1)]
+                            if abs(Points[1][0] - Points[0][0]) > abs(Points[1][1] - Points[0][1]):
+                                vertical = True
+                            else:
+                                vertical = False
+
                             if vertical:
-                                TLBR="Nb_crosses_Top_Bot"
+                                TLBR= "Nb_crosses_Top_Bot"
                                 BRTL = "Nb_crosses_Bot_Top"
                             else:
                                 TLBR = "Nb_crosses_Left_Right"
@@ -645,7 +668,7 @@ class Extend(Frame):
                             for Ind_infos in Shapes_infos[Shape_name][1:]:
                                 #Arenas[Ind_infos[1]][0]+= Ind_infos[5]
                                 #Arenas[Ind_infos[1]][1] += Ind_infos[6]
-                                writer.writerow(Ind_infos)
+                                writer.writerow(Ind_infos[0:(len(Ind_infos)-1)])#We don't want to save the position of the points of the segment
                             #for Ar in range(len(self.Arenas)):
                                 #Time_inside.append([Ind_infos[0],Ar,Shape_name,"NA","NA","NA",Arenas[Ar][0],Arenas[Ar][1]])
 
@@ -664,14 +687,14 @@ class Extend(Frame):
                             for Ind_infos in Shapes_infos[Shape_name][1:]:
                                 writer.writerow(Ind_infos)
 
-                with open(self.list_vid_minus[0].Folder + str("/Results/Spatial/General.csv"),'w', newline='', encoding="utf-8") as file:
+                with open(os.path.join(self.list_vid_minus[0].Folder,"Results","Spatial","General.csv"),'w', newline='', encoding="utf-8") as file:
                     writer = csv.writer(file, delimiter=";")
                     writer.writerow(["Video", "Arena", "Shape", "Min_number_of_targets", "Max_number_of_targets", "Mean_number_of_targets","Crosses_TopRight_to_BotLeft","Crosses_BotLeft_to_TopRight"])
                     for Sh in Time_inside:
                         writer.writerow(Sh)
 
                 #Inter-ind_dists:
-                with open(self.list_vid_minus[0].Folder + str("/Results/Results_InterInd.csv"), 'w', newline='', encoding="utf-8") as file:
+                with open(os.path.join(self.list_vid_minus[0].Folder, "Results","Results_InterInd.csv"), 'w', newline='', encoding="utf-8") as file:
                     writer = csv.writer(file, delimiter=";")
                     writer.writerow(["Video", "Arena", "Mean_dist", "Min_dist", "Max_dist"])
                     for row in rows_inter_dists:
@@ -702,6 +725,15 @@ class Extend(Frame):
         self.loading_bar.create_rectangle(0, 0, 400, self.loading_bar.cget("height"), fill="red")
         self.loading_bar.create_rectangle(0, 0, self.timer*400, self.loading_bar.cget("height"), fill="blue")
         self.loading_bar.update()
+
+    def deform_coos(self, M):
+        for ind in range(len(self.Coos)):
+            ind_coo = [[np.nan if val == -1000 else val for val in row] for row in self.Coos[ind]]
+            vals = np.array(ind_coo, dtype=np.float32)
+            new_vals = cv2.perspectiveTransform(vals[None, :, :], self.Vid.Analyses[4][0])
+            new_vals[np.where(new_vals == 0)] = -1000
+            new_vals = new_vals.astype(dtype=float)
+            self.Coos[ind] = new_vals.copy()
 
     def smooth_coos(self, window_length, polyorder):
         #Apply a smoothing filter

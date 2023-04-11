@@ -1,4 +1,5 @@
 from tkinter import *
+import os
 import cv2
 import PIL.Image, PIL.ImageTk
 import numpy as np
@@ -24,6 +25,7 @@ class Mask(Frame):
         self.Ctrlpressed = False
         self.Which_ar = None
 
+
         if self.portion:#If we are just changing the arenas for a part of the video (during corrections)
             Grid.columnconfigure(self.parent, 0, weight=1)
             Grid.rowconfigure(self.parent, 0, weight=1)
@@ -32,7 +34,7 @@ class Mask(Frame):
         #Import messages
         self.Vid = Video_file
         self.Language = StringVar()
-        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
+        f = open(UserMessages.resource_path(os.path.join("AnimalTA","Files","Language")), "r", encoding="utf-8")
         self.Language.set(f.read())
         self.LanguageO = self.Language.get()
         f.close()
@@ -65,6 +67,7 @@ class Mask(Frame):
 
             self.capture = VL.Video_Loader(self.Vid, self.Vid.Fusion[Which_part][1])
             self.background = self.capture[self.Vid.Cropped[1][0] - self.Vid.Fusion[Which_part][0]]
+
             del self.capture
             self.background=cv2.cvtColor(self.background,cv2.COLOR_RGB2GRAY)
 
@@ -102,7 +105,7 @@ class Mask(Frame):
         self.ratio=1
         self.final_width=750
         self.Size = self.Vid.shape
-        self.canvas_img.bind("<Configure>", self.afficher)
+
 
         #Help user and parameters
         self.HW= User_help.Help_win(self.parent, default_message=self.Messages["Mask10"])
@@ -163,9 +166,7 @@ class Mask(Frame):
         self.canvas_img.update()
         self.final_width = self.canvas_img.winfo_width()
         self.ratio = self.Size[1] / self.final_width
-
         self.canvas_img.focus_force()
-
 
         if not self.Vid.Mask[0]:#If there were no arenas defined yet
             self.liste_points = [[[], [], (0, 0, 0), 0]]
@@ -176,6 +177,8 @@ class Mask(Frame):
                 self.Which_ar=len(self.liste_points)-1
             else:
                 self.liste_points = [[[], [], (0, 0, 0), 0]]
+
+        self.canvas_img.bind("<Configure>", self.afficher)
         self.afficher()
 
     def Zoom_in(self, event):
@@ -551,20 +554,22 @@ class Mask(Frame):
 
     def afficher(self, *args):
         #Show the image
+        self.TMP_image_to_show=np.copy(self.image_to_show)
         best_ratio = max(self.Size[1] / (self.canvas_img.winfo_width()),
                          self.Size[0] / (self.canvas_img.winfo_height()))
         prev_final_width=self.final_width
         self.final_width=int(self.Size[1]/best_ratio)
         self.ratio=self.ratio*(prev_final_width/self.final_width)
 
-        self.image_to_show2 = self.image_to_show[self.zoom_sq[1]:self.zoom_sq[3], self.zoom_sq[0]:self.zoom_sq[2]]
-        self.TMP_image_to_show2 = cv2.resize(self.image_to_show2,
-                                             (self.final_width, int(self.final_width * (self.Size[0] / self.Size[1]))))
+        self.image_to_show2 = self.TMP_image_to_show[self.zoom_sq[1]:self.zoom_sq[3], self.zoom_sq[0]:self.zoom_sq[2]]
+        self.TMP_image_to_show2 = cv2.resize(self.image_to_show2, (self.final_width, int(self.final_width * (self.Size[0] / self.Size[1]))))
         self.image_to_show3 = PIL.ImageTk.PhotoImage(image=PIL.Image.fromarray(self.TMP_image_to_show2))
         self.canvas_img.create_image(0, 0, image=self.image_to_show3, anchor=NW)
         self.canvas_img.config(width=self.final_width, height=int(self.final_width * (self.Size[0] / self.Size[1])))
-        empty=empty=np.zeros([self.image_to_show.shape[0],self.image_to_show.shape[1],1],np.uint8)
+
+        empty=np.zeros([self.image_to_show.shape[0],self.image_to_show.shape[1],1],np.uint8)
         self.draw_binaries(empty)
+
 
     def draw_binaries(self, img, thick=-1):
         #Draw a binary image (the mask)

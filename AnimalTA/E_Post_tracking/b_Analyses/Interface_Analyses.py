@@ -2,9 +2,9 @@ from tkinter import *
 import cv2
 import numpy as np
 from AnimalTA.E_Post_tracking import Coos_loader_saver as CoosLS
-from AnimalTA.E_Post_tracking.b_Analyses import Functions_Analyses_Speed, Class_rows_analyses, Interface_smooth_param
+from AnimalTA.E_Post_tracking.b_Analyses import Functions_Analyses_Speed, Class_rows_analyses, Interface_smooth_param, Interface_deformation, Functions_deformation
 from AnimalTA.A_General_tools import Class_change_vid_menu, Class_Lecteur, Function_draw_mask, Interface_extend, \
-    UserMessages, User_help, Class_stabilise
+    UserMessages, User_help, Class_stabilise, Class_loading_Frame
 import copy
 import math
 from scipy.signal import savgol_filter
@@ -79,9 +79,22 @@ class Analyse_track(Frame):
         self.Scale_tail.bind("<Enter>", lambda a: self.HW.change_tmp_message(self.Messages["Analyses1"]))
         self.Scale_tail.bind("<Leave>", lambda a: self.HW.remove_tmp_message())
 
+
+        #Correct deformation of the camera/angle:
+        Deformation=Button(self.User_params_cont, text=self.Messages["Analyses12"], command=self.deform)
+        Deformation.grid(row=1, column=0, columnspan=2, sticky="nsew")
+        Deformation.bind("<Enter>", lambda a: self.HW.change_tmp_message(self.Messages["Analyses13"]))
+        Deformation.bind("<Leave>", self.HW.remove_tmp_message)
+        #Apply similar deformation to other videos
+
+        bouton_extend_Deformation = Button(self.User_params_cont, text=self.Messages["Analyses_B4"], command=self.extend_deform)
+        bouton_extend_Deformation.grid(row=2, column=0, columnspan=2, sticky="we")
+
+
+
         # Apply smoothing filter
         Fr_smooth = Frame(self.User_params_cont)
-        Fr_smooth.grid(row=1, column=0, columnspan=2, sticky="nsew")
+        Fr_smooth.grid(row=3, column=0, columnspan=2, sticky="nsew")
         Fr_smooth.columnconfigure(0, weight=10)
         Fr_smooth.columnconfigure(1, weight=1)
 
@@ -116,11 +129,11 @@ class Analyse_track(Frame):
         #Load the different kind of analyses
         self.Add_ana = Label(self.User_params_cont, text=self.Messages["Analyses_Lab1"], background="cornflower blue",
                              height=2)
-        self.Add_ana.grid(row=3, columnspan=2, sticky="nsew")
+        self.Add_ana.grid(row=4, columnspan=2, sticky="nsew")
 
         Liste_analyses = Frame(self.User_params_cont, height=200, width=150, highlightbackground="cornflower blue",
                                highlightthickness=4)
-        Liste_analyses.grid(row=4, columnspan=2, sticky="nsew")
+        Liste_analyses.grid(row=5, columnspan=2, sticky="nsew")
         Liste_analyses.columnconfigure(0, weight=1)
 
         self.liste_ana.append(
@@ -174,12 +187,16 @@ class Analyse_track(Frame):
         # Navigation buttons
         self.bouton_save = Button(self.User_params_cont, text=self.Messages["Control3"], bg="#6AED35",
                                   command=self.save_And_quit)
-        self.bouton_save.grid(row=5, column=0, sticky="we")
+        self.bouton_save.grid(row=6, column=0, sticky="we")
 
         self.bouton_saveNext = Button(self.User_params_cont, text=self.Messages["Control7"], bg="#6AED35",
                                       command=lambda: self.save_And_quit(follow=True))
-        self.bouton_saveNext.grid(row=5, column=1, sticky="we")
+        self.bouton_saveNext.grid(row=6, column=1, sticky="we")
 
+
+    def deform(self):
+        newWindow = Toplevel(self.master)
+        interface = Interface_deformation.Deformation(parent=newWindow, Video_file= self.Vid, main_frame=self)
 
     def extend_glob_smooth(self):
         """ Extend the parameters of smoothong filter to other videos"""
@@ -208,25 +225,69 @@ class Analyse_track(Frame):
         newWindow = Toplevel(self.parent.master)
         interface = Interface_extend.Extend(parent=newWindow, value=self.Infos_inter, boss=self.main_frame,
                                             Video_file=self.Vid, type="analyses_inter")
-
+    def extend_deform(self):
+        """Extend the deformation parameters to other videos"""
+        newWindow = Toplevel(self.parent.master)
+        interface = Interface_extend.Extend(parent=newWindow, value=self.Vid.Analyses[4].copy(), boss=self.main_frame,
+                                            Video_file=self.Vid, type="analyses_deform")
     def on_frame_conf(self, *arg):
         # Change canvas' size according to the main window size
         self.Liste_analyses.configure(scrollregion=self.Liste_analyses.bbox("all"))
 
     def change_type_coos(self, modif=False, *arg):
         # Change displayed coordiantes from smoothed to brut ones
+        self.load_frame = Class_loading_Frame.Loading(self)  # Progression bar
+        self.load_frame.show_load(0)
         self.Coos = self.Coos_brutes.copy()
+        if len(self.Vid.Analyses[4][0]) > 0:
+            self.Coos=self.deform_coos(self.Coos)
         if self.Check_Smoothed.get():
-            self.smooth_coos()
+            self.Coos = self.smooth_coos(self.Coos)
         self.smooth_button()
         if modif:
             self.modif_image()
 
-    def smooth_coos(self):
-        self.Coos=self.Coos.astype(dtype=float)
+        self.load_frame.destroy()
+
+
+    def deform_coos(self, coos):
+        if self.Check_Smoothed.get():
+            progress=0.5
+        else:
+            progress=1
+
+        if len(self.Vid.Analyses[4][0])>0:
+            mask = Function_draw_mask.draw_mask(self.Vid)
+            Arenas, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            self.Arenas = Function_draw_mask.Organise_Ars(Arenas)
+            if len(self.Vid.Analyses[4][0]) > 0:
+                for Ar in range(len(self.Arenas)):
+                    Arena_pts = self.Arenas[Ar]
+                    Arena_pts = Arena_pts[:, 0, :]
+                    Arena_pts = np.array([Arena_pts], dtype=np.float32)
+                    Arena_pts = cv2.perspectiveTransform(Arena_pts, self.Vid.Analyses[4][0])
+                    Arena_pts = cv2.convexHull(Arena_pts.astype(np.int32))
+                    self.Arenas[Ar] = Arena_pts
+
+            for ind in range(self.NB_ind):
+                self.load_frame.show_load((ind/self.NB_ind)*progress)
+                ind_coo = [[np.nan if val == -1000 else val for val in row] for row in coos[ind]]
+                vals = np.array(ind_coo, dtype=np.float32)
+                new_vals=cv2.perspectiveTransform(vals[None, :, :],self.Vid.Analyses[4][0])
+                new_vals[np.where(new_vals==0)] = -1000
+                new_vals = new_vals.astype(dtype=float)
+                coos[ind] = new_vals.copy()
+        return(coos)
+
+    def smooth_coos(self, coos):
+        if len(self.Vid.Analyses[4][0]) > 0:
+            progress = 0.5
+        else:
+            progress = 0
         """Apply the savgol_filter to smoothen the trajectories"""
         for ind in range(self.NB_ind):
-            ind_coo = [[np.nan if val == -1000 else val for val in row] for row in self.Coos_brutes[ind]]
+            self.load_frame.show_load(progress+((ind / self.NB_ind) * (1-progress)))
+            ind_coo = [[np.nan if val == -1000 else val for val in row] for row in coos[ind]]
             ind_coo = np.array(ind_coo, dtype=np.float)
             for column in range(2):
                 Pos_NA = np.where(np.isnan(ind_coo[:, column]))[0]
@@ -259,7 +320,8 @@ class Analyse_track(Frame):
 
             ind_coo[np.where(np.isnan(ind_coo))] = -1000
             ind_coo = ind_coo.astype(dtype=float)
-            self.Coos[ind] = ind_coo.copy()
+            coos[ind] = ind_coo.copy()
+        return(coos)
 
     def smooth_button(self):
         # Change the state of the button for changing the parameters of smooth filter
@@ -267,14 +329,6 @@ class Analyse_track(Frame):
             self.Button_Smoothed_param.config(state="active")
         else:
             self.Button_Smoothed_param.config(state="disable")
-
-    def bindings(self):
-        """Do all the mandatory bindings"""
-        self.bind_all("<Right>", self.move1)
-        self.bind_all("<Left>", self.back1)
-        self.bind_all("<space>", lambda x: self.playbacks())
-        self.canvas_video.bind("<Control-1>", self.Zoom_in)
-        self.canvas_video.bind("<Control-3>", self.Zoom_out)
 
     def resize(self, event):
         #Adapt the size of the Scrollbar to the size of the window
@@ -308,7 +362,6 @@ class Analyse_track(Frame):
 
     def save(self):
         # Save the parameters
-        self.Vid.Analyses = [0, [], [], 0]
         self.Vid.Analyses[0] = self.Calc_speed.seuil_movement  # We save the movement threshold
 
         # Pickle does not accept tkinter DoubleVar:
@@ -328,7 +381,7 @@ class Analyse_track(Frame):
     def pressed_can(self, Pt, *args):
         pass
 
-    def moved_can(self, Pt):
+    def moved_can(self, Pt, Shift):
         pass
 
     def released_can(self, Pt):
@@ -347,6 +400,14 @@ class Analyse_track(Frame):
         mask = Function_draw_mask.draw_mask(self.Vid)
         Arenas, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         self.Arenas = Function_draw_mask.Organise_Ars(Arenas)
+        if len(self.Vid.Analyses[4][0])>0:
+            for Ar in range(len(self.Arenas)):
+                Arena_pts=self.Arenas[Ar]
+                Arena_pts=Arena_pts[:, 0, :]
+                Arena_pts = np.array([Arena_pts], dtype=np.float32)
+                Arena_pts = cv2.perspectiveTransform(Arena_pts, self.Vid.Analyses[4][0])
+                Arena_pts=cv2.convexHull(Arena_pts.astype(np.int32))
+                self.Arenas[Ar]=Arena_pts
 
         try:
             self.Calc_speed.seuil_movement = self.Vid.Analyses[0]
@@ -388,12 +449,15 @@ class Analyse_track(Frame):
         self.Coos=self.Coos_brutes.copy()
         self.NB_ind = len(self.Vid.Identities)
 
+
+
         if self.Vid.Smoothed[0] != 0: #If the video was already associated with video smoothing
             self.window_length = self.Vid.Smoothed[0]
             self.polyorder = self.Vid.Smoothed[1]
             self.Check_Smoothed.set(1)
             self.change_type_coos()
-
+        elif len(self.Vid.Analyses[4][0])>0:
+            self.change_type_coos()
 
         # We show the first frame:
         self.Vid_Lecteur.canvas_video.update()
@@ -427,6 +491,10 @@ class Analyse_track(Frame):
         if self.Vid.Stab[0]:
             new_img = (Class_stabilise.find_best_position(Vid=self.Vid, Prem_Im=self.Vid_Lecteur.Prem_image_to_show,
                                                           frame=new_img, show=False, prev_pts=self.prev_pts))
+
+
+        if len(self.Vid.Analyses[4][0])>0:
+            new_img =  cv2.warpPerspective(new_img, self.Vid.Analyses[4][0], (new_img.shape[1], new_img.shape[0]))
 
         for ind in range(self.NB_ind): #For each target
             color = self.Vid.Identities[ind][2]

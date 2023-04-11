@@ -17,6 +17,7 @@ class Draw_ent(Frame):
         self.scale=scale
         self.boss=boss#Who is the class calling this one
         self.parent=parent
+        self.parent.geometry("1200x750")
         self.image_to_show=self.img.copy()
         self.last_image_to_show=self.image_to_show.copy()
         self.ents=Entrances

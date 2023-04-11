@@ -226,11 +226,12 @@ class Lecteur(Frame):
         else:
             file_name = self.Vid.User_Name
 
-        if os.path.isfile(self.Vid.Folder+"/corrected_coordinates/"+file_name + "_Corrected.csv"):
-            os.remove(self.Vid.Folder+"/corrected_coordinates/"+file_name + "_Corrected.csv")
+        if os.path.isfile(os.path.join(self.Vid.Folder,"corrected_coordinates",file_name + "_Corrected.csv")):
+            os.remove(os.path.join(self.Vid.Folder,"corrected_coordinates",file_name + "_Corrected.csv"))
 
         self.load_Vid(self.Vid)
         self.modif_image()
+
 
     def redo_tracking(self):
         #Rerun part of the tracking. To do so, a temporary table and a temporary video will be created from the frames to be re-run.
@@ -304,7 +305,7 @@ class Lecteur(Frame):
         else:
             file_name = self.Vid.User_Name
 
-        path = self.Vid.Folder + "/TMP_portion/" + file_name + "_TMP_portion_Coordinates.csv"
+        path = os.path.join(self.Vid.Folder, "TMP_portion", file_name + "_TMP_portion_Coordinates.csv")
         for ind in range(len(self.Coos)):
             with open(path, encoding="utf-8") as csv_file:
                 csv_reader = csv.reader(csv_file, delimiter=";")
@@ -354,7 +355,7 @@ class Lecteur(Frame):
         #Save the new cooridnates in a specific folder (corrected_coordinates)
         CoosLS.save(self.Vid, self.Coos)
         #If there was a temporary file used, we delete it
-        folder = self.main_frame.folder + str("/TMP_portion")
+        folder = os.path.join(self.main_frame.folder, "TMP_portion")
         if os.path.isdir(folder):
             shutil.rmtree(folder)
         self.Vid.corrected=True
@@ -389,12 +390,10 @@ class Lecteur(Frame):
         self.Coos[self.selected_ind,(self.Scrollbar.active_pos - self.to_sub):len(self.Coos[new_ind])], \
         self.Coos[new_ind,(self.Scrollbar.active_pos - self.to_sub):len(self.Coos[new_ind])].copy()
 
-
-
         self.afficher_table(redo=True)
         self.modif_image()
 
-    def moved_can(self, Pt):
+    def moved_can(self, Pt, Shift):
         #Used to move  a target's position
         #If the user clicked on a target before and if the user does not try to put the target outside of the frame.
         if self.clicked and Pt[0]>=0 and Pt[1]>=0 and Pt[0]<=self.Vid.shape[1] and Pt[1]<=self.Vid.shape[0]:
@@ -402,6 +401,18 @@ class Lecteur(Frame):
             self.Coos[self.selected_ind,self.Scrollbar.active_pos-self.to_sub]=[Pt[0],Pt[1]]
             #Display the new frame
             self.modif_image(self.last_empty)
+
+    def right_click(self, Pt):
+        #If the target position was unknown (NA value), the user can create a new position using a right click.
+        if self.Coos[self.selected_ind,self.Scrollbar.active_pos-self.to_sub][0]==-1000:
+            self.Coos[self.selected_ind, self.Scrollbar.active_pos - self.to_sub] = [Pt[0], Pt[1]]
+            self.modif_image(self.last_empty)
+
+            self.Scrollbar.active_pos += 1
+            self.Scrollbar.refresh()
+            self.Vid_Lecteur.update_image(self.Scrollbar.active_pos)
+            self.afficher_table()
+
 
     def released_can(self, Pt):
         #We put back the clicked flag to false (user is not moving a target's position)
@@ -561,8 +572,8 @@ class Lecteur(Frame):
 
             for raw in self.selected_rows[0:len(self.selected_rows)-1+add]:
                 raw=int(raw)
-                self.Coos[self.selected_ind,raw,0] = int(round(int( self.Coos[self.selected_ind,first,0]) + ((int( self.Coos[self.selected_ind,last,0]) - int( self.Coos[self.selected_ind,first,0])) * ((raw - first) / (len(self.selected_rows)-1))),0))
-                self.Coos[self.selected_ind,raw,1] = int(round(int( self.Coos[self.selected_ind,first,1]) + ((int( self.Coos[self.selected_ind,last,1]) - int( self.Coos[self.selected_ind,first,1])) * ((raw - first) / (len(self.selected_rows)-1))),0))
+                self.Coos[self.selected_ind,raw,0] = (( self.Coos[self.selected_ind,first,0]) + ((( self.Coos[self.selected_ind,last,0]) - ( self.Coos[self.selected_ind,first,0])) * ((raw - first) / (len(self.selected_rows)-1))))
+                self.Coos[self.selected_ind,raw,1] = (( self.Coos[self.selected_ind,first,1]) + ((( self.Coos[self.selected_ind,last,1]) - ( self.Coos[self.selected_ind,first,1])) * ((raw - first) / (len(self.selected_rows)-1))))
                 if self.selected_ind not in self.who_is_here[raw]:
                     self.who_is_here[raw].append(self.selected_ind)
 
@@ -629,6 +640,7 @@ class Lecteur(Frame):
         self.Coos, self.who_is_here = CoosLS.load_coos(self.Vid)
         self.selected_ind=0
         self.afficher_table()
+
 
         # Associate the vertical scrollbar with the table
         self.vsb = Scale(self.User_params_cont, from_=self.to_sub, to=self.to_sub + len(self.Coos[0]) -1,orient="vertical")

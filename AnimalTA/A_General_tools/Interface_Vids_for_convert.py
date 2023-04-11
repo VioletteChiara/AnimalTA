@@ -1,4 +1,5 @@
 from tkinter import *
+import os
 from tkinter import messagebox
 from AnimalTA.A_General_tools import UserMessages
 from AnimalTA.B_Project_organisation import Class_converter
@@ -21,7 +22,7 @@ class Convert(Frame):
 
         #Import messsages
         self.Language = StringVar()
-        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
+        f = open(UserMessages.resource_path(os.path.join("AnimalTA","Files","Language")), "r", encoding="utf-8")
         self.Language.set(f.read())
         self.LanguageO = self.Language.get()
         f.close()

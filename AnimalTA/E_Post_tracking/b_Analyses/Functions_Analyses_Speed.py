@@ -240,6 +240,8 @@ class speed_calculations:
         copy=np.array(parent.Coos[ind])
         return(np.count_nonzero(copy[:,0]==-1000)/len(copy[:,0]))
 
+
+
     def calculate_dist(self, parent, ind, in_move=False, return_vals=False):
         """Calculate the distance traveled by the target (in px).
         parent: higher level class calling this function
@@ -249,17 +251,36 @@ class speed_calculations:
         if return_vals: dists = []
         Sdists=0
         nb_dists=0
+        Smeander=0
+        nb_Smeander=0
         last=[-1000,-1000]
+        last_angle=-1000
+
         for ligne in range(len(parent.Coos[ind])):
             if ligne > 0 and parent.Coos[ind,ligne,0] != -1000:
                 if parent.Coos[ind,ligne - 1,0] != -1000:
                     dist = (math.sqrt((float(parent.Coos[ind][ligne][0]) - float(parent.Coos[ind][ligne - 1][0])) ** 2 + (float(parent.Coos[ind][ligne][1]) - float(parent.Coos[ind][ligne - 1][1])) ** 2))/ float(parent.Vid.Scale[0])
                     speed = (dist) / (1 / parent.Vid.Frame_rate[1])
                     last=parent.Coos[ind][ligne]
+
+                    angle = math.atan2((parent.Coos[ind][ligne - 1][1] - parent.Coos[ind][ligne][1]), (parent.Coos[ind][ligne - 1][0] - parent.Coos[ind][ligne][0]))
+                    angle = (angle*180)/math.pi
+                    if (last_angle != -1000):
+                        angle_diff=min([abs(angle-last_angle),abs(angle+last_angle)])
+
                     if return_vals: dists.append(dist)
                     if (in_move and speed > self.seuil_movement) or not in_move:
                         Sdists+=dist
                         nb_dists+=1
+
+                        if (last_angle != -1000 and dist>0):
+                            Smeander += angle_diff / dist
+                            nb_Smeander += 1
+
+                        last_angle=angle
+                    else:
+                        last_angle=-1000
+
                 elif last[0]!=-1000:
                     dist = (math.sqrt((float(parent.Coos[ind][ligne][0]) - float(last[0])) ** 2 + (float(parent.Coos[ind][ligne][1]) - float(last[1])) ** 2))/ float(parent.Vid.Scale[0])
                     speed = (dist) / (1 / parent.Vid.Frame_rate[1])
@@ -269,8 +290,14 @@ class speed_calculations:
                     if (in_move and speed > self.seuil_movement) or not in_move:
                         Sdists += dist
                         nb_dists += 1
+
+                    last_angle=-1000
+
                 else:
-                    dists.append("NA")
+                    if return_vals: dists.append("NA")
+                    last_angle = -1000
+
+
 
             elif return_vals:
                 dists.append("NA")
@@ -278,10 +305,16 @@ class speed_calculations:
         if nb_dists==0:
             Sdists="NA"
 
-        if not return_vals:
-            return (Sdists)
+        if(nb_Smeander>0):
+            meander_val=Smeander/nb_Smeander
         else:
-            return(Sdists, dists)
+            meander_val = "NA"
+
+        if not return_vals:
+
+            return (Sdists, meander_val)
+        else:
+            return(Sdists, dists, meander_val)
 
     def calculate_speed(self, parent, ind):
         """Calculate the speed of a target at the frame displayed by parent.
@@ -417,7 +450,6 @@ class speed_calculations:
         Points: coordinates of the segment
         ind: individual of interest (ID number)
         """
-
         if len(Points)==2:#Avoid errors
             touched_border = False  # If a target stay more than 1 frame exactly on the segment
             Latency = "NA"
@@ -425,6 +457,8 @@ class speed_calculations:
             nb_cross_TL_BR =0
             last=[-1000,-1000]
             dist_seg=math.sqrt((Points[0][0]-Points[1][0])**2 + (Points[0][1]-Points[1][1])**2)
+
+
             if dist_seg>0:#We verify that the two points defining the segment are not at the same place
                 if abs(Points[1][0] - Points[0][0]) > abs(Points[1][1] - Points[0][1]):
                     vertical = True
@@ -439,10 +473,13 @@ class speed_calculations:
                             if dist_trav>0:#Si l'individu est en mouvement
                                 Pt1 = (float(parent.Coos[ind,ligne-1,0]), float(parent.Coos[ind,ligne-1,1]))
                                 Pt2=(float(parent.Coos[ind,ligne,0]),float(parent.Coos[ind,ligne,1]))
+
+
                                 is_inter=self.inter(Points[0], Pt1, Pt2)[0] != self.inter(Points[1], Pt1, Pt2)[0] and self.inter(Points[0], Points[1], Pt1)[0] != self.inter(Points[0], Points[1], Pt2)[0]
                                 is_crossed=self.inter(Points[0], Pt1, Pt2)[1] != self.inter(Points[1], Pt1, Pt2)[1] and self.inter(Points[0], Points[1], Pt1)[1] != self.inter(Points[0], Points[1], Pt2)[1]
-                                if is_crossed and not touched_border:
 
+
+                                if is_crossed and not touched_border:
                                     #If there is a cross, we want to know if it is from left to right/top to bottom
                                     if (Points[1][0] - Points[0][0]) == 0:
                                         t = [Points[1][0], Pt1[1]]
@@ -461,7 +498,6 @@ class speed_calculations:
                                     else:
                                         if Pt1[0]<t[0]:
                                             nb_cross_TL_BR += 1
-
                                     nb_cross+=1
                                     if Latency=="NA":
                                         Latency=ligne/parent.Vid.Frame_rate[1]

@@ -1,7 +1,7 @@
 from tkinter import *
+import os
 from AnimalTA.A_General_tools import UserMessages
 from AnimalTA.B_Project_organisation import Interface_pretracking
-from ctypes import windll
 from tkinter import ttk
 
 
@@ -22,27 +22,12 @@ class Mainframe(Tk):
         self.frame = Interface_pretracking.Interface(self)
         self.frame.grid(sticky="nsew")
 
-    def set_appwindow(self,root):
-        hwnd = windll.user32.GetParent(root.winfo_id())
-        style = windll.user32.GetWindowLongPtrW(hwnd, GWL_EXSTYLE)
-        style = style & ~WS_EX_TOOLWINDOW
-        style = style | WS_EX_APPWINDOW
-        res = windll.user32.SetWindowLongPtrW(hwnd, GWL_EXSTYLE, style)
-        # re-assert the new window style
-        root.wm_withdraw()
-        root.after(10, lambda: root.wm_deiconify())
-
-GWL_EXSTYLE = -20
-WS_EX_APPWINDOW = 0x00040000
-WS_EX_TOOLWINDOW = 0x00000080
-
 root=Mainframe()
 root.overrideredirect(1)
 root.geometry("1250x720")
 root.geometry("+100+100")
-img = PhotoImage(file=UserMessages.resource_path("AnimalTA/Files/Logo.png"))
+img = PhotoImage(file=UserMessages.resource_path(os.path.join("AnimalTA","Files","Logo.png")))
 root.wm_iconphoto(True, img)
-root.after(10, lambda: root.set_appwindow(root=root))
 
 
 Grid.rowconfigure(root,0,weight=1)

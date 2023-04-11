@@ -1,4 +1,5 @@
 import math
+import os
 from tkinter import *
 import cv2
 import PIL.Image, PIL.ImageTk
@@ -27,7 +28,7 @@ class Row_Can(Canvas):
 
 
             self.Language = StringVar()
-            f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
+            f = open(UserMessages.resource_path(os.path.join("AnimalTA","Files","Language")), "r", encoding="utf-8")
             self.Language.set(f.read())
             self.LanguageO = self.Language.get()
             f.close()
@@ -35,24 +36,24 @@ class Row_Can(Canvas):
             self.Messages = UserMessages.Mess[self.Language.get()]
 
             #Draw preparation:
-            self.oeuil = cv2.imread(UserMessages.resource_path("AnimalTA/Files/Oeuil.png"))
+            self.oeuil = cv2.imread(UserMessages.resource_path(os.path.join("AnimalTA","Files","Oeuil.png")))
             self.oeuil = cv2.cvtColor(self.oeuil, cv2.COLOR_BGR2RGB)
             self.Size_oe = self.oeuil.shape
             self.oeuil = cv2.resize(self.oeuil, (int(self.Size_oe[1] / 4), int(self.Size_oe[0] / 4)))
             self.oeuil2 = PIL.ImageTk.PhotoImage(image=PIL.Image.fromarray(self.oeuil))
 
-            self.oeuilB = cv2.imread(UserMessages.resource_path("AnimalTA/Files/OeuilB.png"))
+            self.oeuilB = cv2.imread(UserMessages.resource_path(os.path.join("AnimalTA","Files","OeuilB.png")))
             self.oeuilB = cv2.cvtColor(self.oeuilB, cv2.COLOR_BGR2RGB)
             self.oeuilB = cv2.resize(self.oeuilB, (int(self.Size_oe[1] / 4), int(self.Size_oe[0] / 4)))
             self.oeuilB2 = PIL.ImageTk.PhotoImage(image=PIL.Image.fromarray(self.oeuilB))
 
-            self.Supr_im = PIL.Image.open(UserMessages.resource_path("AnimalTA/Files/cross.png"))
+            self.Supr_im = PIL.Image.open(UserMessages.resource_path(os.path.join("AnimalTA","Files","cross.png")))
             self.Supr_im = PIL.ImageTk.PhotoImage(self.Supr_im)
 
-            self.Copy_im = PIL.Image.open(UserMessages.resource_path("AnimalTA/Files/Copy.png"))
+            self.Copy_im = PIL.Image.open(UserMessages.resource_path(os.path.join("AnimalTA","Files","Copy.png")))
             self.Copy_im = PIL.ImageTk.PhotoImage(self.Copy_im)
 
-            self.Concat_im = PIL.Image.open(UserMessages.resource_path("AnimalTA/Files/Concat.png"))
+            self.Concat_im = PIL.Image.open(UserMessages.resource_path(os.path.join("AnimalTA","Files","Concat.png")))
             self.Concat_im = PIL.ImageTk.PhotoImage(self.Concat_im)
 
 
@@ -426,8 +427,8 @@ class Row_Can(Canvas):
             self.Video.Frame_rate[1] = choice
 
         one_every=int(round(round(self.Video.Frame_rate[0], 2) / self.Video.Frame_rate[1]))
-        self.Video.Cropped[1][0]=int(math.ceil(self.Video.Cropped[1][0]/one_every) * one_every)#Avoid to try to open un-existing frames after changes in frame-rate
-        self.Video.Cropped[1][1] = int(math.ceil(self.Video.Cropped[1][1]/one_every) * one_every)
+        self.Video.Cropped[1][0]= int(math.floor(self.Video.Cropped[1][0]/one_every) * one_every)#Avoid to try to open un-existing frames after changes in frame-rate
+        self.Video.Cropped[1][1] = int(math.floor(self.Video.Cropped[1][1]/one_every) * one_every)
 
         self.Video.Frame_nb[1] = int(self.Video.Frame_nb[0] / round(self.Video.Frame_rate[0] / self.Video.Frame_rate[1]))
         self.update()
@@ -440,8 +441,8 @@ class Row_Can(Canvas):
         interface = Interface_extend.Extend(parent=newWindow, value=ratio, boss=self.main_frame, Video_file=self.Video, type="fps")
 
     def update_crop(self):
-        # Show the details about video duration (with cropping)
-        if self.Video.Cropped[0]:
+        # Show the details about video duration (with cropping) and spatial cropping
+        if self.Video.Cropped[0] and self.Video.Cropped_sp[0]:
             self.cropping_button.config(bg="#3aa6ff")
             one_every = int(round(round(self.Video.Frame_rate[0], 2) / self.Video.Frame_rate[1]))
             self.text_crop.set(self.Messages["RowL1"].format(int(self.Video.Cropped[1][0]/one_every), round((self.Video.Cropped[1][0]/one_every) / self.Video.Frame_rate[1],2), \
@@ -449,6 +450,21 @@ class Row_Can(Canvas):
                                                             int(self.Video.Cropped[1][1]/one_every) - int(self.Video.Cropped[1][0]/one_every) + 1, \
                                                              round((int(self.Video.Cropped[1][1]/one_every) - int(self.Video.Cropped[1][0]/one_every) +1) / self.Video.Frame_rate[1],2)))
             self.crop_it.set(self.Messages["RowB7"])
+
+        elif self.Video.Cropped[0] and not self.Video.Cropped_sp[0]:
+            self.cropping_button.config(bg="#bfe62b")
+            one_every = int(round(round(self.Video.Frame_rate[0], 2) / self.Video.Frame_rate[1]))
+            self.text_crop.set(self.Messages["RowL1"].format(int(self.Video.Cropped[1][0]/one_every), round((self.Video.Cropped[1][0]/one_every) / self.Video.Frame_rate[1],2), \
+                                                             int((self.Video.Cropped[1][1]/one_every)), round((int(self.Video.Cropped[1][1]/one_every)+1)/ self.Video.Frame_rate[1],2), \
+                                                            int(self.Video.Cropped[1][1]/one_every) - int(self.Video.Cropped[1][0]/one_every) + 1, \
+                                                             round((int(self.Video.Cropped[1][1]/one_every) - int(self.Video.Cropped[1][0]/one_every) +1) / self.Video.Frame_rate[1],2)))
+            self.crop_it.set(self.Messages["RowB7"])
+
+
+        elif not self.Video.Cropped[0] and self.Video.Cropped_sp[0]:
+            self.cropping_button.config(bg="#bfe62b")
+            self.text_crop.set(self.Messages["RowL2"].format(self.Video.Frame_nb[1], round(self.Video.Frame_nb[1] / self.Video.Frame_rate[1],2)))
+            self.crop_it.set(self.Messages["RowB8"])
             self.update_repre()
             self.update_back()
 
@@ -459,6 +475,7 @@ class Row_Can(Canvas):
 
         if self.Video.Tracked:
             self.cropping_button.config(bg="SystemButtonFace")
+
 
     def crop_vid(self, speed=0):
         # Open the cropping window
@@ -543,8 +560,6 @@ class Row_Can(Canvas):
         else:
             self.main_frame.Change_win(
                 Interface_stabilis.Stabilise(parent=self.main_frame.canvas_main, boss=self, main_frame=self.main_frame, Video_file=self.Video, speed=speed))
-
-
 
     def extend_stab(self):
         # Open a window to expend the stabilization to other videos

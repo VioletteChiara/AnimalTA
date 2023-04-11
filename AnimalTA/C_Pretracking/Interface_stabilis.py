@@ -1,4 +1,5 @@
 from tkinter import *
+import os
 import cv2
 from AnimalTA.A_General_tools import Class_change_vid_menu, Class_Lecteur, UserMessages, User_help, Class_stabilise
 import math
@@ -21,7 +22,7 @@ class Stabilise(Frame):
 
         #Import messages
         self.Language = StringVar()
-        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
+        f = open(UserMessages.resource_path(os.path.join("AnimalTA","Files","Language")), "r", encoding="utf-8")
         self.Language.set(f.read())
         self.LanguageO = self.Language.get()
         f.close()
@@ -106,7 +107,7 @@ class Stabilise(Frame):
             self.last_empty = img
             new_img = np.copy(img)
 
-        new_img= Class_stabilise.find_best_position(self.Vid, self.Vid_Lecteur.Prem_image_to_show, new_img, True, prev_pts=self.prev_points)
+        new_img= Class_stabilise.find_best_position(self.Vid, self.Vid_Lecteur.Prem_image_to_show, new_img, True, prev_pts=self.prev_points, scale=self.Vid_Lecteur.ratio)
 
         if self.Scrollbar.active_pos>self.Scrollbar.crop_end or self.Scrollbar.active_pos<self.Scrollbar.crop_beg:
             new_img = cv2.addWeighted(new_img, 1, new_img, 0, 1)
@@ -167,7 +168,7 @@ class Stabilise(Frame):
                 break
         self.modif_image()
 
-    def moved_can(self, Pt):
+    def moved_can(self, Pt, Shift):
         pass
 
     def released_can(self, Pt):

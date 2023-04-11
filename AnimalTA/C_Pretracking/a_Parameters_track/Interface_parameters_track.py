@@ -284,12 +284,12 @@ class Param_definer(Frame):
             #This is for the next update: alloww to redraw the areas throught which targets can enter the arenas
             #self.draw_ent_B=Button(self.Sub_V_Nb, text="Redraw entrance area", command=self.redo_ent, background="grey80")
             #self.draw_ent_B.grid(sticky="nsew")
+            # self.Sub_V_Nb.grid_columnconfigure(0, weight=1)
+
 
             self.Sub_F_Nb.grid_columnconfigure(0, weight=1)
             self.Sub_F_Nb.grid_columnconfigure(1, weight=5)
             self.Sub_F_Nb.grid_columnconfigure(2, weight=1)
-
-            #self.Sub_V_Nb.grid_columnconfigure(0, weight=1)
 
             Lab_three_per_Ar = Label(self.Sub_F_Nb, text=self.Messages["Param9"], width=width_labels+3, wraplength=120, background="grey80")
             Lab_three_per_Ar.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Param8"]))
@@ -307,7 +307,8 @@ class Param_definer(Frame):
             param_nb_per_ar.bind("<Leave>", self.HW.remove_tmp_message)
 
             self.Sub_F_Nb.grid(row=1, column=0, sticky="nsew")#To be replaced by next lines when update
-            '''
+
+            ''' Add this part of code to unlock the possibility of variable number of targets tracking
             if self.Vid.Track[1][6][0]:
                 self.Unknown_Nb_B.config(background="grey80")
                 self.Sub_F_Nb.grid(row=1, column=0, sticky="nsew")
@@ -642,7 +643,7 @@ class Param_definer(Frame):
     def pressed_can(self, Pt, Shift):
         pass
 
-    def moved_can(self, Pt):
+    def moved_can(self, Pt, Shift):
         pass
 
     def released_can(self, Pt):

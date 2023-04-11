@@ -16,6 +16,7 @@ class Show(Frame):
         self.parent = parent
         self.boss = boss
         self.grid(sticky="nsew")
+        self.parent.geometry("1050x620")
         self.Video_liste = Video_liste
         self.Vid=Vid
         self.boss.PortionWin.grab_set()
@@ -165,12 +166,13 @@ class Show(Frame):
 
     def modif_image(self, img=[], aff=False, move=True, actual_pos=None, *args):
         #draw the target's potition and trajectories on the image
-        self.Vid_Lecteur.update_ratio()
         if len(img)==0:
             new_img=np.copy(self.last_empty)
         else:
             self.last_empty = img
             new_img = np.copy(img)
+
+        self.Vid_Lecteur.update_ratio()
 
         if self.Vid.Cropped[0]:
             to_remove = int(round((self.Vid.Cropped[1][0])/self.Vid_Lecteur.one_every))
@@ -206,7 +208,7 @@ class Show(Frame):
     def pressed_can(self, Pt, Shift):
         pass
 
-    def moved_can(self, Pt):
+    def moved_can(self, Pt, Shift):
         pass
 
     def released_can(self, Pt):

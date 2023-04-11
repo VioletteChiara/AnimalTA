@@ -2,7 +2,7 @@ import os
 import csv
 import numpy as np
 from tkinter import *
-from AnimalTA.B_Project_organisation import Class_loading_Frame
+from AnimalTA.A_General_tools import Class_loading_Frame
 
 def load_coos(Vid, TMP=False):
     # Importation of the coordinates associated with the current video
@@ -17,10 +17,10 @@ def load_coos(Vid, TMP=False):
         file_name = Vid.User_Name
 
     if not TMP:
-        file_tracked_not_corr = Vid.Folder + "/coordinates/" + file_name + "_Coordinates.csv"
-        file_tracked_corr = Vid.Folder + "/corrected_coordinates/" + file_name + "_Corrected.csv"
+        file_tracked_not_corr = os.path.join(Vid.Folder, "coordinates", file_name + "_Coordinates.csv")
+        file_tracked_corr = os.path.join(Vid.Folder, "corrected_coordinates", file_name + "_Corrected.csv")
     else:
-        file_tracked_corr = Vid.Folder + "/TMP_portion/" + file_name + "_TMP_portion_Coordinates.csv"
+        file_tracked_corr = os.path.join(Vid.Folder, "TMP_portion", file_name + "_TMP_portion_Coordinates.csv")
 
     if os.path.isfile(file_tracked_corr):
         path = file_tracked_corr
@@ -50,13 +50,13 @@ def save(Vid, Coos, TMP=False):
         file_name = Vid.User_Name
 
     if not TMP:
-        if not os.path.isdir(Vid.Folder + str("/corrected_coordinates")):
-            os.makedirs(Vid.Folder + str("/corrected_coordinates"))
-        path = Vid.Folder + "/corrected_coordinates/" + file_name + "_Corrected.csv"
+        if not os.path.isdir(os.path.join(Vid.Folder, "corrected_coordinates")):
+            os.makedirs(os.path.join(Vid.Folder, "corrected_coordinates"))
+        path = os.path.join(Vid.Folder, "corrected_coordinates", file_name + "_Corrected.csv")
     else:
-        if not os.path.isdir(Vid.Folder + str("/TMP_portion")):
-            os.makedirs(Vid.Folder + str("/TMP_portion"))
-        path = Vid.Folder +  "/TMP_portion/" + file_name + "_TMP_portion_Coordinates.csv"
+        if not os.path.isdir(os.path.join(Vid.Folder, "TMP_portion")):
+            os.makedirs(os.path.join(Vid.Folder , "TMP_portion"))
+        path = os.path.join(Vid.Folder, "TMP_portion", file_name + "_TMP_portion_Coordinates.csv")
 
     if os.path.isfile(path):
         path = path
@@ -72,29 +72,32 @@ def load_variable(Vid, path):
     newWindow = Toplevel()
     load_frame = Class_loading_Frame.Loading(newWindow)  # Progression bar
 
-
     with open(path, encoding="utf-8") as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=";")
         or_table = list(csv_reader)
 
-    Coos = np.full((len(Vid.Identities),(int((Vid.Cropped[1][1] - Vid.Cropped[1][0])/one_every) + 1),2),-1000, dtype=float)
-    or_table = np.asarray(or_table)
-    or_table[or_table=="NA"]=-1000
-    who_is_here = [[] for x in range(int((Vid.Cropped[1][1] - Vid.Cropped[1][0])/one_every) + 1)]
+    who_is_here = [[] for x in range(int((Vid.Cropped[1][1] - Vid.Cropped[1][0]) / one_every) + 1)]
+    if len(or_table)==1:
+        Coos=np.full((1,(int((Vid.Cropped[1][1] - Vid.Cropped[1][0])/one_every) + 1),2),-1000, dtype=float)
 
-    count = 0
-    for Ind in Vid.Identities:
-        load_frame.show_load(count / len(Vid.Identities))
-        subset = or_table[np.where((np.array(or_table[:, 2]) == str(Ind[0])) & (np.array(or_table[:, 3]) == str(Ind[1][3:])))]
-        if len(subset)>0:
-            time = subset[:, 0].astype('float')
-            time = time.astype('int32')
-            time=time-int(Vid.Cropped[1][0]/one_every)
-            T_Coos = subset[:, 4:6]
-            Coos[count, time, :] = T_Coos
-            for im in time:
-                who_is_here[im] = who_is_here[im] + [count]
-            count += 1
+    else:
+        Coos = np.full((len(Vid.Identities),(int((Vid.Cropped[1][1] - Vid.Cropped[1][0])/one_every) + 1),2),-1000, dtype=float)
+        or_table = np.asarray(or_table)
+        or_table[or_table=="NA"]=-1000
+
+        count = 0
+        for Ind in Vid.Identities:
+            load_frame.show_load(count / len(Vid.Identities))
+            subset = or_table[np.where((np.array(or_table[:, 2]) == str(Ind[0])) & (np.array(or_table[:, 3]) == str(Ind[1][3:])))]
+            if len(subset)>0:
+                time = subset[:, 0].astype('float')
+                time = time.astype('int32')
+                time=time-int(Vid.Cropped[1][0]/one_every)
+                T_Coos = subset[:, 4:6]
+                Coos[count, time, :] = T_Coos
+                for im in time:
+                    who_is_here[im] = who_is_here[im] + [count]
+                count += 1
 
     load_frame.destroy()
     newWindow.destroy()
@@ -106,13 +109,11 @@ def load_fixed(Vid, path):
         csv_reader = csv.reader(csv_file, delimiter=";")
         or_table = list(csv_reader)
     or_table = np.array(or_table)
-    one_every = int(round(round(Vid.Frame_rate[0], 2) / Vid.Frame_rate[1]))
-    Coos = np.full((len(Vid.Identities), (int((Vid.Cropped[1][1] - Vid.Cropped[1][0]) / one_every) + 1), 2), -1000,dtype=float)
+    Coos = np.full((len(Vid.Identities), len(or_table)-1, 2), -1000,dtype=float)
     or_table = np.asarray(or_table)
     or_table[or_table == "NA"] = -1000
     for Ind in range(len(Vid.Identities)):
         Coos[Ind] = or_table[1:,2*Ind+2:2*Ind+4]
-
     return (Coos, [list(range(len(Vid.Identities)))]*len(Coos[0,:,0]))
 
 def save_fixed(Vid, Coos, path):
@@ -128,8 +129,6 @@ def save_fixed(Vid, Coos, path):
         General_Coos[1:,Ind*2+2:Ind*2+2+2]=Coos[Ind]
 
     np.savetxt(path, General_Coos, delimiter=';', encoding="utf-8", fmt='%s')
-
-
 
 def save_variable(Vid, Coos, path):
     one_every = int(round(round(Vid.Frame_rate[0], 2) / Vid.Frame_rate[1]))

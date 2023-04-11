@@ -1,6 +1,6 @@
 from tkinter import *
 from AnimalTA.A_General_tools import UserMessages
-from AnimalTA.E_Post_tracking.b_Analyses import Interface_details_ana
+from AnimalTA.E_Post_tracking.b_Analyses import Interface_details_ana, Interface_deformation
 
 
 class Row_Ana(Frame):
@@ -59,5 +59,3 @@ class Row_Ana(Frame):
             self.main.overlay=None
             newWindow = Toplevel(self.main.master)
             interface = Interface_details_ana.Details_inter(parent=newWindow, main=self.main)
-
-

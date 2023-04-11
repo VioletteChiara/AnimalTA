@@ -6,7 +6,7 @@ from AnimalTA.A_General_tools import Class_Scroll_crop, Function_draw_mask as Dr
 import time
 import PIL.Image, PIL.ImageTk
 import psutil
-import decord
+import os
 
 class Lecteur(Frame):
     """
@@ -24,7 +24,7 @@ class Lecteur(Frame):
 
         #Impotrt the language settings
         self.Language = StringVar()
-        f = open(UserMessages.resource_path(UserMessages.resource_path("AnimalTA/Files/Language")), "r", encoding="utf-8")
+        f = open(UserMessages.resource_path(UserMessages.resource_path(os.path.join("AnimalTA","Files","Language"))), "r", encoding="utf-8")
         self.Language.set(f.read())
         self.LanguageO = self.Language.get()
         self.Messages = UserMessages.Mess[self.Language.get()]
@@ -54,8 +54,6 @@ class Lecteur(Frame):
         Grid.columnconfigure(self.Frame_scrollbar, 0, weight=1)
         self.Scrollbar = Class_Scroll_crop.Pers_Scroll(self.Frame_scrollbar, container=self, bd=2, highlightthickness=1, relief='ridge', ecart=self.ecart)  #################NEWWWW
         self.Scrollbar.grid(sticky="ew")
-
-
 
         self.canvas_buttons = Frame(self, bd=2, highlightthickness=1, background="grey")
         self.canvas_buttons.grid(row=3, column=0, sticky="nsew")
@@ -229,8 +227,6 @@ class Lecteur(Frame):
         return_img=IF true, the function return the image without triggering image modification of the parent
         This fonction is calling another fonction that will apply the mandatory changes to the image (all kind of modifications: draw the trajectories, grayscaled, add the mask, etc).
         This second fonction is a method of the object containing this Video Reader.'''
-        frame=int(frame)
-
         Which_part=0
         if len(self.Vid.Fusion)>1:#If videos were concatenated, wecdetermine which segment of the video we are interested in
             Which_part = [index for index, Fu_inf in enumerate(self.Vid.Fusion) if Fu_inf[0] <= (frame * self.one_every)][-1]#Determine in which segment of the video is the frame to be display
@@ -320,8 +316,10 @@ class Lecteur(Frame):
         self.Frame_scrollbar.bind("<Configure>", self.Scrollbar.refresh)
 
         self.canvas_video.bind("<Button-1>", self.callback)
+        self.canvas_video.bind("<Shift-B1-Motion>", lambda x: self.callback_move(event=x,Shift=True))
         self.canvas_video.bind("<B1-Motion>", self.callback_move)
         self.canvas_video.bind("<ButtonRelease>", self.release)
+        self.canvas_video.bind("<Button-3>", self.right_click)
 
     def unbindings(self):
         '''Remove all the bindings'''
@@ -339,6 +337,7 @@ class Lecteur(Frame):
             self.canvas_video.unbind("<Button-1>")
             self.canvas_video.unbind("<B1-Motion>")
             self.canvas_video.unbind("<ButtonRelease>")
+
         except:
             pass
 
@@ -349,17 +348,27 @@ class Lecteur(Frame):
         event.y = int( self.ratio * (event.y - (self.canvas_video.winfo_height()-self.shape[0])/2)) + self.zoom_sq[1]
         self.parent.pressed_can((event.x,event.y), Shift)
 
-    def callback_move(self, event):
+    def callback_move(self, event, Shift=False):
         '''The info about where the frame was clicked is sent to the Video Reader container'''
-        event.x = int( self.ratio * (event.x - (self.canvas_video.winfo_width()-self.shape[1])/2)) + self.zoom_sq[0]
-        event.y = int( self.ratio * (event.y - (self.canvas_video.winfo_height()-self.shape[0])/2)) + self.zoom_sq[1]
+        event.x = self.ratio * (event.x - (self.canvas_video.winfo_width()-self.shape[1])/2) + self.zoom_sq[0]
+        event.y = self.ratio * (event.y - (self.canvas_video.winfo_height()-self.shape[0])/2) + self.zoom_sq[1]
         if  event.x >= 0 and event.y >= 0 and event.x <= self.Size[1] and event.y <= self.Size[0]:
-            self.parent.moved_can((event.x,event.y))
+            self.parent.moved_can((event.x,event.y), Shift)
+
+    def right_click(self, event):
+        '''The info about where the frame was clicked is sent to the Video Reader container'''
+        event.x = self.ratio * (event.x - (self.canvas_video.winfo_width()-self.shape[1])/2) + self.zoom_sq[0]
+        event.y = self.ratio * (event.y - (self.canvas_video.winfo_height()-self.shape[0])/2) + self.zoom_sq[1]
+        if  event.x >= 0 and event.y >= 0 and event.x <= self.Size[1] and event.y <= self.Size[0]:
+            try:#If we are in a window in which right click is usefull
+                self.parent.right_click((event.x,event.y))
+            except:
+                pass
 
     def release(self, event):
         '''The info about where the frame was clicked is sent to the Video Reader container'''
-        event.x = int( self.ratio * (event.x - (self.canvas_video.winfo_width()-self.shape[1])/2)) + self.zoom_sq[0]
-        event.y = int( self.ratio * (event.y - (self.canvas_video.winfo_height()-self.shape[0])/2)) + self.zoom_sq[1]
+        event.x = self.ratio * (event.x - (self.canvas_video.winfo_width()-self.shape[1])/2) + self.zoom_sq[0]
+        event.y = self.ratio * (event.y - (self.canvas_video.winfo_height()-self.shape[0])/2) + self.zoom_sq[1]
         self.parent.released_can((event.x,event.y))
 
     def afficher_img(self, img):
