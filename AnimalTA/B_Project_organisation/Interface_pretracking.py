@@ -46,7 +46,7 @@ class Information_panel(Frame):
         Lab_cite.grid(row=2, column=0,columnspan=2, sticky="nsw")
         Citation= Text(self, height=5, width=75, wrap=WORD)
         Citation.grid(row=3, column=0,columnspan=2, sticky="nswe")
-        Citation.insert("1.0", "Chiara V. & Kim S.Y. AnimalTA: a highly flexible and easy-to-use program for tracking and analyzing animal movement in different environments. Under review.")
+        Citation.insert("1.0", "Chiara V. & Kim S.Y. AnimalTA: a highly flexible and easy-to-use program for tracking and analyzing animal movement in different environments. Methods in Ecolocy and Evolution, Accepted.")
         Citation.configure(state="disabled")
 
         Lab_contact=Label(self, text="Contact:")
