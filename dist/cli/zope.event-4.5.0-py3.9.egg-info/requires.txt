@@ -1,7 +1,0 @@
-setuptools
-
-[docs]
-Sphinx
-
-[test]
-zope.testrunner
