@@ -39,7 +39,7 @@ class Information_panel(Frame):
         Grid.columnconfigure(self, 1, weight=100)
 
         #Short summary about current version, how to cite and how to find guidelines.
-        Lab_version=Label(self, text="AnimalTA. v2.2.1", font=("Arial", "14", "bold"))
+        Lab_version=Label(self, text="AnimalTA. v2.2.2 Private share from the 23/04/2023", font=("Arial", "14", "bold"))
         Lab_version.grid(row=0, column=0,columnspan=2, sticky="nsw")
 
         Lab_cite=Label(self, text="How to cite:")

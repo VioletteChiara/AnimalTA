@@ -145,8 +145,10 @@ def match_shapes(cnt1,cnt2, pts):
     for pt in approx2:
         list_of_pts2.append((int(round(pt[0][0])), int(round(pt[0][1]))))
 
+
     #If the two shapes have the same number of points or if both ar circual/ellipsoid
     if len(list_of_pts1)==len(list_of_pts2) or (Is_ellipse_c1 and Is_ellipse_c2):
+        print("Same nb")
         if Is_ellipse_c1:
             min_rect1 = cv2.minAreaRect(cnt1)
             min_rect2 = cv2.minAreaRect(cnt2)
@@ -158,7 +160,7 @@ def match_shapes(cnt1,cnt2, pts):
         min_rect1=list(min_rect1)
         min_rect2 = list(min_rect2)
 
-        min_rect1[1]=list(min_rect1[1])
+        min_rect1[1]= list(min_rect1[1])
         min_rect2[1] = list(min_rect2[1])
 
         #We first check that it is not a square (if it is the case, we will not apply rotation according to the width/heigh)
@@ -167,6 +169,7 @@ def match_shapes(cnt1,cnt2, pts):
 
         if 0.95 < min_rect1[1][0] / min_rect1[1][1] < 1.05:
             is_square1=True
+
 
         if not is_square1 or not is_square2:
             if min_rect1[1][0]<min_rect1[1][1]:
@@ -205,9 +208,25 @@ def match_shapes(cnt1,cnt2, pts):
         # We put the shape horizontaly to change its size
         approx2, pts=rotate_contour(approx2, -min_rect2[2], pts=pts)
 
+        empty1 = np.zeros([max(np.max(approx1[:, :, 1]), np.max(approx2[:, :, 1])) + 10,
+                           max(np.max(approx1[:, :, 0]), np.max(approx2[:, :, 0])) + 10, 3], np.uint8)
+
         #We calculate the size difference between the two arenas:
         resize_val=(min_rect1[1][0]/min_rect2[1][0],min_rect1[1][1]/min_rect2[1][1])
         approx2=resize(approx2,center2,center1,resize_val)
+
+
+        print(approx2)
+        print("AAAA")
+        empty1 = cv2.drawContours(empty1, [approx2], -1, (0, 255, 0), 3)
+        empty1 = cv2.drawContours(empty1, [approx1], -1, (255, 0, 0), 3)
+        cv2.imshow("W", empty1)
+        cv2.waitKey()
+        cv2.waitKey()
+        cv2.waitKey()
+        cv2.waitKey("Q")
+
+
         pts = resize_pt(np.array(pts),center2,center1,resize_val)
 
         # If it is a square or a circle, we keep the original orientation

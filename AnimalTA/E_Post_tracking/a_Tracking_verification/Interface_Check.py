@@ -58,7 +58,7 @@ class Lecteur(Frame):
 
         #We load the Arenas shapes to be able to show the user there positions
         mask = Dr.draw_mask(self.Vid)
-        self.Arenas, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        self.Arenas, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         self.Arenas = Dr.Organise_Ars(self.Arenas)
 
         # Help user and parameters
@@ -250,7 +250,7 @@ class Lecteur(Frame):
 
 
             new_Coos=self.Coos[:,(self.first- int(self.Vid.Cropped[1][0]/self.Vid_Lecteur.one_every)):(self.last- int(self.Vid.Cropped[1][0]/self.Vid_Lecteur.one_every)),:].copy()
-            CoosLS.save(self.TMP_Vid, new_Coos, TMP=True)
+            CoosLS.save(self.TMP_Vid, new_Coos, TMP=True, location=self)
 
             #We create a new coordinates file with only the selected frames:
             if self.Vid.Track[1][8]:
@@ -353,7 +353,7 @@ class Lecteur(Frame):
 
     def save_file(self):
         #Save the new cooridnates in a specific folder (corrected_coordinates)
-        CoosLS.save(self.Vid, self.Coos)
+        CoosLS.save(self.Vid, self.Coos, location=self)
         #If there was a temporary file used, we delete it
         folder = os.path.join(self.main_frame.folder, "TMP_portion")
         if os.path.isdir(folder):
@@ -637,7 +637,7 @@ class Lecteur(Frame):
             self.to_sub = 0
 
         #We import the coordinates
-        self.Coos, self.who_is_here = CoosLS.load_coos(self.Vid)
+        self.Coos, self.who_is_here = CoosLS.load_coos(self.Vid, location=self)
         self.selected_ind=0
         self.afficher_table()
 

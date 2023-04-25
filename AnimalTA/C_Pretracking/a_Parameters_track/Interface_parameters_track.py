@@ -65,7 +65,7 @@ class Param_definer(Frame):
         self.mask = Dr.draw_mask(self.Vid)
 
         #We look for the arenas
-        self.Arenas, _ = cv2.findContours(self.mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        self.Arenas, _ = cv2.findContours(self.mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         self.Arenas = Dr.Organise_Ars(self.Arenas)
 
         #We set here a maximum distance to avoid user to put too high distances

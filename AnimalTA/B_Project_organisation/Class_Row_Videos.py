@@ -9,6 +9,7 @@ from AnimalTA.A_General_tools import Function_draw_mask as Dr, Interface_extend,
 from AnimalTA.C_Pretracking import Interface_cropping, Interface_back, Interface_arenas, Interface_scaling, \
     Interface_stabilis
 from tkinter import font
+import numpy as np
 
 
 class Row_Can(Canvas):

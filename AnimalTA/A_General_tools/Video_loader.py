@@ -18,7 +18,7 @@ class Video_Loader():
 
     def __getitem__(self, i):
         if self.which_reader=="decord":
-            im= self.capture[i].asnumpy()
+            im=self.capture[i].asnumpy()
             if self.is_crop and self.Vid.Cropped_sp[0]:
                 im=im[self.Vid.Cropped_sp[1][0]:self.Vid.Cropped_sp[1][2], self.Vid.Cropped_sp[1][1]:self.Vid.Cropped_sp[1][3]]
             self.capture.seek(0)
@@ -42,6 +42,7 @@ class Video_Loader():
             return L
         else:
             return int(self.capture.get(cv2.CAP_PROP_FRAME_COUNT))
+
 
     def load_video(self, File):
         self.which_reader = "cv2"

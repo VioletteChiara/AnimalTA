@@ -137,7 +137,9 @@ class Extend(Frame):
                     if self.list_vid_minus[V].Track[1][6][0]:
                         try:
                             self.running="Normal"
+                            deb = time.time()
                             succeed=Do_the_track_fixed.Do_tracking(self, Vid=self.list_vid_minus[V], folder=self.boss.folder)
+                            print("duration = " +str(time.time()-deb))
                             self.running = None
                             if succeed:
                                 self.list_vid_minus[V].Identities = []
@@ -233,11 +235,11 @@ class Extend(Frame):
                         self.Vid=self.list_vid_minus[V]
                         #We create the calculation class:
                         Calc_speed = Functions_Analyses_Speed.speed_calculations(seuil_movement=self.Vid.Analyses[0])
-                        self.Coos,_=CoosLS.load_coos(self.Vid)
+                        self.Coos,_=CoosLS.load_coos(self.Vid, location=self)
                         self.NB_ind = len(self.Vid.Identities)
 
                         mask = Function_draw_mask.draw_mask(self.Vid)
-                        Arenas, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+                        Arenas, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                         self.Arenas = Function_draw_mask.Organise_Ars(Arenas)
 
                         if len(self.Vid.Analyses[4][0]) > 0:

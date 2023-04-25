@@ -95,7 +95,7 @@ class Lecteur(Frame):
             self.show_track_B=Button(Right_Frame, text=self.Messages["Save_Vid3"], command=self.change_track)
             self.show_track_B.grid(row=0, column=0, sticky="ew")
 
-            self.Coos_brutes, self.who_is_here = CoosLS.load_coos(self.Vid)
+            self.Coos_brutes, self.who_is_here = CoosLS.load_coos(self.Vid, location=self)
             self.Coos=self.Coos_brutes.copy()
             self.NB_ind=len(self.Vid.Identities)
 

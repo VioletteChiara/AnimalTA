@@ -258,7 +258,7 @@ class Analyse_track(Frame):
 
         if len(self.Vid.Analyses[4][0])>0:
             mask = Function_draw_mask.draw_mask(self.Vid)
-            Arenas, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            Arenas, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             self.Arenas = Function_draw_mask.Organise_Ars(Arenas)
             if len(self.Vid.Analyses[4][0]) > 0:
                 for Ar in range(len(self.Arenas)):
@@ -398,7 +398,7 @@ class Analyse_track(Frame):
 
         #Find the arenas defined by the user
         mask = Function_draw_mask.draw_mask(self.Vid)
-        Arenas, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        Arenas, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         self.Arenas = Function_draw_mask.Organise_Ars(Arenas)
         if len(self.Vid.Analyses[4][0])>0:
             for Ar in range(len(self.Arenas)):
@@ -445,7 +445,7 @@ class Analyse_track(Frame):
         else:
             self.to_sub = 0
 
-        self.Coos_brutes, _ = CoosLS.load_coos(self.Vid)
+        self.Coos_brutes, _ = CoosLS.load_coos(self.Vid, location=self)
         self.Coos=self.Coos_brutes.copy()
         self.NB_ind = len(self.Vid.Identities)
 

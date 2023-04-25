@@ -90,7 +90,7 @@ class Show(Frame):
         self.B_validate_track = Button(self.User_buttons, text=self.Messages["Portion8"], command=self.validate_correction)
         self.B_validate_track.grid(row=7, column=0, columnspan=2)
 
-        self.Coos, self.who_is_here = CoosLS.load_coos(self.Vid, TMP=True)
+        self.Coos, self.who_is_here = CoosLS.load_coos(self.Vid, TMP=True, location=self)
         self.NB_ind = len(self.Vid.Identities)
 
         self.Vid_Lecteur = Class_Lecteur.Lecteur(self, self.Vid, ecart=5)
@@ -137,7 +137,7 @@ class Show(Frame):
         else:
             Do_the_track_variable.Do_tracking(self, self.Vid, self.Folder, portion=True, prev_row=self.prev_row)
 
-        self.Coos, self.who_is_here = CoosLS.load_coos(self.Vid, TMP=True)
+        self.Coos, self.who_is_here = CoosLS.load_coos(self.Vid, TMP=True, location=self)
 
         self.B_change_stab.config(state="active")
         self.B_change_back.config(state="active")

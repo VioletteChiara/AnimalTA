@@ -584,7 +584,7 @@ class Details_spatial(Frame):
                 place+=1
 
         mask = Function_draw_mask.draw_mask(self.main.Vid)
-        Arenas, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        Arenas, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         Arenas = Function_draw_mask.Organise_Ars(Arenas)
         self.Arena_pts = Arenas[self.Area]
 
@@ -1267,7 +1267,7 @@ class Details_explo(Frame):
         last_pt=["NA","NA"]
         if radius > 0:
             for pt in self.main.Coos[self.Ind]:
-                if pt[0]!="NA" and last_pt[0]!="NA":
+                if pt[0]!="NA" and last_pt[0]!="NA" and pt[0]!=-1000 and last_pt[0]!=-1000:
                     cv2.line(empty, (int(float(last_pt[0])), int(float(last_pt[1]))),
                              (int(float(pt[0])), int(float(pt[1]))), (1), max(1,int(radius * float(self.main.Vid.Scale[0])))*2)
                 elif pt[0]!="NA":
@@ -1498,7 +1498,7 @@ class Details_explo(Frame):
                 place+=1
 
         mask = Function_draw_mask.draw_mask(self.main.Vid)
-        Arenas, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        Arenas, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         Arenas = Function_draw_mask.Organise_Ars(Arenas)
         self.Arena_pts = Arenas[self.Area]
 
@@ -1819,7 +1819,7 @@ class Details_inter(Frame):
                 place += 1
 
         mask = Function_draw_mask.draw_mask(self.main.Vid)
-        Arenas, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        Arenas, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         Arenas = Function_draw_mask.Organise_Ars(Arenas)
         self.Arena_pts = Arenas[self.Area]
 

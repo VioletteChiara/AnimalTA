@@ -79,7 +79,6 @@ def Do_tracking(parent, Vid, folder, portion=False, prev_row=None):
 
 
     mask = Dr.draw_mask(Vid)  # A mask for the arenas
-
     start = Vid.Cropped[1][0]  # Video beginning (after crop)
     end = Vid.Cropped[1][1]  # Video end (after crop)
 
@@ -121,7 +120,7 @@ def Do_tracking(parent, Vid, folder, portion=False, prev_row=None):
 
     # We identify the different arenas:
     if Vid.Mask[0]:
-        Arenas, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        Arenas, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         Arenas = Dr.Organise_Ars(Arenas)
     else:
         Arenas = [np.array([[[0, 0]], [[Vid.shape[1], 0]], [[Vid.shape[1], Vid.shape[0]]], [[0, Vid.shape[0]]]],
@@ -210,8 +209,7 @@ def Treat_cnts(Vid, Arenas, start, end, prev_row, all_NA, Extracted_cnts, Too_mu
                     else:
                         cX = cnt_M["m10"]
                         cY = cnt_M["m01"]
-                    result = cv2.pointPolygonTest(Arenas[Are], (cX, cY),
-                                                  False)  # Is the center of the contour inside the arena?
+                    result = cv2.pointPolygonTest(Arenas[Are], (cX, cY), False)  # Is the center of the contour inside the arena?
                     if result >= 0:
                         Ar_cnts.append(
                             [kept_cnts[cnt], (cX, cY)])  # If yes, we save this contour and add it as part of the arena

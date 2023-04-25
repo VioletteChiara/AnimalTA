@@ -160,7 +160,7 @@ class Lists(Frame):
         list_of_shapes=[self.boss.main.Calc_speed.Areas[self.Current_Area][i] for i in self.Liste_objects.curselection()]
 
         mask = Function_draw_mask.draw_mask(self.Current_Vid)
-        Or_Arenas, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        Or_Arenas, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         Or_Arenas = Function_draw_mask.Organise_Ars(Or_Arenas)
 
         Np_style_pts=np.array([self.pointers[i] for i in self.Liste_Vids.curselection()])
@@ -177,7 +177,7 @@ class Lists(Frame):
             Load_show.show_load(nb_V/len(list_of_vids))#Show the progress
             mask = Function_draw_mask.draw_mask(Vid)
             nb_V+=1
-            Arenas, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            Arenas, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             Arenas = Function_draw_mask.Organise_Ars(Arenas)
 
             for Area in range(len(Arenas)):
@@ -298,7 +298,7 @@ class Lists(Frame):
 
         del capture
         mask= Function_draw_mask.draw_mask(self.pointers[index][0])
-        self.Arenas, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        self.Arenas, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         self.Arenas = Function_draw_mask.Organise_Ars(self.Arenas)
 
         for Ar in range(len(self.Arenas)):

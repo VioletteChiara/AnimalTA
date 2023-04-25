@@ -3,8 +3,9 @@ import csv
 import numpy as np
 from tkinter import *
 from AnimalTA.A_General_tools import Class_loading_Frame
+import time
 
-def load_coos(Vid, TMP=False):
+def load_coos(Vid, TMP=False, location=None):
     # Importation of the coordinates associated with the current video
     if Vid.User_Name == Vid.Name:
         file_name = Vid.Name
@@ -29,7 +30,7 @@ def load_coos(Vid, TMP=False):
 
     try:#Old versions of AnimalTA did not had the possibility to have a variable number of targets, this is to avoid compatibility problems
         if Vid.Track[1][8]:
-            return load_fixed(Vid, path)
+            return load_fixed(Vid, path, location)
         else:
             return load_variable(Vid, path)
     except:
@@ -37,7 +38,7 @@ def load_coos(Vid, TMP=False):
 
 
 
-def save(Vid, Coos, TMP=False):
+def save(Vid, Coos, TMP=False, location=None):
     # Save the coordinates associated with the current video
     if Vid.User_Name == Vid.Name:
         file_name = Vid.Name
@@ -62,7 +63,7 @@ def save(Vid, Coos, TMP=False):
         path = path
 
     if Vid.Track[1][8]:
-        save_fixed(Vid, Coos, path)
+        save_fixed(Vid, Coos, path, location)
     else:
         save_variable(Vid, Coos, path)
 
@@ -104,19 +105,52 @@ def load_variable(Vid, path):
     return(Coos, who_is_here)
 
 
-def load_fixed(Vid, path):
+def load_fixed(Vid, path, location=None):
+    if location==None:
+        frame = Toplevel()
+    else:
+        frame=location
+    load_frame = Class_loading_Frame.Loading(frame)  # Progression bar
+    load_frame.show_load(0)
+    load_frame.grab_set()
+
+    or_table=[]
     with open(path, encoding="utf-8") as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=";")
-        or_table = list(csv_reader)
+        count=0
+        for row in csv_reader:
+            or_table.append(row)
+            if count % 1000 == 0:
+                load_frame.show_load((count/Vid.Frame_nb[1])/3)
+            count+=1
+
     or_table = np.array(or_table)
     Coos = np.full((len(Vid.Identities), len(or_table)-1, 2), -1000,dtype=float)
     or_table = np.asarray(or_table)
     or_table[or_table == "NA"] = -1000
+    count=0
     for Ind in range(len(Vid.Identities)):
+        load_frame.show_load(1/3 + (count / len(Vid.Identities))*2/3)
         Coos[Ind] = or_table[1:,2*Ind+2:2*Ind+4]
+        count+=1
+
+    load_frame.destroy()
+    if location==None:
+        frame.destroy()
+
+    load_frame.grab_release()
+
     return (Coos, [list(range(len(Vid.Identities)))]*len(Coos[0,:,0]))
 
-def save_fixed(Vid, Coos, path):
+def save_fixed(Vid, Coos, path, location=None):
+    if location == None:
+        frame = Toplevel()
+    else:
+        frame = location
+    load_frame = Class_loading_Frame.Loading(frame)  # Progression bar
+    load_frame.show_load(0)
+
+
     one_every=int(round(round(Vid.Frame_rate[0], 2) / Vid.Frame_rate[1]))
     General_Coos=np.zeros([Coos.shape[1]+1,Coos.shape[2]*Coos.shape[0]+2], dtype="object")
     General_Coos[1:,0]=list(range(Vid.Cropped[1][0],Vid.Cropped[1][1]+one_every,one_every))
@@ -126,9 +160,21 @@ def save_fixed(Vid, Coos, path):
     Coos = Coos.astype(dtype=object)
     Coos[Coos==-1000]="NA"
     for Ind in range(Coos.shape[0]):
+        load_frame.show_load(((Ind+1)/(Coos.shape[0]+1))*1/3)
         General_Coos[1:,Ind*2+2:Ind*2+2+2]=Coos[Ind]
 
-    np.savetxt(path, General_Coos, delimiter=';', encoding="utf-8", fmt='%s')
+    with open(path, 'w', newline='', encoding="utf-8") as file:
+        writer = csv.writer(file, delimiter=";")
+        for rows in range(300,len(General_Coos)+300,300):
+            writer.writerows(General_Coos[range(rows-300, min([len(General_Coos),rows]))])
+            load_frame.show_load(1/3 + ((rows) / Vid.Frame_nb[1])*2/3)
+
+    #np.savetxt(path, General_Coos, delimiter=';', encoding="utf-8", fmt='%s')
+    load_frame.destroy()
+
+    if location == None:
+        frame.destroy()
+
 
 def save_variable(Vid, Coos, path):
     one_every = int(round(round(Vid.Frame_rate[0], 2) / Vid.Frame_rate[1]))

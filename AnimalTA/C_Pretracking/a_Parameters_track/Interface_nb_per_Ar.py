@@ -30,7 +30,7 @@ class Assign(Frame):
 
         #We look for the arenas and their names
         self.mask = Dr.draw_mask(self.boss.Vid)
-        self.Arenas, _ = cv2.findContours(self.mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        self.Arenas, _ = cv2.findContours(self.mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         self.Arenas = Dr.Organise_Ars(self.Arenas)
 
         Grid.columnconfigure(self,0,weight=1)

@@ -260,8 +260,9 @@ class Mask(Frame):
             self.Vid.Mask[1] = self.liste_points
             #We count the number of Arenas defined
             mask = Dr.draw_mask(self.Vid)
-            Arenas, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-            if len(Arenas) < len(self.Vid.Track[1][6]):#We uodate the number of arenas to be tracked
+            Arenas, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+            if len(Arenas) < len(self.Vid.Track[1][6]):#We update the number of arenas to be tracked
                 self.Vid.Track[1][6]=self.Vid.Track[1][6][0:(len(Arenas))]
             elif len(Arenas) > len(self.Vid.Track[1][6]):
                 self.Vid.Track[1][6] = self.Vid.Track[1][6]+ [self.Vid.Track[1][6][-1]]*(len(Arenas) - len(self.Vid.Track[1][6]))
@@ -394,6 +395,7 @@ class Mask(Frame):
                 self.dessiner_Formes()#Show the result
                 self.afficher()
 
+            #Move a shape
             elif len(self.selected_shapes[1])>0:
                 transla=[int((event.x * self.ratio + self.zoom_sq[0]) - self.selected_shapes[0][0]),int((event.y * self.ratio + self.zoom_sq[1]) - self.selected_shapes[0][1])]
                 for sh in range(len(self.selected_shapes[1])):
@@ -457,12 +459,13 @@ class Mask(Frame):
 
         if len(self.Pt_select) < 1:
             empty=np.zeros([self.image_to_show.shape[0],self.image_to_show.shape[1],1],np.uint8)
-            empty=self.draw_binaries(empty, thick=int(self.ratio*7))
-            if empty[int(event.y),int(event.x)]==255:
-                self.cnts,_=cv2.findContours(empty, cv2.RETR_EXTERNAL , cv2.CHAIN_APPROX_SIMPLE)
+            empty2=self.draw_binaries(empty, thick=int(self.ratio*7))
+            if empty2[int(event.y),int(event.x)]==255:
+                empty = self.draw_binaries(empty)
+                self.cnts,_=cv2.findContours(empty, cv2.RETR_EXTERNAL , cv2.CHAIN_APPROX_NONE)
                 for cnt in self.cnts:
-                    res=cv2.pointPolygonTest(cnt,[int(event.x),int(event.y)], False)
-                    if res>=0:
+                    res=cv2.pointPolygonTest(cnt,[int(event.x),int(event.y)], False)#We check if we clicked in an existing shape
+                    if res>=0:#If it is the case, we look for associated shapes
                         M = cv2.moments(cnt)
                         self.selected_shapes_rot[3]=[int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"])]
                         for j in range(len(self.liste_points)):
@@ -478,8 +481,9 @@ class Mask(Frame):
         self.selected_shapes = [[event.x,event.y],[],[]]
 
         empty = np.zeros([self.image_to_show.shape[0], self.image_to_show.shape[1], 1], np.uint8)
-        empty = self.draw_binaries(empty, thick=int(self.ratio * 7))
-        if empty[int(event.y), int(event.x)] == 255:
+        empty2 = self.draw_binaries(empty, thick=int(self.ratio * 7))
+        if empty2[int(event.y), int(event.x)] == 255:
+            empty = self.draw_binaries(empty)
             self.cnts, _ = cv2.findContours(empty, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             for cnt in self.cnts:
                 res = cv2.pointPolygonTest(cnt, [int(event.x), int(event.y)], False)
@@ -515,17 +519,18 @@ class Mask(Frame):
                         self.Shape_ar.set(self.liste_points[j][3])
                         break
 
-        if len(self.Pt_select) < 1:
+        if len(self.Pt_select) < 1: #If the user did not press on a point
             empty=np.zeros([self.image_to_show.shape[0],self.image_to_show.shape[1],1],np.uint8)
-            empty=self.draw_binaries(empty, thick=int(self.ratio*7))
-            if empty[int(event.y),int(event.x)]==255:
+            empty2=self.draw_binaries(empty, thick=int(self.ratio*7))
+            if empty2[int(event.y),int(event.x)]==255:
+                empty = self.draw_binaries(empty)
                 self.cnts,_=cv2.findContours(empty, cv2.RETR_EXTERNAL , cv2.CHAIN_APPROX_SIMPLE)
                 for cnt in self.cnts:
-                    res=cv2.pointPolygonTest(cnt,[int(event.x),int(event.y)], False)
-                    if res>=0:
+                    res=cv2.pointPolygonTest(cnt,[int(event.x),int(event.y)], True)
+                    if abs(res)<=int(self.ratio*7):
                         for j in range(len(self.liste_points)):
                             if len(self.liste_points[j][0])>0:
-                                if cv2.pointPolygonTest(cnt,[self.liste_points[j][0][0],self.liste_points[j][1][0]],False)>=0:
+                                if abs(cv2.pointPolygonTest(cnt,[self.liste_points[j][0][0],self.liste_points[j][1][0]],True))<=int(self.ratio*7):
                                     self.selected_shapes[1].append(j)
                                     self.selected_shapes[2].append(deepcopy(self.liste_points[j]))
                         break
@@ -571,8 +576,9 @@ class Mask(Frame):
         self.draw_binaries(empty)
 
 
-    def draw_binaries(self, img, thick=-1):
+    def draw_binaries(self, img_or, thick=-1):
         #Draw a binary image (the mask)
+        img=np.copy(img_or)
         for i in range(len(self.liste_points)):
             New_col = (255)
             if len(self.liste_points[i][0]) > 0:

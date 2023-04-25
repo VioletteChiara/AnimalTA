@@ -122,7 +122,7 @@ class Extend(Frame):
                 elif self.type == "track":
                     self.list_vid_minus[V].Track[0] = 1
                     mask = Function_draw_mask.draw_mask(self.list_vid_minus[V])
-                    Arenas, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+                    Arenas, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                     nb_ar = len(Arenas)
                     self.list_vid_minus[V].Track[1] = deepcopy(self.value)
                     self.list_vid_minus[V].Track[1][6] = deepcopy(self.value)[6][0:nb_ar]

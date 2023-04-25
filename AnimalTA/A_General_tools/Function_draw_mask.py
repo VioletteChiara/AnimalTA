@@ -26,18 +26,25 @@ def draw_mask(Vid, thick=-1, color=255):
             if len(liste_points[i][0]) > 0:
                 if liste_points[i][3] == 1:
                     image_to_save, _ = Draw_elli(image_to_save, liste_points[i][0],
-                                                           liste_points[i][1], color, -1)
+                                                           liste_points[i][1], color, thick)
 
                 elif liste_points[i][3] == 2 and len(liste_points[i][0]) > 1:
                     image_to_save, _ = Draw_rect(image_to_save, liste_points[i][0],
-                                                           liste_points[i][1], color, -1)
+                                                           liste_points[i][1], color, thick)
 
                 elif liste_points[i][3] == 3 and len(liste_points[i][0]) > 1:
                     image_to_save, _ = Draw_Poly(image_to_save, liste_points[i][0],
-                                                           liste_points[i][1], color, -1)
+                                                           liste_points[i][1], color, thick)
     else:
         #If the user did not define any arena, the whole image will be used.
         image_to_save.fill(color)
+
+    #Special case, not to keep in the final code
+    #kernel=np.ones((2,2), np.uint8)
+    #image_to_save=cv2.erode(image_to_save,kernel, iterations=2)
+    #image_to_save = image_to_save.reshape((image_to_save.shape[0], image_to_save.shape[1], 1))
+
+
     return(image_to_save)
 
 

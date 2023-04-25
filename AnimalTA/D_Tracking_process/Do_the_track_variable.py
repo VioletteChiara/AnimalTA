@@ -123,7 +123,7 @@ def Do_tracking(parent, Vid, folder, portion=False, prev_row=None):
 
     # We identify the different arenas:
     if Vid.Mask[0]:
-        Main_Arenas, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        Main_Arenas, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         Main_Arenas = Dr.Organise_Ars(Main_Arenas)
     else:
         Main_Arenas = [np.array([[[0, 0]], [[Vid.shape[1], 0]], [[Vid.shape[1], Vid.shape[0]]], [[0, Vid.shape[0]]]],dtype="int32")]
