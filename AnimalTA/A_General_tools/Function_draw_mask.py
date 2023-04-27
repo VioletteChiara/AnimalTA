@@ -4,7 +4,6 @@ import math
 from statistics import mean
 from AnimalTA.A_General_tools import F_Ellipse
 
-
 def draw_mask(Vid, thick=-1, color=255):
     """
     This function is used to draw a binary image from the arena's shapes. This binary image will be used as a mask.

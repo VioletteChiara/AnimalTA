@@ -16,7 +16,6 @@ Language=f.read()
 f.close()
 Messages = UserMessages.Mess[Language]
 
-
 def find_pts(Vid, Prem_Im, minDistance=30,  blockSize=3, quality=0.05,maxCorners=200):
     '''
     This function looks for points of interest to be tracked (on the first frame of the video).

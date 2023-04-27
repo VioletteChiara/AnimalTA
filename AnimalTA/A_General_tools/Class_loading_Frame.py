@@ -26,6 +26,11 @@ class Loading(Frame):
         self.loading_bar = Canvas(self.loading_canvas, height=10)
         self.loading_bar.create_rectangle(0, 0, 400, self.loading_bar.cget("height"), fill="red")
         self.loading_bar.grid(row=0, column=1)
+        self.grab_set()
+
+    def __del__(self):
+        self.grab_release()
+        self.destroy()
 
 
     def show_load(self, prop):

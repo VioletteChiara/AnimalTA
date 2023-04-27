@@ -97,8 +97,6 @@ class Stabilise(Frame):
         self.Vid_Lecteur.bindings()
         self.Vid_Lecteur.Scrollbar.refresh()
 
-
-
     def modif_image(self, img=[], aff=False, **kwargs):
         #Draw the points of interest on the top of the image. Also combine the first image, the original image at the current frame and the stabilised result.
         if len(img) <= 10:

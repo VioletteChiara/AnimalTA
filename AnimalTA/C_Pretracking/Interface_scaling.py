@@ -151,7 +151,6 @@ class Scale(Frame):
         #Ensure the image has always the focus
         self.canvas_img.focus_set()
 
-
     def UI_Ratio_update(self, new_val):
         # Recalculates and updates the ratio value
         if new_val == "":

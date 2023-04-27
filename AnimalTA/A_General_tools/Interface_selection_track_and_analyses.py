@@ -470,7 +470,6 @@ class Extend(Frame):
                                 #Exploration:
                                 if self.Vid.Analyses[2][0]==0:#Si c'est method moderne
                                     radius = math.sqrt((float(self.Vid.Analyses[2][1])) / math.pi)
-
                                     empty = np.zeros((self.Vid.shape[0], self.Vid.shape[1], 1), np.uint8)
                                     last_pt = [-1000, -1000]
                                     if radius > 0:

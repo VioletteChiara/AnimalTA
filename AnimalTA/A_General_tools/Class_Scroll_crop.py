@@ -100,7 +100,6 @@ class Pers_Scroll(Canvas):
             self.refresh()
             self.Top.update_image(self.active_pos)
 
-
     def move_position(self,event):
         '''
         When the user B1-Motion on the timeline.

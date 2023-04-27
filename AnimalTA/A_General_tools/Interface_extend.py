@@ -84,7 +84,6 @@ class Extend(Frame):
         Grid.rowconfigure(self, 2, weight=1)  ########NEW
 
         self.grab_set()
-
         self.parent.protocol("WM_DELETE_WINDOW", self.rebind)
 
     def select_all(self):

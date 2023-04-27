@@ -8,7 +8,6 @@ class Video_Loader():
         self.is_crop=is_crop#Should we crop the video
         self.load_video(File)#Which video to load
 
-
     def __len__(self):
         return self.calculate_len()
 

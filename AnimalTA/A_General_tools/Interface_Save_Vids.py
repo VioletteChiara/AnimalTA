@@ -218,7 +218,7 @@ class Lecteur(Frame):
         file_to_save = filedialog.asksaveasfilename(defaultextension=".avi", initialfile="Untitled_video.avi", filetypes=(("Video", "*.avi"),))
 
         if len(file_to_save)>0:
-            self.bouton_hide.grid(row=20, column=0, columnspan=2)
+            self.bouton_hide.grid(row=20, column=0, columnspan=2)#Button allowing to minimise the window
             self.bouton_hide.grab_set()
 
             if self.Vid.Cropped[0]:
@@ -234,7 +234,7 @@ class Lecteur(Frame):
             frame_height = int(self.Vid.shape[0])
             frame_rate = self.Vid.Frame_rate[1]
             size = (frame_width, frame_height)
-            result = cv2.VideoWriter(file_to_save, cv2.VideoWriter_fourcc(*'XVID'), frame_rate, size)
+            result = cv2.VideoWriter(file_to_save, cv2.VideoWriter_fourcc(*'XVID'), frame_rate, size)#We save the video in teh chosen file
 
             for frame in range(int(start), int(end) + self.Vid_Lecteur.one_every, self.Vid_Lecteur.one_every):
                 try:

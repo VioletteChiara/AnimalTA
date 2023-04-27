@@ -5,7 +5,6 @@ import PIL.Image, PIL.ImageTk
 from AnimalTA.A_General_tools import Video_loader as VL, UserMessages, User_help
 import numpy as np
 
-
 class Background(Frame):
     """This frame will appear when the user is not satisfied with the automatic background and wants to change it.
     It basically allow the user to select a color in the fram eand then to paint with this color.

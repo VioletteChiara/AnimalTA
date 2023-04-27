@@ -70,7 +70,6 @@ class Convert(Frame):
 
         #Minimise the AnimalTA program to allow user to do something else while converting
         self.bouton_hide = Button(self, text=self.Messages["Do_track1"], command=self.hide)
-
         self.select_all()
 
     def select_all(self):

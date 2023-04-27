@@ -18,7 +18,6 @@ class Help_win(Frame):
         self.Messages = UserMessages.Mess[self.Language.get()]
         self.default_message=default_message
 
-
         #Title
         Info_title=Label(self, text=self.Messages["Info"],  justify=CENTER, background="RoyalBlue3", fg="white", font=("Helvetica", 16, "bold"))
         Info_title.grid(row=0, sticky="new")

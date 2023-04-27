@@ -20,7 +20,6 @@ class Int_import(Frame):
         self.header=IntVar() #Do the original file use a header? If 0, we try to determine it automatically, 1 no header, 2 header
         self.header.set(0)
 
-
         self.or_Tab=Frame(self)
         self.or_Tab.grid(row=1,column=0)
 

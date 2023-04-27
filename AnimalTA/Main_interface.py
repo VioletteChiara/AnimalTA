@@ -7,7 +7,6 @@ from tkinter import ttk
 
 
 #How to run pyinstaller to have the exe file: pyinstaller cli.spec --noconsole --path="< Import path >"
-
 class Mainframe(Tk):
     #Launch the rest of animalTA
     def __init__(self):

@@ -11,24 +11,12 @@ def resource_path(relative_path):
 
     return os.path.join(base_path, relative_path)
 
-
-###General comments:
-
+###General comments for translators:
 #the \n in the middle of a sentence manes that the text will continue on the next line. Please do not remove it.
-
 #AnimalTA is the name of the program, please do not translate it.
-
 #If you see {} within a text, it means that it will be replaced by a value. please always keep it and try to place it in the correct place within the sentence.
 #For instance if I write : There are {} apples. It will lead to: There are 5 apples.
-
 #Because it is easy in English, I often write things like the video(s), meaning that it can be one or more videos. If the translation is complicated, please just use the plural form
-
-
-
-#To add: Analyses12
-#To add: Analyses13
-#To add: Ana_deform
-
 
 
 Mess_EN=dict(

@@ -154,7 +154,6 @@ class Show(Frame):
         self.Vid_Lecteur.bindings()
         self.Scrollbar.refresh()
 
-
     def show_load(self):
         #Show the progress of the tracking process
         self.loading_lab.config(text=self.Messages["Loading"])

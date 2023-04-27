@@ -62,7 +62,6 @@ class Cropping(Frame):
         self.End_Title=Label(self.canvas_entrie,text=self.Messages["Crop6"])
         self.End_Title.grid(row=0,column=7,columnspan=2, sticky="ew")
 
-
         # Begin:
         regBfr = (self.register(self.Begin_fr_update), '%P', '%V')
         self.Bfrvar = StringVar()

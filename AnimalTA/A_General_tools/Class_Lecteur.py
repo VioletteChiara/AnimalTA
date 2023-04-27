@@ -213,12 +213,9 @@ class Lecteur(Frame):
             if not within:
                 self.playing=False
 
-
-
     def stop(self):
         '''stop the video'''
         self.playing = False
-
 
     def update_image(self, frame, first=False, actual_pos=None, return_img=False):
         '''Change the currently displayed frame.

@@ -575,7 +575,6 @@ class Mask(Frame):
         empty=np.zeros([self.image_to_show.shape[0],self.image_to_show.shape[1],1],np.uint8)
         self.draw_binaries(empty)
 
-
     def draw_binaries(self, img_or, thick=-1):
         #Draw a binary image (the mask)
         img=np.copy(img_or)

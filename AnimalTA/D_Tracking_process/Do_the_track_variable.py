@@ -312,7 +312,6 @@ def Treat_cnts(Vid, Arenas, Main_Arenas_Bimage, start, end, prev_row, all_NA, Ex
                         col_ind = [x for _, x in sorted(zip(row_ind, col_ind))]
                         row_ind = sorted(row_ind)
 
-
                         if ["Waiting_sep"] in [cn[0] for cn in final_cnts]:  # If there were some contours to be separated
                             for Cnt in range(len(need_sep)):
                                 if need_sep[Cnt] > 1:

@@ -732,7 +732,7 @@ class Row_Can(Canvas):
             cv2.moveWindow(" ", X_Pos, 50)
             mask = Dr.draw_mask(self.Video)
 
-            if self.Video.Back[0]:
+            if self.Video.Back[0]:#Create the image
                 mask_to_show=cv2.bitwise_and(self.Video.Back[1],self.Video.Back[1],mask=mask)
             else:
                 if self.Video.Cropped_sp[0]:

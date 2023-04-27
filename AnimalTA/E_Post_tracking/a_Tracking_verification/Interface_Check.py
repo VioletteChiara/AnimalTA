@@ -641,7 +641,6 @@ class Lecteur(Frame):
         self.selected_ind=0
         self.afficher_table()
 
-
         # Associate the vertical scrollbar with the table
         self.vsb = Scale(self.User_params_cont, from_=self.to_sub, to=self.to_sub + len(self.Coos[0]) -1,orient="vertical")
         self.vsb.grid(row=2, column=2, sticky="ns")

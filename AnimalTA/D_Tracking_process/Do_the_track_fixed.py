@@ -226,6 +226,8 @@ def Treat_cnts(Vid, Arenas, start, end, prev_row, all_NA, Extracted_cnts, Too_mu
                             final_cnts = new_pos.tolist()
                             final_cnts = [[[], (nf[0], nf[1])] for nf in final_cnts]
 
+
+
                         final_positions = [cnt_info[1] for cnt_info in final_cnts]  # Final list of contours
                         all_NA[Are] = False
 
@@ -299,10 +301,12 @@ def Treat_cnts(Vid, Arenas, start, end, prev_row, all_NA, Extracted_cnts, Too_mu
                                     new_pos = kmeans.cluster_centers_
                                     inds = [ind for ind, cnt in enumerate(col_ind) if cnt == Cnt]  # Which individuals are sassociated to this contour
                                     table_dists_corr = []
+
+
                                     # Here we make the similar kind of calculation as before to determine which part of the spitted contours goes to which target.
+                                    passed_inds = sum(Vid.Track[1][6][0:Are])
                                     for ind in inds:
                                         row = []
-                                        passed_inds = sum(Vid.Track[1][6][0:Are])
                                         OldCoos = last_row[(2 + 2 * passed_inds + row_ind[ind] * 2):(
                                                     4 + 2 * passed_inds + row_ind[ind] * 2)]
                                         for new_center in new_pos:
@@ -317,6 +321,8 @@ def Treat_cnts(Vid, Arenas, start, end, prev_row, all_NA, Extracted_cnts, Too_mu
 
                                     for i in range(len(row_ind2)):
                                         final_cnts[row_ind[inds[i]]] = [val for val in new_pos[col_ind2[i]]]
+
+
 
                         #If some targets are not correctly asociated because sptlit was impossible:
                         if ["Waiting_sep"] in final_cnts:
