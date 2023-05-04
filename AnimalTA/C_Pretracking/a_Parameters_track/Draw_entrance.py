@@ -6,7 +6,6 @@ from AnimalTA.A_General_tools import Function_draw_mask, UserMessages, User_help
 import cv2
 import PIL
 
-
 """This script is for next update only, not available not now!"""
 
 class Draw_ent(Frame):

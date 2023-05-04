@@ -22,7 +22,6 @@ class Change_Vid_Menu(Frame):
         self.bouton_change_vid.config(font=("Arial", 15))
         self.bouton_change_vid.grid(row=0, column=0, sticky="we")
 
-
     def change_vid(self, vid):
         #Change the current video for another one (vid)
         #The speed info indicates at which speed the Video-Reader should be opened (to avoid that the user needs to change each time when changing the vidéo)

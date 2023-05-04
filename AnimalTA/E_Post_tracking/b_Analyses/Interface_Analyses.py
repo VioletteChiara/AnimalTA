@@ -249,7 +249,6 @@ class Analyse_track(Frame):
 
         self.load_frame.destroy()
 
-
     def deform_coos(self, coos):
         if self.Check_Smoothed.get():
             progress=0.5

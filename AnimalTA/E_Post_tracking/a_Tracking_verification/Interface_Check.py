@@ -724,7 +724,6 @@ class Lecteur(Frame):
 
     def modif_image(self, img=[], actual_pos=None, **args):
         #Draw trajectories on teh top of the frame to be displayed
-
         self.afficher_table(actual_pos=actual_pos)
         self.Vid_Lecteur.update_ratio()
         if len(img) <= 10:

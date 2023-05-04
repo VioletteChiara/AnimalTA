@@ -2,6 +2,7 @@ from tkinter import *
 from AnimalTA.A_General_tools import UserMessages
 
 
+
 class Modify(Frame):
     """This little frame allows the user to modify the parameters of the smoothing filter."""
     def __init__(self, parent, boss, **kwargs):

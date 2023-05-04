@@ -177,7 +177,6 @@ class Show(Frame):
             to_remove = int(round((self.Vid.Cropped[1][0])/self.Vid_Lecteur.one_every))
         else:
             to_remove=0
-
         if self.Vid.Stab[0]:
             new_img = (Class_stabilise.find_best_position(Vid=self.Vid, Prem_Im=self.Vid_Lecteur.Prem_image_to_show, frame=new_img, show=False))
 

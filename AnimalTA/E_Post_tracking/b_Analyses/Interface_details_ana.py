@@ -186,7 +186,6 @@ class Details_basics(Frame):
         self.Ent_threshold=Entry(Frame_for_results, textvariable=tmp_var, validatecommand=verif_E_float, validate="all")
         self.Ent_threshold.grid(row=0, column=1, sticky="e")
 
-
     def update_vals(self):
         # Show the results values for the selected target
         self.show_Mean_Speed()

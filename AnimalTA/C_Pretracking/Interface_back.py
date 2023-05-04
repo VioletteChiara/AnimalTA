@@ -92,7 +92,6 @@ class Background(Frame):
 
         self.afficher()
 
-
     def auto_back(self):
         #This function remove the previous background a redo a new one with the automatic process
         self.Vid.make_back()

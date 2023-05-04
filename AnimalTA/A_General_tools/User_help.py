@@ -2,7 +2,6 @@ from tkinter import *
 import os
 from AnimalTA.A_General_tools import UserMessages
 
-
 class Help_win(Frame):
     def __init__(self, parent, default_message="",width=0, **kwargs):
         """This Frame is reused everywhere in the program and consist in a little text of explanation about how the program is working.

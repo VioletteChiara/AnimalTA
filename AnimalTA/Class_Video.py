@@ -12,6 +12,7 @@ Language=(f.read())
 f.close()
 Messages = UserMessages.Mess[Language]
 
+
 class Video:
     '''
     This class is used to save the information about the videos.

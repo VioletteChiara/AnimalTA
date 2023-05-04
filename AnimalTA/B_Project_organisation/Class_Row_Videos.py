@@ -579,7 +579,6 @@ class Row_Can(Canvas):
                 elif self.Video.Back[0]:
                     self.main_frame.Change_win(Interface_back.Background(parent=self.main_frame.canvas_main, boss=self,
                                                                          main_frame=self.main_frame, Video_file=self.Video))
-
         else:
             if not self.Video.Back[0]:
                 self.Video.make_back()

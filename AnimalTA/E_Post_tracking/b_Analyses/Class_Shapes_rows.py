@@ -3,7 +3,6 @@ import numpy as np
 import cv2
 from AnimalTA.A_General_tools import Function_draw_mask, UserMessages
 
-
 #This file contains classes herited from Frame. They are Frames widgets which will show the characteristics of an element of interest (in the Analyses part) and allow to modify or delete it.
 
 class Row_Point(Frame):

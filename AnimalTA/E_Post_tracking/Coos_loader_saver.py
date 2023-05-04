@@ -150,7 +150,6 @@ def save_fixed(Vid, Coos, path, location=None):
     load_frame = Class_loading_Frame.Loading(frame)  # Progression bar
     load_frame.show_load(0)
 
-
     one_every=int(round(round(Vid.Frame_rate[0], 2) / Vid.Frame_rate[1]))
     General_Coos=np.zeros([Coos.shape[1]+1,Coos.shape[2]*Coos.shape[0]+2], dtype="object")
 

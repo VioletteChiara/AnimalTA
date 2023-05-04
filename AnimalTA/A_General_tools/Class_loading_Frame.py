@@ -2,7 +2,6 @@ from tkinter import *
 import os
 from AnimalTA.A_General_tools import UserMessages
 
-
 class Loading(Frame):
     #A loading bar
     def __init__(self, parent):

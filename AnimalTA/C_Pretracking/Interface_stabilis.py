@@ -175,6 +175,7 @@ class Stabilise(Frame):
 
 
 
+
 """
 root = Tk()
 root.geometry("+100+100")

@@ -442,7 +442,6 @@ def Image_modif(Vid, start, end, one_every, Which_part, Prem_image_to_show, mask
             odd_val = int(Vid.Track[1][0]) + (1 - (int(Vid.Track[1][0]) % 2))
             img = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, odd_val,10)
 
-
         # Mask
         if Vid.Mask[0]:
             img = cv2.bitwise_and(img, img, mask=mask)

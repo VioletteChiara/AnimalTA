@@ -19,6 +19,7 @@ import numpy
         elliptical fitting'
 """
 
+
 class LSqEllipse:
     def fit(self, data):
         """Lest Squares fitting algorithm

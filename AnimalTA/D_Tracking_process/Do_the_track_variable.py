@@ -439,7 +439,6 @@ def Image_modif(Vid, start, end, one_every, Which_part, Prem_image_to_show, mask
         if Vid.Stab[0]:
             img = Class_stabilise.find_best_position(Vid=Vid, Prem_Im=Prem_image_to_show, frame=img, show=False, prev_pts=prev_pts)
 
-
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
         # Correct flicker

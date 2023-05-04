@@ -8,6 +8,7 @@ import PIL
 import copy
 
 
+
 class Lists(Frame):
     """ This Frame displays a list of the videos and their arenas from the project that have been tracked.
     The user can select some arenas to copy-paste there the elements of interest from the current arena"""

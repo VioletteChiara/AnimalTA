@@ -190,8 +190,6 @@ class speed_calculations:
             states=[int(val>self.seuil_movement) if val!="NA" else "NA" for val in speeds]
             return(val_s,states)
 
-
-
     def get_all_speeds_ind(self, parent, ind, in_move=False, with_NA=False):
         """Calculate the speed of an individual for each frame.
         parent: higher level class calling this function

@@ -60,7 +60,6 @@ class Deformation(Frame):
                                  command=self.End_of_window)
         self.B_Validate.grid(row=6, column=0, sticky="new")
 
-
         # Video reader
         self.Vid_Lecteur = Class_Lecteur.Lecteur(self, self.Vid, ecart=10)
         self.Vid_Lecteur.grid(row=1, column=0, rowspan=2, sticky="nsew")

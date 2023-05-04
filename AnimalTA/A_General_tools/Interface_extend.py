@@ -78,6 +78,7 @@ class Extend(Frame):
 
         self.Liste.grid(row=1,column=0, sticky="nsew")
 
+
         Grid.columnconfigure(self, 0, weight=1)  ########NEW
         Grid.rowconfigure(self, 0, weight=1)  ########NEW
         Grid.rowconfigure(self, 1, weight=100)  ########NEW

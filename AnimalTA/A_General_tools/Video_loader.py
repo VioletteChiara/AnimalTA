@@ -2,6 +2,7 @@ import cv2
 import threading
 import decord
 
+
 class Video_Loader():
     def __init__(self, Vid, File, is_crop=True, **kwargs):
         self.Vid=Vid#Which video of the project (can be different from the previous one in case of concatenated videos)

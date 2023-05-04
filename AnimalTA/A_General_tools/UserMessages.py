@@ -114,10 +114,8 @@ Mess_EN=dict(
     GInfo1="The file has been saved, now please indicate where you want the new project to be created.",
     GInfoT1="Project saved",
     Conversion="Conversion", #Change one video format (.mp4 for instance) to another one (for instance .avi)
-    ExtendConvert_EX="The video(s) marked in the list below is/are not in a compatible format and should be converted before importing to AnimalTA. Unselect/select them by pressing on the file name.\nHold <Ctrl> of <Shift> keys for multiple selections.\nOnce they are converted, you will find the .avi files in the <converted vids> subdirectory of the current project.",
-    #If the (s) and is/are is annoying for translation, please keep plural form.
-    Extend1="Hold <Ctrl> of <Shift> keys for multiple selections. Choose the videos you want to share the same",
-    #<Ctrl> and <Shift> refer to keyboard keys.
+    ExtendConvert_EX="The video(s) marked in the list below is/are not in a compatible format and should be converted before importing to AnimalTA. Unselect/select them by pressing on the file name.\nHold <Ctrl> of <Shift> keys for multiple selections.\nOnce they are converted, you will find the .avi files in the <converted vids> subdirectory of the current project.",#If the (s) and is/are is annoying for translation, please keep plural form.
+    Extend1="Hold <Ctrl> of <Shift> keys for multiple selections. Choose the videos you want to share the same",#<Ctrl> and <Shift> refer to keyboard keys.
     ExtendB1="Select all",
     ExtendB2="Unselect all",
     Row0="This video displays {} frames per second. Decrease the frame rate using this button if you want to reduce tracking time.", # The {] is code and will be replaced by the name of te video. Please keep it and integrate it in the translated sentence.

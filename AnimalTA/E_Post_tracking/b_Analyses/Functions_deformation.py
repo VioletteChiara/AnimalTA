@@ -76,7 +76,6 @@ def correct(curr_img, ref_img,or_pts,corr_pts, ratio, selected=None, scale=1):
 
     return(frame_out)
 
-
 def transform(img,or_pts,corr_pts):
     if len(or_pts)>=4 and len(or_pts)==len(corr_pts):
         or_pts = np.float32(or_pts)

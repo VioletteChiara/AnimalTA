@@ -42,7 +42,6 @@ def find_pts(Vid, Prem_Im, minDistance=30,  blockSize=3, quality=0.05,maxCorners
     return(prev_pts)
 
 
-
 def find_best_position(Vid, Prem_Im, frame, show, scale=1, prev_pts=None):
     '''
     This function calculate the optival flow between the points of interest of the first image (see find_pts function) and the point of interest of a frame of interest (frame).

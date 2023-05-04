@@ -97,7 +97,6 @@ class Cropping(Frame):
         self.canvas_entrie.grid_columnconfigure((1,2,4,5,7,8), weight=3, uniform="column")
         self.canvas_entrie.grid_columnconfigure((0,3,6,9), weight=1, uniform="column")
 
-
         # End:
         self.Efrvar = StringVar()
         self.End_fr = Label(self.canvas_entrie, textvariable=self.Efrvar,

@@ -107,7 +107,6 @@ class Lecteur(Frame):
             if self.Vid.Smoothed[0]>0:
                 self.show_smooth_B = Button(Right_Frame, text=self.Messages["Save_Vid4"], command=self.change_smooth)
 
-
             #If the perspective was transformed, we propose this option
             if len(self.Vid.Analyses[4][0])>0:
                 self.show_deform_B = Button(Right_Frame, text=self.Messages["Analyses12"], command=self.change_deform)

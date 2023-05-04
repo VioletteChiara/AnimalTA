@@ -294,6 +294,7 @@ def match_shapes(cnt1,cnt2, pts):
     else:
         return (False, None)
 
+
 '''
 img1=cv2.imread("E:/Post-doc/TRacking_software/test_arenas1.png")
 img1=cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)

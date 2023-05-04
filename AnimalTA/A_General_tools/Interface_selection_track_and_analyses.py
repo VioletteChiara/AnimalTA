@@ -348,7 +348,6 @@ class Extend(Frame):
                                 self.show_load()
                                 Passed_fish += self.Vid.Track[1][6][Area]
 
-
                             for I in range(self.Vid.Track[1][6][Area]):#Individual's caracteristics
                                 self.timer = ((2/10 + ((I/self.Vid.Track[1][6][Area])*(5 / 10)) * (Area+1))) / len(self.Vid.Analyses[1])
                                 self.show_load()

@@ -172,8 +172,6 @@ class Scale(Frame):
                 self.ratio_val_ent.insert(0, self.Mem_ratio)
                 return False
 
-
-
     def UI_Size_update(self, new_val):
         #Recalculates and updates the ratio value
         if new_val=="":

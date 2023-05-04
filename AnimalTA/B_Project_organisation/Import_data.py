@@ -65,7 +65,6 @@ class Int_import(Frame):
         f.close()
         self.Messages = UserMessages.Mess[self.Language.get()]
 
-
         #Button to validate once the position is chosen
         BValidate=Button(self, text=self.Messages["Validate"], background="#6AED35", command=self.validate)
         BValidate.grid(row=5, column=0, columnspan=4)

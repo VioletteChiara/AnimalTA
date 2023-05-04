@@ -200,7 +200,6 @@ class Lecteur(Frame):
                 self.move1(nb_fr=self.jump_image, begin=begin, select=select)# We advance from nb_fr frames, this allow to display the video at high speed by omitting frames to go faster
             self.update()
 
-
             duration=0
             while duration <= (self.wait*(self.jump_image)-0.00001):#To ensure that we keep the good frame rate
                 duration=time.time()-duration_beg

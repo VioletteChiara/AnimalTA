@@ -276,7 +276,6 @@ class Param_definer(Frame):
             F_Nb.grid_columnconfigure(0, weight=1)
             self.Sub_F_Nb = Frame(F_Nb, background="grey80")
 
-
             #For the next update: proposes to track videos with unknown number of individuals.
             #self.Unknown_Nb_B=Button(F_Nb, text=self.Messages["Param12"], command=self.change_var_nb)#We allow the user to determine wether he knows how much targets they are or not
             #self.Sub_V_Nb = Frame(F_Nb, background="grey80")
@@ -285,7 +284,6 @@ class Param_definer(Frame):
             #self.draw_ent_B=Button(self.Sub_V_Nb, text="Redraw entrance area", command=self.redo_ent, background="grey80")
             #self.draw_ent_B.grid(sticky="nsew")
             # self.Sub_V_Nb.grid_columnconfigure(0, weight=1)
-
 
             self.Sub_F_Nb.grid_columnconfigure(0, weight=1)
             self.Sub_F_Nb.grid_columnconfigure(1, weight=5)

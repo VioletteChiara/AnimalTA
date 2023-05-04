@@ -10,7 +10,6 @@ def draw_mask(Vid, thick=-1, color=255):
     :param Vid: The video concerned, thick: the thickness of the shapes to be drawn (default=filled)
     :return: The binary image
     """
-
     liste_points=Vid.Mask[1]#Liste_points is a list of all the shapes used to draw the arenas.
     #Structure of liste_points:
     #[Shape1, Shape2,...]

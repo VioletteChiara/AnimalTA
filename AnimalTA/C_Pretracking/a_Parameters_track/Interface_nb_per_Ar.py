@@ -24,7 +24,6 @@ class Assign(Frame):
         self.LanguageO = self.Language.get()
         f.close()
 
-
         self.Messages = UserMessages.Mess[self.Language.get()]
         self.winfo_toplevel().title(self.Messages["Param9"])
 

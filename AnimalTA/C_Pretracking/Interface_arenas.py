@@ -592,7 +592,6 @@ class Mask(Frame):
                 elif self.liste_points[i][3] == 3 and len(self.liste_points[i][0]) > 1:
                     img, _ = Dr.Draw_Poly(img, self.liste_points[i][0],
                                                          self.liste_points[i][1], New_col, thick)
-
         if np.any(img[:,:]>0):
             Arenas, _ = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             self.NB_Arenas.set(len(Arenas))
