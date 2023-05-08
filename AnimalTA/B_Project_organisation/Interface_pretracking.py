@@ -74,7 +74,6 @@ class Interface(Frame):
     1. A homemade menu option to allow to add, remove video, change the language, save projectes, open projects...
     2. A table with one row per video (see Class_Row_Videos
     3. A set of options to set tracking parameters, correct the trajectories or analyses them."""
-
     def __init__(self, parent, liste_of_videos=[], **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
         self.config(background="grey")
