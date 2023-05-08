@@ -56,12 +56,11 @@ class Information_panel(Frame):
         mail.configure(state="disabled")
         mail.grid(row=5, column=1, sticky="nsw")
 
-        Lab_Help=Label(self, text="Need help? Go check the guidelines:")
+        Lab_Help=Label(self, text="Need help? Go check the guidelines or the video tutorials:")
         Lab_Help.grid(row=7, column=0,columnspan=2, sticky="nsew")
         link = Label(self, text="http://vchiara.eu/index.php/animalta", fg="#b448cd", cursor="hand2")
         link.grid(row=8, column=0,columnspan=2, sticky="nsew")
         link.bind("<Button-1>", self.send_link)
-
 
         self.rowconfigure(1, minsize=20)
         self.rowconfigure(4, minsize=30)

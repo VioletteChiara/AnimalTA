@@ -6,7 +6,6 @@ import os
 from tkinter import messagebox
 
 # Import language
-
 f = open(UserMessages.resource_path(os.path.join("AnimalTA","Files","Language")), "r", encoding="utf-8")
 Language=(f.read())
 f.close()
