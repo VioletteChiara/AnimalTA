@@ -6,6 +6,7 @@ from AnimalTA.E_Post_tracking import Coos_loader_saver as CoosLS
 from AnimalTA.A_General_tools import Class_change_vid_menu, Class_Lecteur, Function_draw_mask as Dr, UserMessages, \
     User_help, Class_stabilise
 
+from tkinter import messagebox
 import csv
 import math
 from tkinter import ttk
@@ -235,7 +236,6 @@ class Lecteur(Frame):
 
     def redo_tracking(self):
         #Rerun part of the tracking. To do so, a temporary table and a temporary video will be created from the frames to be re-run.
-
         self.timer=0
         if len(self.selected_rows) > 2:#It works only if we select more than two frames.
             self.Vid_Lecteur.proper_close()#To avoid too much memory consumption, the current video reader is closed until the rerun is done.
@@ -383,7 +383,6 @@ class Lecteur(Frame):
 
     def echange_traj(self, new_ind):
         #Make a swap between two targets' trajectories from the active farme to the end of the video
-
         self.Coos[new_ind,(self.Scrollbar.active_pos - self.to_sub):len(self.Coos[new_ind])], \
         self.Coos[self.selected_ind,(self.Scrollbar.active_pos - self.to_sub):len(self.Coos[new_ind])] \
             = \
@@ -559,26 +558,32 @@ class Lecteur(Frame):
 
     def interpolate(self, *event):
         #The coordinates of the selected target are changed by a straight line between the first and last frames from the selection.
-        if len(self.selected_rows)>2 and (self.Coos[self.selected_ind,self.selected_rows[0],0]!=-1000 or self.Coos[self.selected_ind,self.selected_rows[-1],0]!=-1000):#Works only if the user selected more than 2 lines and not NAs in bothe first and last.
-            first=int(self.selected_rows[0])
-            last=int(self.selected_rows[-1])
+        if len(self.selected_rows)>2:
+            if (self.Coos[self.selected_ind,self.selected_rows[0],0]!=-1000 or self.Coos[self.selected_ind,self.selected_rows[-1],0]!=-1000):#Works only if the user selected more than 2 lines and not NAs in both first and last.
+                first=int(self.selected_rows[0])
+                last=int(self.selected_rows[-1])
 
-            add=0
-            if self.Coos[self.selected_ind,self.selected_rows[0],0] == -1000:
-                first=last
-            elif self.Coos[self.selected_ind,self.selected_rows[-1],0] == -1000:
-                last=first
-                add = 1
+                add=0
+                if self.Coos[self.selected_ind,self.selected_rows[0],0] == -1000:
+                    first=last
+                elif self.Coos[self.selected_ind,self.selected_rows[-1],0] == -1000:
+                    last=first
+                    add = 1
 
-            for raw in self.selected_rows[0:len(self.selected_rows)-1+add]:
-                raw=int(raw)
-                self.Coos[self.selected_ind,raw,0] = (( self.Coos[self.selected_ind,first,0]) + ((( self.Coos[self.selected_ind,last,0]) - ( self.Coos[self.selected_ind,first,0])) * ((raw - first) / (len(self.selected_rows)-1))))
-                self.Coos[self.selected_ind,raw,1] = (( self.Coos[self.selected_ind,first,1]) + ((( self.Coos[self.selected_ind,last,1]) - ( self.Coos[self.selected_ind,first,1])) * ((raw - first) / (len(self.selected_rows)-1))))
-                if self.selected_ind not in self.who_is_here[raw]:
-                    self.who_is_here[raw].append(self.selected_ind)
+                for raw in self.selected_rows[0:len(self.selected_rows)-1+add]:
+                    raw=int(raw)
+                    self.Coos[self.selected_ind,raw,0] = (( self.Coos[self.selected_ind,first,0]) + ((( self.Coos[self.selected_ind,last,0]) - ( self.Coos[self.selected_ind,first,0])) * ((raw - first) / (len(self.selected_rows)-1))))
+                    self.Coos[self.selected_ind,raw,1] = (( self.Coos[self.selected_ind,first,1]) + ((( self.Coos[self.selected_ind,last,1]) - ( self.Coos[self.selected_ind,first,1])) * ((raw - first) / (len(self.selected_rows)-1))))
+                    if self.selected_ind not in self.who_is_here[raw]:
+                        self.who_is_here[raw].append(self.selected_ind)
 
-            self.look_for_NA(move_to=False)
-            self.modif_image()
+                self.look_for_NA(move_to=False)
+                self.modif_image()
+
+        else:
+            response=messagebox.askyesno(message=self.Messages["Control2"])
+            if response:
+                self.correct_NA()
 
     def look_for_NA(self, move_to=True):
         #If the user want to jump toward the next NA value
@@ -673,11 +678,9 @@ class Lecteur(Frame):
         self.look_for_NA(move_to=False)
 
     def correct_NA(self):
-        #####Not used anymore#######
-        #This function can be used to fill all NA values with interpolations. This option is not available anymore.
-        self.Blancs = {}
-        for col in self.Coos:
-            self.Blancs[col] = []
+        self.Blancs = []
+        for col in range(len(self.Coos)):
+            self.Blancs.append([])
             pdt_blanc = FALSE
             for raw in range(len(self.Coos[col])):
                 if self.Coos[col][raw][0] == -1000:
@@ -692,39 +695,28 @@ class Lecteur(Frame):
                     self.Blancs[col].append((int(Deb), int(raw)))
                     pdt_blanc = FALSE
 
-        for col in self.Coos:
+        for col in range(len(self.Coos)):
             for correct in self.Blancs[col]:
                 nb_raws = int(correct[1] - correct[0])
                 if correct[0] != 0 and correct[1] != (len(self.Coos[col])-1):
                     for raw in range(correct[0], correct[1]+1):
-                        self.Coos[col,raw,0] = int(round(int(self.Coos[col,correct[0] - 1,0]) + ((int(self.Coos[col,correct[1],0]) - int(self.Coos[col,correct[0] - 1,0])) * ((raw - correct[0]) / nb_raws)), 0))
-                        self.Coos[col,raw,1] = int(round(int(self.Coos[col,correct[0] - 1,1]) + ((int(self.Coos[col,correct[1],1]) - int(self.Coos[col,correct[0] - 1,1])) * ((raw - correct[0]) / nb_raws)), 0))
+                        self.Coos[col][raw][0] = int(round(int(self.Coos[col][correct[0] - 1][0]) + ((int(self.Coos[col][correct[1]][0]) - int(self.Coos[col][correct[0] - 1][0])) * ((raw - correct[0]) / nb_raws)), 0))
+                        self.Coos[col][raw][1] = int(round(int(self.Coos[col][correct[0] - 1][1]) + ((int(self.Coos[col][correct[1]][1]) - int(self.Coos[col][correct[0] - 1][1])) * ((raw - correct[0]) / nb_raws)), 0))
 
                 elif correct[0] == 0 and correct[1]!=(len(self.Coos[col])-1):
                     for raw in range(correct[0], correct[1]+1):
-                        self.Coos[col,raw,0] = int(round(int(self.Coos[col,correct[1],0]), 0))
-                        self.Coos[col,raw,1] = int(round(int(self.Coos[col,correct[1],1]), 0))
+                        self.Coos[col][raw][0] = int(round(int(self.Coos[col][correct[1]][0]), 0))
+                        self.Coos[col][raw][1] = int(round(int(self.Coos[col][correct[1]][1]), 0))
 
                 elif correct[0] != 0 and correct[1]==(len(self.Coos[col])-1):
                     for raw in range(correct[0], correct[1]+1):
-                        self.Coos[col,raw,0] = int(round(int(self.Coos[col,correct[0]-1,0]), 0))
-                        self.Coos[col,raw,1] = int(round(int(self.Coos[col,correct[0]-1,1]), 0))
-                elif correct[0] == 0 and correct[1]==(len(self.Coos[col])-1):
-                    for raw in range(correct[0], correct[1]+1):
-                        self.Coos[col][raw][0] = 10
-                        self.Coos[col][raw][1] = 10
+                        self.Coos[col][raw][0] = int(round(int(self.Coos[col][correct[0]-1][0]), 0))
+                        self.Coos[col][raw][1] = int(round(int(self.Coos[col][correct[0]-1][1]), 0))
+        self.modif_image()
 
-
-            for raw in range(len(self.Coos[col])):
-                new_tree_R = self.tree.item(raw)
-                new_tree_R = (new_tree_R["values"])
-                column = int([idx for idx, element in enumerate(self.tree["columns"]) if element == col][0])
-                new_tree_R[column] = str(self.Coos[col,raw,0]) + " " + str(self.Coos[col,raw,1])
-                self.tree.item(raw, text="", values=new_tree_R)
 
     def modif_image(self, img=[], actual_pos=None, **args):
         #Draw trajectories on teh top of the frame to be displayed
-
         self.afficher_table(actual_pos=actual_pos)
         self.Vid_Lecteur.update_ratio()
         if len(img) <= 10:

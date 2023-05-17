@@ -414,10 +414,23 @@ class speed_calculations:
         return_vals:if True, return all the distances for each frame
         """
         if return_vals: dists=[]
+        #For next update: more detailed analyses
+        #last=[-1000,-1000]
+        #last_angle=-1000
         is_inside=0
         nb_inside=0
         Latency="NA"
         Sdists=0
+
+        #Sdists_move=0
+        #nb_dists_move=0
+
+        #Sdists_move_all=0
+        #nb_dists_move_all = 0
+
+        #Smeander=0
+        #nb_Smeander=0
+
         for ligne in range(len(parent.Coos[ind])):
             if parent.Coos[ind,ligne,0] != -1000:
                 dist = (math.sqrt((float(parent.Coos[ind,ligne,0]) - float(Point[0])) ** 2 + (float(parent.Coos[ind,ligne,1]) - float(Point[1])) ** 2)) / float(parent.Vid.Scale[0])
@@ -428,6 +441,56 @@ class speed_calculations:
                     if Latency=="NA":
                         Latency=ligne/parent.Vid.Frame_rate[1]
                 nb_inside+=1
+
+                '''
+                if parent.Coos[ind,ligne - 1,0] != -1000 and dist<=Dist:
+                    dist_move = (math.sqrt((float(parent.Coos[ind][ligne][0]) - float(parent.Coos[ind][ligne - 1][0])) ** 2 + (float(parent.Coos[ind][ligne][1]) - float(parent.Coos[ind][ligne - 1][1])) ** 2))/ float(parent.Vid.Scale[0])
+                    speed = (dist) / (1 / parent.Vid.Frame_rate[1])
+                    last=parent.Coos[ind][ligne]
+
+                    angle = math.atan2((parent.Coos[ind][ligne - 1][1] - parent.Coos[ind][ligne][1]), (parent.Coos[ind][ligne - 1][0] - parent.Coos[ind][ligne][0]))
+                    angle = (angle*180)/math.pi
+
+                    if (last_angle != -1000):
+                        angle_diff=min([abs(angle-last_angle),abs(angle+last_angle)])
+
+                    #Count speed and distance
+                    Sdists_move_all+=dist_move
+                    nb_dists_move_all+=1
+
+                    #Count meander
+                    if (last_angle != -1000 and dist>0):
+                        Smeander += angle_diff / dist
+                        nb_Smeander += 1
+
+                    #Count dist while moving
+                    if (speed > self.seuil_movement):
+                        Sdists_move+=dist_move
+                        nb_dists_move+=1
+
+                        # Count meander while moving
+                        if (last_angle != -1000 and dist>0):
+                            Smeander += angle_diff / dist
+                            nb_Smeander += 1
+
+
+                        last_angle=angle
+                    else:
+                        last_angle=-1000
+
+                elif last[0]!=-1000 and dist<=Dist:
+                    dist_move = (math.sqrt((float(parent.Coos[ind][ligne][0]) - float(last[0])) ** 2 + (float(parent.Coos[ind][ligne][1]) - float(last[1])) ** 2))/ float(parent.Vid.Scale[0])
+                    speed_move = (dist) / (1 / parent.Vid.Frame_rate[1])
+                    last = parent.Coos[ind][ligne]
+                    if return_vals: dists.append(dist)
+
+                    if (in_move and speed > self.seuil_movement) or not in_move:
+                        Sdists += dist
+                        nb_dists += 1
+
+                    last_angle=-1000
+                '''
+
             elif return_vals:
                 dists.append("NA")
 
