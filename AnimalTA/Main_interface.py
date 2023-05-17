@@ -2,7 +2,6 @@ from tkinter import *
 import os
 from AnimalTA.A_General_tools import UserMessages
 from AnimalTA.B_Project_organisation import Interface_pretracking
-from AnimalTA.B_Project_organisation import test_tres
 from tkinter import ttk
 
 
