@@ -20,7 +20,6 @@ def convert_to_avi(parent, file, folder):
         nb_fr=0
         start=0
         end=cap.get(cv2.CAP_PROP_FRAME_COUNT)
-        print(end)
         while(cap.isOpened()):
             if nb_fr%25==0:
                 parent.timer = (nb_fr - start) / (end - start - 1)
@@ -30,11 +29,7 @@ def convert_to_avi(parent, file, folder):
                 result.write(frame)
                 nb_fr+=1
             else:
-                print("end")
                 break
-
-            if(nb_fr%1000==0):
-                print(nb_fr)
 
         cap.release()
         result.release()

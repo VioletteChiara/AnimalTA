@@ -77,7 +77,6 @@ def Do_tracking(parent, Vid, folder, portion=False, prev_row=None):
     one_every = int(round(round(Vid.Frame_rate[0], 2) / Vid.Frame_rate[1]))
     Which_part = 0
 
-
     mask = Dr.draw_mask(Vid)  # A mask for the arenas
     start = Vid.Cropped[1][0]  # Video beginning (after crop)
     end = Vid.Cropped[1][1]  # Video end (after crop)
@@ -386,7 +385,6 @@ def Image_modif(Vid, start, end, one_every, Which_part, Prem_image_to_show, mask
             capture.seek(0)
             activate_protection=False
             first_protection=False
-
         img = capture[frame - Vid.Fusion[Which_part][0]].asnumpy()
         if activate_protection:
             if first_protection:

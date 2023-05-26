@@ -10,6 +10,7 @@ from AnimalTA.C_Pretracking import Interface_cropping, Interface_back, Interface
     Interface_stabilis
 from tkinter import font
 import numpy as np
+from watchpoints import watch
 
 
 class Row_Can(Canvas):
@@ -421,19 +422,21 @@ class Row_Can(Canvas):
             self.holder.set(self.Fr_rate[1])
 
     def change_fps(self, choice):
-        # On change le frame rate
+        # We change the frame rate
         if choice==self.List_poss_FrRate[0]:
             self.Video.Frame_rate[1]=self.Video.Frame_rate[0]
         else:
             self.Video.Frame_rate[1] = choice
 
-        one_every=int(round(round(self.Video.Frame_rate[0], 2) / self.Video.Frame_rate[1]))
+        one_every=int(round(round(self.Video.Frame_rate[0]) / self.Video.Frame_rate[1]))
+
         self.Video.Cropped[1][0]= int(math.floor(self.Video.Cropped[1][0]/one_every) * one_every)#Avoid to try to open un-existing frames after changes in frame-rate
         self.Video.Cropped[1][1] = int(math.floor(self.Video.Cropped[1][1]/one_every) * one_every)
 
         self.Video.Frame_nb[1] = int(self.Video.Frame_nb[0] / round(self.Video.Frame_rate[0] / self.Video.Frame_rate[1]))
         self.update()
         self.bouton_Fr_rate.bind("<Enter>", partial(self.main_frame.HW.change_tmp_message, self.Messages["Row0"].format(round(self.Video.Frame_rate[1], 2))))
+
 
     def extend_change_fps(self):
         # Open a new window to extend the frame rate at several videos
@@ -461,14 +464,12 @@ class Row_Can(Canvas):
                                                              round((int(self.Video.Cropped[1][1]/one_every) - int(self.Video.Cropped[1][0]/one_every) +1) / self.Video.Frame_rate[1],2)))
             self.crop_it.set(self.Messages["RowB7"])
 
-
         elif not self.Video.Cropped[0] and self.Video.Cropped_sp[0]:
             self.cropping_button.config(bg="#bfe62b")
             self.text_crop.set(self.Messages["RowL2"].format(self.Video.Frame_nb[1], round(self.Video.Frame_nb[1] / self.Video.Frame_rate[1],2)))
             self.crop_it.set(self.Messages["RowB8"])
             self.update_repre()
             self.update_back()
-
         else:
             self.cropping_button.config(bg="#ff8a33")
             self.text_crop.set(self.Messages["RowL2"].format(self.Video.Frame_nb[1], round(self.Video.Frame_nb[1] / self.Video.Frame_rate[1],2)))

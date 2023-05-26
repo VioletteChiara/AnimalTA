@@ -1,6 +1,7 @@
 import cv2
 import threading
 import decord
+import math
 
 class Video_Loader():
     def __init__(self, Vid, File, is_crop=True, **kwargs):
@@ -58,9 +59,10 @@ class Video_Loader():
 
         # if the video was not concatenated, we recalculate its real length (opencv is not precise in this task, so we correct this value using the decord library)
         # For concatenated videos, this step has been done at the moment of the concatenation
-        if len(self.Vid.Fusion) < 2:
+        if len(self.Vid.Fusion) < 2 :
             self.Vid.Frame_nb[0] = len(self.capture)
             self.capture.seek(0)
             self.Vid.Frame_nb[1] = self.Vid.Frame_nb[0] /  int(round(round(self.Vid.Frame_rate[0], 2) / self.Vid.Frame_rate[1]))
             if not self.Vid.Cropped[0]:
-                self.Vid.Cropped[1][1] = self.Vid.Frame_nb[0] - 1
+                one_every = int(round(round(self.Vid.Frame_rate[0]) / self.Vid.Frame_rate[1]))
+                self.Vid.Cropped[1][1] = int(math.floor(self.Vid.Cropped[1][1] / one_every) * one_every)
