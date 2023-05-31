@@ -1071,22 +1071,20 @@ class Interface(Frame):
                 if len(self.selected_vid.Fusion) < 2: #If it was not done yet, we prepare the info for the Fusion process (can't be done before as opencv is not accurate in frame counting and decord too slow to manage all the videos at the same time)
                     capture = decord.VideoReader(self.selected_vid.File_name, ctx=decord.cpu(0))
                     self.selected_vid.Frame_nb[0] = len(capture)
-                    self.selected_vid.Frame_nb[1] = self.selected_vid.Frame_nb[0] / round(
-                        self.selected_vid.Frame_rate[0] / self.selected_vid.Frame_rate[1])
+                    self.selected_vid.Frame_nb[1] = self.selected_vid.Frame_nb[0] / int(round(round(self.selected_vid.Frame_rate[0], 2) / self.selected_vid.Frame_rate[1]))
                     del capture
 
                 if len(second_Vid.Fusion) < 2: #If it was not done yet, we prepare the info for the Fusion process (can't be done before as opencv is not accurate in frame counting and decord too slow to manage all the videos at the same time)
                     capture = decord.VideoReader(second_Vid.File_name, ctx=decord.cpu(0))
                     second_Vid.Frame_nb[0] = len(capture)
-                    second_Vid.Frame_nb[1] = second_Vid.Frame_nb[0] / round(second_Vid.Frame_rate[0] / second_Vid.Frame_rate[1])
+                    second_Vid.Frame_nb[1] = second_Vid.Frame_nb[0] / int(round(round(second_Vid.Frame_rate[0], 2) / second_Vid.Frame_rate[1]))
                     del capture
 
                 # We add the second part after the first one
                 self.selected_vid.Fusion.append([self.selected_vid.Frame_nb[0], second_Vid.File_name])
                 self.selected_vid.Frame_nb[0] += second_Vid.Frame_nb[0]
-                self.selected_vid.Frame_nb[1] = math.floor(self.selected_vid.Frame_nb[0] / round(
-                    self.selected_vid.Frame_rate[0] / self.selected_vid.Frame_rate[1]))
-                self.selected_vid.Cropped = [False, [0, self.selected_vid.Frame_nb[0]]]
+                self.selected_vid.Frame_nb[1] = self.selected_vid.Frame_nb[0] / int(round(round(self.selected_vid.Frame_rate[0], 2) / self.selected_vid.Frame_rate[1]))
+                self.selected_vid.Cropped = [False, [0, self.selected_vid.Frame_nb[0]-1]]
                 self.supr_video(Vid=second_Vid)
                 self.wait_for_vid = False
                 self.afficher_projects()
