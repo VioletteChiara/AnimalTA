@@ -13,3 +13,6 @@ If you are using AnimalTA for your researches, please cite:
 *Chiara, V., & Kim, S.-Y. (2023). AnimalTA: A highly flexible and easy- to- use program for tracking and analysing animal movement in different environments. Methods in Ecology and Evolution, 00, 1–9.*
 https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.14115
 
+
+# Request a language
+If the language you want to translate is not present in AnimalTA yet, submit an issue so that we can provide you with the mandatory material.
