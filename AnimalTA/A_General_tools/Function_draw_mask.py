@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import math
 from statistics import mean
-from AnimalTA.A_General_tools import F_Ellipse
+from AnimalTA.A_General_tools import Diverse_functions
 
 def draw_mask(Vid, thick=-1, color=255):
     """
@@ -200,7 +200,7 @@ def Draw_elli(image, xs, ys, color=(255, 0, 0), thick=2):
                             thick)
 
     elif len(xs) > 4:
-        lsqe = F_Ellipse.LSqEllipse()
+        lsqe = Diverse_functions.LSqEllipse()
         lsqe.fit(np.array([xs, ys]))
         center, width, height, phi = lsqe.parameters()
         phi = float(phi)*180/math.pi

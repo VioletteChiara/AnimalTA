@@ -266,7 +266,10 @@ class speed_calculations:
                     angle = math.atan2((parent.Coos[ind][ligne - 1][1] - parent.Coos[ind][ligne][1]), (parent.Coos[ind][ligne - 1][0] - parent.Coos[ind][ligne][0]))
                     angle = (angle*180)/math.pi
                     if (last_angle != -1000):
-                        angle_diff=min([abs(angle-last_angle),abs(angle+last_angle)])
+                        angle_diff = angle - last_angle
+                        if angle_diff > 180: angle_diff -= 360
+                        if angle_diff < -180: angle_diff += 360
+                        angle_diff=abs(angle_diff)
 
                     if return_vals: dists.append(dist)
                     if (in_move and speed > self.seuil_movement) or not in_move:
@@ -274,7 +277,7 @@ class speed_calculations:
                         nb_dists+=1
 
                         if (last_angle != -1000 and dist>0):
-                            Smeander += angle_diff / dist
+                            Smeander += (angle_diff / dist)
                             nb_Smeander += 1
 
                         last_angle=angle
@@ -297,8 +300,6 @@ class speed_calculations:
                     if return_vals: dists.append("NA")
                     last_angle = -1000
 
-
-
             elif return_vals:
                 dists.append("NA")
 
@@ -311,7 +312,6 @@ class speed_calculations:
             meander_val = "NA"
 
         if not return_vals:
-
             return (Sdists, meander_val)
         else:
             return(Sdists, dists, meander_val)
@@ -403,8 +403,6 @@ class speed_calculations:
 
 
 
-
-
     def calculate_dist_lat(self, parent, Point, ind, Dist, return_vals=False):
         """Extract the measurements relatives to the "Point" element of interest.
         parent: higher level class calling this function
@@ -414,98 +412,205 @@ class speed_calculations:
         return_vals:if True, return all the distances for each frame
         """
         if return_vals: dists=[]
-        #For next update: more detailed analyses
-        #last=[-1000,-1000]
-        #last_angle=-1000
+
+        last=[-1000, -1000]#Last know position
+
         is_inside=0
         nb_inside=0
         Latency="NA"
+
+        last_in="NA" #Whether the target was already inside the perimeter
+        Nb_entries=0#Number of time the target entered the area
+
+        #Prop time lost
+        Slost=0
+        nb_lost=0
+
+        #Prop time moving
+        Smoving=0
+        nb_moving=0
+
+        #Distance to the point
         Sdists=0
+        nb_dists=0
 
-        #Sdists_move=0
-        #nb_dists_move=0
+        # Distance traveled
+        Sloc=0
 
-        #Sdists_move_all=0
-        #nb_dists_move_all = 0
+        # Distance traveled while moving
+        Sloc_move=0
 
-        #Smeander=0
-        #nb_Smeander=0
+        #Movement speed
+        Sspeed=0
+        nb_speed=0
+
+        #Movement speed while moving
+        Sspeed_move=0
+        nb_speed_move=0
+
+        #Meander
+        last_angle=-1000
+        last_angle_moving = -1000
+        Smeander=0
+        nb_Smeander=0
+
+        #Meander en mouvement
+        Smeander_move=0
+        nb_Smeander_move=0
 
         for ligne in range(len(parent.Coos[ind])):
-            if parent.Coos[ind,ligne,0] != -1000:
+            was_in = last_in
+            #If we don't know were teh taregt is but that it was inside the area last time
+            if parent.Coos[ind,ligne,0] == -1000 and was_in==True:
+                nb_lost+=1
+
+            if parent.Coos[ind,ligne,0] != -1000:#If we now where the target is
+                #We first determine whether the target is inside the perimeter
                 dist = (math.sqrt((float(parent.Coos[ind,ligne,0]) - float(Point[0])) ** 2 + (float(parent.Coos[ind,ligne,1]) - float(Point[1])) ** 2)) / float(parent.Vid.Scale[0])
-                if return_vals: dists.append(dist)
-                Sdists+=dist
+                if return_vals: dists.append(dist)#If we want to save all the detailed data
+                Sdists+=dist#We sum the distances between the target and the point of interest
+                nb_dists+=1
                 if dist<=Dist:
-                    is_inside+=1
+                    #If the target is not lost
+                    Slost+=1
+                    nb_lost+=1
+
+                    if last_in==False or last_in=="NA":
+                        Nb_entries+=1#We count each time the target enters the area
+
+                    last_in=True
+
+                    is_inside+=1#We count the number of frame for which the target was seen inside
+
                     if Latency=="NA":
-                        Latency=ligne/parent.Vid.Frame_rate[1]
-                nb_inside+=1
+                        Latency=ligne/parent.Vid.Frame_rate[1]#If it is the first time the target is seen inside, we save this time it
 
-                '''
-                if parent.Coos[ind,ligne - 1,0] != -1000 and dist<=Dist:
-                    dist_move = (math.sqrt((float(parent.Coos[ind][ligne][0]) - float(parent.Coos[ind][ligne - 1][0])) ** 2 + (float(parent.Coos[ind][ligne][1]) - float(parent.Coos[ind][ligne - 1][1])) ** 2))/ float(parent.Vid.Scale[0])
-                    speed = (dist) / (1 / parent.Vid.Frame_rate[1])
-                    last=parent.Coos[ind][ligne]
+                else:
+                    last_in = False#It is not inside the area
 
-                    angle = math.atan2((parent.Coos[ind][ligne - 1][1] - parent.Coos[ind][ligne][1]), (parent.Coos[ind][ligne - 1][0] - parent.Coos[ind][ligne][0]))
-                    angle = (angle*180)/math.pi
+                nb_inside+=1#We count the total number of frames for which the target was visible
 
-                    if (last_angle != -1000):
-                        angle_diff=min([abs(angle-last_angle),abs(angle+last_angle)])
+                if return_vals:
+                    if parent.Coos[ind,ligne - 1,0] != -1000 and ligne>0 and dist <= Dist and was_in==True: #If we knew the last position of the target and that the target is and was inside the perimeter
+                        #Number of frame for which we know whether the individual is moving or not
+                        nb_moving += 1
 
-                    #Count speed and distance
-                    Sdists_move_all+=dist_move
-                    nb_dists_move_all+=1
+                        #We first save the distance moved
+                        dist_move = (math.sqrt((float(parent.Coos[ind][ligne][0]) - float(parent.Coos[ind][ligne - 1][0])) ** 2 + (float(parent.Coos[ind][ligne][1]) - float(parent.Coos[ind][ligne - 1][1])) ** 2))/ float(parent.Vid.Scale[0])
+                        speed = (dist_move) / (1 / parent.Vid.Frame_rate[1])
 
-                    #Count meander
-                    if (last_angle != -1000 and dist>0):
-                        Smeander += angle_diff / dist
-                        nb_Smeander += 1
+                        #We record the angle between last and current frame
+                        angle = math.atan2((parent.Coos[ind][ligne - 1][1] - parent.Coos[ind][ligne][1]), (parent.Coos[ind][ligne - 1][0] - parent.Coos[ind][ligne][0]))
+                        angle = (angle*180)/math.pi
 
-                    #Count dist while moving
-                    if (speed > self.seuil_movement):
-                        Sdists_move+=dist_move
-                        nb_dists_move+=1
+                        #If we knew the last angle, we can calculate turning speed
+                        if (last_angle != -1000):
+                            angle_diff = angle - last_angle
+                            if angle_diff > 180: angle_diff -= 360
+                            if angle_diff < -180: angle_diff += 360
+                            angle_diff_not_moving=abs(angle_diff)
 
-                        # Count meander while moving
-                        if (last_angle != -1000 and dist>0):
-                            Smeander += angle_diff / dist
+                        if (last_angle_moving != -1000):
+                            angle_diff = angle - last_angle_moving
+                            if angle_diff > 180: angle_diff -= 360
+                            if angle_diff < -180: angle_diff += 360
+                            angle_diff_moving=abs(angle_diff)
+
+
+                        #Count distance
+                        Sloc += dist_move
+
+                        # Count speed
+                        Sspeed += speed
+                        nb_speed += 1
+
+                        #Count meander
+                        if (last_angle != -1000 and dist_move>0):
+                            Smeander += (angle_diff_not_moving / dist_move)
                             nb_Smeander += 1
-
-
                         last_angle=angle
+
+                        #While moving
+                        if (speed > self.seuil_movement):
+                            Smoving +=1
+                            Sloc_move+=dist_move
+                            Sspeed_move += speed
+                            nb_speed_move += 1
+                            if (last_angle_moving != -1000 and dist_move > 0):
+                                Smeander_move += (angle_diff_moving / dist_move)
+                                nb_Smeander_move += 1
+                            last_angle_moving=angle
+
+                        else:
+                            last_angle_moving = -1000
+
+                    elif last[0] != -1000 and dist <= Dist and was_in==True:#Si il y a eu des valeurs de NA, on considère que l'individu a parcouru au moins la distance entre ces deux points
+                        dist_move = (math.sqrt((float(parent.Coos[ind][ligne][0]) - float(last[0])) ** 2 + (float(parent.Coos[ind][ligne][1]) - float(last[1])) ** 2)) / float(parent.Vid.Scale[0])
+                        speed = (dist_move) / (1 / parent.Vid.Frame_rate[1])
+                        Sloc += dist_move
+
+                        if (speed > self.seuil_movement) :
+                            Sloc_move += dist_move
+
+                        last_angle = -1000
+                        last_angle_moving = -1000
+
                     else:
                         last_angle=-1000
+                        last_angle_moving = -1000
 
-                elif last[0]!=-1000 and dist<=Dist:
-                    dist_move = (math.sqrt((float(parent.Coos[ind][ligne][0]) - float(last[0])) ** 2 + (float(parent.Coos[ind][ligne][1]) - float(last[1])) ** 2))/ float(parent.Vid.Scale[0])
-                    speed_move = (dist) / (1 / parent.Vid.Frame_rate[1])
-                    last = parent.Coos[ind][ligne]
-                    if return_vals: dists.append(dist)
+                last=parent.Coos[ind,ligne]#We save the last known coordinates
 
-                    if (in_move and speed > self.seuil_movement) or not in_move:
-                        Sdists += dist
-                        nb_dists += 1
-
-                    last_angle=-1000
-                '''
-
-            elif return_vals:
-                dists.append("NA")
+            else:
+                last_angle=-1000
+                last_angle_moving = -1000
+                if return_vals:
+                    dists.append("NA")
 
         if Sdists>0:
-            Mean_dist=Sdists/nb_inside
-            Prop_Time=is_inside/nb_inside
+            Mean_dist=Sdists/nb_dists
+            Prop_Time_in=is_inside/nb_inside
         else:
-            Mean_dist="NA"
-            Prop_Time="NA"
+            Mean_dist = "NA"
+            Prop_Time_in = "NA"
+
+        if nb_lost>0:
+            Prop_Time_lost_in= 1- Slost/nb_lost
+        else:
+            Prop_Time_lost_in="NA"
+
+        if nb_moving>0:
+            Mean_time_moving_in = Smoving / nb_moving
+        else:
+            Mean_time_moving_in="NA"
+
+        if nb_speed>0:
+            Speed_in = Sspeed / nb_speed
+        else:
+            Speed_in = "NA"
+
+        Distance_traveled_in=Sloc
+        Distance_traveled_moving_in = Sloc_move
+
+
+        if nb_speed_move>0:
+            Speed_moving_in=Sspeed_move/nb_speed_move
+        else:
+            Speed_moving_in="NA"
+        if nb_Smeander>0:
+            Meander_in=Smeander/nb_Smeander
+        else:
+            Meander_in="NA"
+        if nb_Smeander_move>0:
+            Meander_moving_in = Smeander_move / nb_Smeander_move
+        else:
+            Meander_moving_in="NA"
 
         if not return_vals:
-            return([Mean_dist, Latency, Prop_Time])
+            return([Mean_dist, Latency, Prop_Time_in])
             #Average distance between the point and the target of interest, Latency before the distance between the point and the target is lower than Dist
         else:
-            return ([Mean_dist, Latency, Prop_Time, dists])
+            return ([Mean_dist, Latency, Prop_Time_in, Nb_entries,Prop_Time_lost_in,Mean_time_moving_in,Distance_traveled_in,Distance_traveled_moving_in,Speed_in,Speed_moving_in,Meander_in,Meander_moving_in, dists])
 
     def calculate_intersect(self, parent, Points, ind):
         """Count the number of times a target crosses a segment. Also record the latency to cross
@@ -611,7 +716,6 @@ class speed_calculations:
             return(nb_cross, nb_cross_TL_BR, Latency, vertical)
         else:
             return ("NA", "NA", "NA", "NA")
-
 
     def inter(self, A, B, C):
         return ((C[1] - A[1]) * (B[0] - A[0]) > (B[1] - A[1]) * (C[0] - A[0]),(C[1] - A[1]) * (B[0] - A[0]) >= (B[1] - A[1]) * (C[0] - A[0]))
@@ -760,33 +864,206 @@ class speed_calculations:
         Latency = "NA"
         if return_vals: dists=[]
         if len(cnt)>0:
-            is_inside = 0
-            nb_inside=0
-            for ligne in range(len(parent.Coos[ind])):
-                if parent.Coos[ind][ligne][0] != -1000:
-                    res = cv2.pointPolygonTest(cnt[0], (int(float(parent.Coos[ind,ligne,0])), int(float(parent.Coos[ind,ligne,1]))),True)
-                    if return_vals: dists.append(-res/float(parent.Vid.Scale[0]))
-                    if res >= 0:
-                        is_inside+=1
-                        if Latency=="NA":
-                            Latency=ligne/parent.Vid.Frame_rate[1]
+            last = [-1000, -1000]  # Last know position
 
-                    nb_inside+=1
-                elif return_vals:
-                    dists.append("NA")
+            is_inside = 0
+            nb_inside = 0
+
+            last_in = "NA"  # Whether the target was already inside the perimeter
+            Nb_entries = 0  # Number of time the target entered the area
+
+            # Prop time lost
+            Slost = 0
+            nb_lost = 0
+
+            # Prop time moving
+            Smoving = 0
+            nb_moving = 0
+
+            # Distance traveled
+            Sloc = 0
+
+            # Distance traveled while moving
+            Sloc_move = 0
+
+            # Movement speed
+            Sspeed = 0
+            nb_speed = 0
+
+            # Movement speed while moving
+            Sspeed_move = 0
+            nb_speed_move = 0
+
+            # Meander
+            last_angle = -1000
+            last_angle_moving = -1000
+            Smeander = 0
+            nb_Smeander = 0
+
+            # Meander en mouvement
+            Smeander_move = 0
+            nb_Smeander_move = 0
+
+            nb_lignes=0
+
+            for ligne in range(len(parent.Coos[ind])):
+                was_in = last_in
+                # If we don't know where the target is but that it was inside the area last time
+                if parent.Coos[ind, ligne, 0] == -1000 and was_in == True:
+                    nb_lost += 1
+                if parent.Coos[ind][ligne][0] != -1000:
+                    dist = cv2.pointPolygonTest(cnt[0], (int(float(parent.Coos[ind,ligne,0])), int(float(parent.Coos[ind,ligne,1]))),True)
+                    dist=-dist/float(parent.Vid.Scale[0])
+                    if return_vals: dists.append(dist)
+                    if dist <= 0:
+                        # If the target is not lost
+                        Slost += 1
+                        nb_lost += 1
+
+                        if last_in == False or last_in == "NA":
+                            Nb_entries += 1  # We count each time the target enters the area
+
+                        last_in = True
+                        is_inside += 1  # We count the number of frame for which the target was seen inside
+
+                        if Latency == "NA":
+                            Latency = ligne / parent.Vid.Frame_rate[1]  # If it is the first time the target is seen inside, we save this time it
+
+                    else:
+                        last_in = False  # It is not inside the area
+
+                    nb_inside += 1  # We count the total number of frames for which the target was visible
+
+                    if return_vals:
+                        if parent.Coos[ind, ligne - 1, 0] != -1000 and ligne > 0 and dist <= 0 and was_in == True:  # If we knew the last position of the target and that the target is and was inside the perimeter
+                            # Number of frame for which we know whether the individual is moving or not
+                            nb_moving += 1
+
+                            # We first save the distance moved
+                            dist_move = (math.sqrt((float(parent.Coos[ind][ligne][0]) - float(parent.Coos[ind][ligne - 1][0])) ** 2 + (float(parent.Coos[ind][ligne][1]) - float(parent.Coos[ind][ligne - 1][1])) ** 2)) / float(parent.Vid.Scale[0])
+                            speed = (dist_move) / (1 / parent.Vid.Frame_rate[1])
+
+                            # We record the angle between last and current frame
+                            angle = math.atan2((parent.Coos[ind][ligne - 1][1] - parent.Coos[ind][ligne][1]),
+                                               (parent.Coos[ind][ligne - 1][0] - parent.Coos[ind][ligne][0]))
+                            angle = (angle * 180) / math.pi
+
+                            # If we knew the last angle, we can calculate turning speed
+                            if (last_angle != -1000):
+                                angle_diff = angle - last_angle
+                                if angle_diff > 180: angle_diff -= 360
+                                if angle_diff < -180: angle_diff += 360
+                                angle_diff_not_moving = abs(angle_diff)
+
+                            if (last_angle_moving != -1000):
+                                angle_diff = angle - last_angle_moving
+                                if angle_diff > 180: angle_diff -= 360
+                                if angle_diff < -180: angle_diff += 360
+                                angle_diff_moving = abs(angle_diff)
+
+                            # Count distance
+                            Sloc += dist_move
+
+                            # Count speed
+                            Sspeed += speed
+                            nb_speed += 1
+
+                            # Count meander
+                            if (last_angle != -1000 and dist_move > 0):
+                                Smeander += (angle_diff_not_moving / dist_move)
+                                nb_Smeander += 1
+                            last_angle=angle
+
+                            # While moving
+                            if (speed > self.seuil_movement):
+                                Smoving += 1
+                                Sloc_move += dist_move
+                                Sspeed_move += speed
+                                nb_speed_move += 1
+
+                                if (last_angle_moving != -1000 and dist_move > 0):
+                                    Smeander_move += (angle_diff_moving / dist_move)
+                                    nb_Smeander_move += 1
+                                last_angle_moving=angle
+
+                            else:
+                                last_angle_moving=-1000
+
+
+                        elif last[0] != -1000 and dist <= 0 and was_in == True:  # Si il y a eu des valeurs de NA, on considère que l'individu a parcouru au moins la distance entre ces deux points
+                            dist_move = (math.sqrt((float(parent.Coos[ind][ligne][0]) - float(last[0])) ** 2 + (float(parent.Coos[ind][ligne][1]) - float(last[1])) ** 2)) / float(parent.Vid.Scale[0])
+                            speed = (dist_move) / (1 / parent.Vid.Frame_rate[1])
+                            Sloc += dist_move
+
+                            if (speed > self.seuil_movement):
+                                Sloc_move += dist_move
+
+                            last_angle = -1000
+                            last_angle_moving = -1000
+
+                        else:
+                            last_angle = -1000
+                            last_angle_moving = -1000
+
+                    last = parent.Coos[ind, ligne]  # We save the last known coordinates
+
+                else:
+                    last_angle=-1000
+                    last_angle_moving = -1000
+                    if return_vals:
+                        dists.append("NA")
 
             if nb_inside > 0:
                 Prop_inside = is_inside / nb_inside
             else:
                 Prop_inside = "NA"
+
+            if nb_lost > 0:
+                Prop_Time_lost_in = 1 - Slost / nb_lost
+            else:
+                Prop_Time_lost_in = "NA"
+
+            if nb_moving > 0:
+                Mean_time_moving_in = Smoving / nb_moving
+            else:
+                Mean_time_moving_in = "NA"
+
+            if nb_speed > 0:
+                Speed_in = Sspeed / nb_speed
+            else:
+                Speed_in = "NA"
+
+            Distance_traveled_in = Sloc
+            Distance_traveled_moving_in = Sloc_move
+
+            if nb_speed_move > 0:
+                Speed_moving_in = Sspeed_move / nb_speed_move
+            else:
+                Speed_moving_in = "NA"
+            if nb_Smeander > 0:
+                Meander_in = Smeander / nb_Smeander
+            else:
+                Meander_in = "NA"
+
+            if nb_Smeander_move > 0:
+                Meander_moving_in = Smeander_move / nb_Smeander_move
+            else:
+                Meander_moving_in = "NA"
+
         else:
             Prop_inside = "NA"
+            Prop_Time_lost_in = "NA"
+            Mean_time_moving_in = "NA"
+            Speed_in = "NA"
+            Speed_moving_in = "NA"
+            Meander_in = "NA"
+            Meander_moving_in = "NA"
             if return_vals: dists=["NA"]*len(parent.Coos[ind])-1
 
         if not return_vals:
             return (Prop_inside, Latency)
         else:
-            return (Prop_inside, Latency, dists)
+            return (Prop_inside, Latency, Nb_entries,Prop_Time_lost_in,Mean_time_moving_in,Distance_traveled_in,Distance_traveled_moving_in,Speed_in,Speed_moving_in,Meander_in,Meander_moving_in, dists)
 
     def calculate_all_inter_dists(self, Pts_coos, Scale):
         """Average the inter-individual distances found and extract its minimum and maximum values.

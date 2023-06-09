@@ -52,7 +52,7 @@ class Param_definer(Frame):
         self.erode_value.set(self.Vid.Track[1][1])
         self.dilate_value = StringVar()
         self.dilate_value.set(self.Vid.Track[1][2])
-        self.kernel = np.ones((3, 3), np.uint8)
+        self.kernel = np.ones((3,3), np.uint8)
         self.Scroll_L = 75
         self.min_area_value=StringVar()
         self.max_area_value=StringVar()
@@ -284,7 +284,7 @@ class Param_definer(Frame):
             #This is for the next update: alloww to redraw the areas throught which targets can enter the arenas
             #self.draw_ent_B=Button(self.Sub_V_Nb, text="Redraw entrance area", command=self.redo_ent, background="grey80")
             #self.draw_ent_B.grid(sticky="nsew")
-            # self.Sub_V_Nb.grid_columnconfigure(0, weight=1)
+            #self.Sub_V_Nb.grid_columnconfigure(0, weight=1)
 
 
             self.Sub_F_Nb.grid_columnconfigure(0, weight=1)
@@ -308,7 +308,8 @@ class Param_definer(Frame):
 
             self.Sub_F_Nb.grid(row=1, column=0, sticky="nsew")#To be replaced by next lines when update
 
-            ''' Add this part of code to unlock the possibility of variable number of targets tracking
+            #Add this part of code to unlock the possibility of variable number of targets tracking
+            '''
             if self.Vid.Track[1][6][0]:
                 self.Unknown_Nb_B.config(background="grey80")
                 self.Sub_F_Nb.grid(row=1, column=0, sticky="nsew")

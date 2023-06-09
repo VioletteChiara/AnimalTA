@@ -167,8 +167,6 @@ class Lists(Frame):
         list_of_vids =[]
         for Vid in Np_style_pts[:,0]:#Look for all videos with at least one selected arena
             if Vid not in list_of_vids:
-
-                print(Vid.User_Name)
                 list_of_vids.append(Vid)
 
         nb_V=0

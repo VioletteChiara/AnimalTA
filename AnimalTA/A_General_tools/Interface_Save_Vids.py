@@ -104,8 +104,7 @@ class Lecteur(Frame):
             self.Show_ID_B.grid(row=1, column=0, sticky="ew")
 
             #If the trajectories were smoothed, we propose to display smoothed trajectories
-            if self.Vid.Smoothed[0]>0:
-                self.show_smooth_B = Button(Right_Frame, text=self.Messages["Save_Vid4"], command=self.change_smooth)
+            self.show_smooth_B = Button(Right_Frame, text=self.Messages["Save_Vid4"], command=self.change_smooth)
 
 
             #If the perspective was transformed, we propose this option
@@ -116,7 +115,7 @@ class Lecteur(Frame):
             #Length of trajectories tail can also be modified
             self.tail_size = DoubleVar(value=10)
             self.max_tail = IntVar()
-            self.max_tail.set(min([self.Vid.Frame_nb[1], 600]))
+            self.max_tail.set(min([self.Vid.Frame_nb[1]/self.Vid.Frame_rate[1], 600]))
             self.Scale_tail = Scale(Right_Frame, from_=0, to=self.max_tail.get(), variable=self.tail_size, resolution=0.5, orient="horizontal", label=self.Messages["Control4"], command=self.modif_image)
 
         #Save the video
@@ -130,8 +129,8 @@ class Lecteur(Frame):
         #Video reader
         self.Vid_Lecteur= Class_Lecteur.Lecteur(self, self.Vid)
         self.Vid_Lecteur.grid(row=0, column=0, sticky="nsew")
-        Grid.columnconfigure(self, 0, weight=1)  ########NEW
-        Grid.rowconfigure(self, 0, weight=1)  ########NEW
+        Grid.columnconfigure(self, 0, weight=1)
+        Grid.rowconfigure(self, 0, weight=1)
 
         self.Vid_Lecteur.canvas_video.update()
         self.Vid_Lecteur.update_image(self.Vid_Lecteur.to_sub)
@@ -167,7 +166,7 @@ class Lecteur(Frame):
 
     def change_smooth(self):
         #Should the trajectories be displayed.
-        if self.show_smooth:
+        if self.show_smooth and self.Vid.Smoothed[0]>0:
             self.show_smooth=False
             self.show_smooth_B.config(background="SystemButtonFace")
         else:
@@ -232,7 +231,14 @@ class Lecteur(Frame):
 
             frame_width = int(self.Vid.shape[1])
             frame_height = int(self.Vid.shape[0])
-            frame_rate = self.Vid.Frame_rate[1]
+            speed=self.Vid_Lecteur.speed.get()
+            if speed < 0:#We allow the user to change the frame rate of the video saved
+                frame_rate = (self.Vid.Frame_rate[1]) / (abs(speed))
+            elif speed>0 :
+                frame_rate = (self.Vid.Frame_rate[1]) * abs(speed + 1)
+            else:
+                frame_rate = self.Vid.Frame_rate[1]
+
             size = (frame_width, frame_height)
             result = cv2.VideoWriter(file_to_save, cv2.VideoWriter_fourcc(*'XVID'), frame_rate, size)#We save the video in teh chosen file
 
@@ -385,9 +391,10 @@ class Lecteur(Frame):
 
     def change_type(self):
         #Update the options available according to what kind of video the user want as an output
-        if self.show_track:#If user there is a tracking done, we allow to choose for tail size
+        if self.show_track :#If user there is a tracking done, we allow to choose for tail size
             self.Scale_tail.grid(row=1, column=1,rowspan=8, columnspan=2)
-            self.show_smooth_B.grid(row=0, column=1, sticky="ew")
+            if self.Vid.Smoothed[0]>0:
+                self.show_smooth_B.grid(row=0, column=1, sticky="ew")
         else:
             self.Scale_tail.grid_forget()
             self.show_smooth_B.grid_forget()

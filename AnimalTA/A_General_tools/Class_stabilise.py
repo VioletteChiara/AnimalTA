@@ -6,6 +6,7 @@ from AnimalTA.A_General_tools import UserMessages
 from PIL import ImageFont, ImageDraw, Image
 
 
+
 """ These functions are based on the work of members of the learnopencv team.
 https://github.com/spmallick/learnopencv/blob/master/VideoStabilization/video_stabilization.py"""
 
@@ -103,6 +104,10 @@ def find_best_position(Vid, Prem_Im, frame, show, scale=1, prev_pts=None):
 
             # Apply affine wrapping to the given frame
             frame_stabilized = cv2.warpAffine(frame, m, (w, h))
+
+
+
+
 
         else:
             frame_stabilized = frame

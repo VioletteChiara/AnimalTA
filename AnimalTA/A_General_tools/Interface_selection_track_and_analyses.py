@@ -1,9 +1,10 @@
 from tkinter import *
 from tkinter import messagebox
 from AnimalTA.D_Tracking_process import Do_the_track_variable, Do_the_track_fixed
-from AnimalTA.A_General_tools import Function_draw_mask, UserMessages
+from AnimalTA.A_General_tools import Function_draw_mask, UserMessages, Diverse_functions
 from AnimalTA.E_Post_tracking import Coos_loader_saver as CoosLS
-from AnimalTA.E_Post_tracking.b_Analyses import Functions_Analyses_Speed, Interface_Analyses
+from AnimalTA.E_Post_tracking.b_Analyses import Functions_Analyses_Speed
+from functools import partial
 import os
 import csv
 import numpy as np
@@ -12,12 +13,12 @@ import cv2
 import math
 from operator import itemgetter
 import shutil
-import random
-import time
+
+
 
 class Extend(Frame):
     """This frame is a list of all the videos. The user can select the ones to be tracked or analysed"""
-    def __init__(self, parent, boss, type):
+    def __init__(self, parent, boss, type, any_tracked=False):
         Frame.__init__(self, parent, bd=5)
         self.parent=parent
         self.boss=boss
@@ -38,7 +39,7 @@ class Extend(Frame):
         self.Messages = UserMessages.Mess[self.Language.get()]
         self.urgent_close = False
 
-        self.cache =False #The program is not minimised
+        self.cache = False #The program is not minimised
 
         #The message displayed varies according to whether the user wants to track or analyse videos
         self.sel_state = StringVar()
@@ -52,33 +53,38 @@ class Extend(Frame):
         self.sel_state.set(self.Messages["ExtendB1"])
         self.Explanation_lab.grid(row=0,columnspan=2)
 
+        #We propose the option to do a manual tracking (the program won't track the videos, just create an empty dataframe)
+        self.manual_track=BooleanVar()
+        if any_tracked:
+            self.manual_track.set(0)
+        else:
+            self.manual_track.set(1)
+
+        self.Manual_ch=Checkbutton(self, text=self.Messages["Do_track2"],variable=self.manual_track, onvalue=1, offvalue=0, command=partial(self.update_list, type))
+        if type!="Analyses":#If we are using the tracking option, we propose the user to make a manual tracking
+            self.Manual_ch.grid(row=1,columnspan=2)
+
         #Button to select all
         self.bouton_sel_all=Button(self,textvariable=self.sel_state,command=self.select_all)
-        self.bouton_sel_all.grid(row=1,columnspan=2)
+        self.bouton_sel_all.grid(row=2,columnspan=2)
 
         #List of videos
         self.yscrollbar = Scrollbar(self)
-        self.yscrollbar.grid(row=2,column=1, sticky="ns")
+        self.yscrollbar.grid(row=3,column=1, sticky="ns")
 
         self.Liste=Listbox(self, selectmode = EXTENDED, yscrollcommand=self.yscrollbar.set)
         self.Liste.config(height=15, width=150)
         self.yscrollbar.config(command=self.Liste.yview)
 
         self.bouton=Button(self,text=self.Messages["Validate"],command=self.validate)
-        self.bouton.grid(row=3)
+        self.bouton.grid(row=4)
 
-        self.list_vid_minus=[]
-        for i in range(len(self.list_vid)):#Only video that are ready for tracking can be choose if the user wants to do tracking. If user wants to analyse, only videos which are already tracked.
-            if (type=="Tracking" and self.list_vid[i].Track[0]) or (type=="Analyses" and self.list_vid[i].Tracked):
-                self.list_vid_minus.append(self.list_vid[i])
-                self.Liste.insert(i, self.list_vid[i].User_Name)
-                if self.list_vid[i].Tracked:
-                    self.Liste.itemconfig(len(self.list_vid_minus)-1, {'fg': 'red'})
+        self.update_list(type=type)#According to the situation (manual or not, trcaking or analyses), we will propose different lists of videos
 
-        self.Liste.grid(row=2,column=0)
+        self.Liste.grid(row=3,column=0)
 
         self.loading_canvas=Frame(self)
-        self.loading_canvas.grid(row=4,columnspan=2)
+        self.loading_canvas.grid(row=5,columnspan=2)
         self.loading_state=Label(self.loading_canvas, text="")
         self.loading_state.grid(row=0, column=0)
 
@@ -93,6 +99,18 @@ class Extend(Frame):
         #Stop all process if the windows is closed
         self.parent.protocol("WM_DELETE_WINDOW", self.close)
         self.running=None#A variable used to determine if the tracking is running and to be able to stop it in the case of urgent close
+
+    def update_list(self, type):
+        self.list_vid_minus=[]
+        self.Liste.delete(0, 'end')
+        for i in range(len(self.list_vid)):#Only video that are ready for tracking can be choose if the user wants to do tracking. If user wants to analyse, only videos which are already tracked.
+            if (type=="Tracking" and self.list_vid[i].Track[0]) or (type=="Analyses" and self.list_vid[i].Tracked) or (self.manual_track.get()):
+                if not self.manual_track.get() or (self.manual_track.get() and not self.list_vid[i].Track[0]) or (self.manual_track.get() and self.list_vid[i].Track[0] and self.list_vid[i].Track[1][8]): #In case of manual tracking, there is no need for the tracking preparation of the videos
+                    self.list_vid_minus.append(self.list_vid[i])
+                    self.Liste.insert(i, self.list_vid[i].User_Name)
+
+                if self.list_vid[i].Tracked:
+                    self.Liste.itemconfig(len(self.list_vid_minus)-1, {'fg': 'red'})
 
     def select_all(self):
         #Sellect all the videos
@@ -121,11 +139,11 @@ class Extend(Frame):
         self.bouton.config(state="disable")
         self.bouton_sel_all.config(state="disable")
         self.Liste.config(state="disable")
-        self.bouton_hide.grid(row=5)
+        self.bouton_hide.grid(row=6)
 
         if self.type=="Tracking":
             for V in list_item:
-                deb = time.time()
+                #deb = time.time() #To see how fast is the process
                 self.curr_vid=V
                 cleared=self.list_vid_minus[V].clear_files()
                 if cleared:
@@ -134,54 +152,65 @@ class Extend(Frame):
 
                     self.loading_state.config(text= self.Messages["Video"] + " {act}/{tot}".format(act=pos,tot=len(list_item)))
 
-                    if self.list_vid_minus[V].Track[1][6][0]:
-                        try:
-                            self.running="Normal"
-                            deb = time.time()
-                            succeed=Do_the_track_fixed.Do_tracking(self, Vid=self.list_vid_minus[V], folder=self.boss.folder)
-                            print("duration = " +str(time.time()-deb))
-                            self.running = None
-                            if succeed:
-                                self.list_vid_minus[V].Identities = []
-                                for Ar_inds in range(len(self.list_vid_minus[V].Track[1][6])):
-                                    for num in range(self.list_vid_minus[V].Track[1][6][Ar_inds]):
-                                        self.list_vid_minus[V].Identities.append([Ar_inds, "Ind" + str(num),self.random_color()[0]])  # 0: identity of target, from 0 to N, 1: in which arene, 2:Name of the target, 3:Color of the target
-                                self.list_vid_minus[V].Tracked = True
-                            else:
-                                self.list_vid_minus[V].clear_files()
-                                self.list_vid_minus[V].Tracked=False
+                    if self.manual_track.get():
+                        #If the user wants to make a manual tracking, we just create an empty dataset.
+                        self.create_empty(self.list_vid_minus[V])
 
-                        except Exception as e:
-                            messagebox.showinfo(message=self.Messages["Do_trackWarn1"].format(self.list_vid_minus[V].User_Name,e), title=self.Messages["Do_trackWarnT1"])
+                        #We must then assign create the identities
+                        self.list_vid_minus[V].Identities = []
+                        for Ar_inds in range(len(self.list_vid_minus[V].Track[1][6])):
+                            for num in range(self.list_vid_minus[V].Track[1][6][Ar_inds]):
+                                self.list_vid_minus[V].Identities.append([Ar_inds, "Ind" + str(num),Diverse_functions.random_color()[0]])  # 0: identity of target, from 0 to N, 1: in which arene, 2:Name of the target, 3:Color of the target
+                        self.list_vid_minus[V].Tracked = True
 
                     else:
-                        try:
-                            self.running = "Variable"
-                            succeed, Nb_targets= Do_the_track_variable.Do_tracking(self, Vid=self.list_vid_minus[V], folder=self.boss.folder)
-                            self.running = None
-                            if succeed:
-                                try:#For old version, Track stopped at [1][7]
-                                    self.list_vid_minus[V].Track[1][8]=False
-                                except:
-                                    self.list_vid_minus[V].Track[1].append(False)
+                        if self.list_vid_minus[V].Track[1][6][0]:
+                            try:
+                                self.running="Normal"
+                                succeed=Do_the_track_fixed.Do_tracking(self, Vid=self.list_vid_minus[V], folder=self.boss.folder)
+                                self.running = None
+                                if succeed:
+                                    self.list_vid_minus[V].Identities = []
+                                    for Ar_inds in range(len(self.list_vid_minus[V].Track[1][6])):
+                                        for num in range(self.list_vid_minus[V].Track[1][6][Ar_inds]):
+                                            self.list_vid_minus[V].Identities.append([Ar_inds, "Ind" + str(num),Diverse_functions.random_color()[0]])  # 0: identity of target, from 0 to N, 1: in which arene, 2:Name of the target, 3:Color of the target
+                                    self.list_vid_minus[V].Tracked = True
+                                else:
+                                    self.list_vid_minus[V].clear_files()
+                                    self.list_vid_minus[V].Tracked=False
 
-                                self.list_vid_minus[V].Tracked = True
-                                self.list_vid_minus[V].Identities = []
-                                min_1=False
-                                for Ar_inds in range(len(self.list_vid_minus[V].Track[1][6])):
-                                    self.list_vid_minus[V].Track[1][6][Ar_inds]=len(Nb_targets[Ar_inds])
-                                    for num in Nb_targets[Ar_inds]:
-                                        min_1=True
-                                        self.list_vid_minus[V].Identities.append([Ar_inds, "Ind" + str(num),self.random_color()[0]])  # 0: identity of target, from 0 to N, 1: in which arene, 2:Name of the target, 3:Color of the target
-                                if not min_1:
-                                    self.list_vid_minus[V].Identities.append([0, "Ind" + str(0), self.random_color()[0]])
+                            except Exception as e:
+                                messagebox.showinfo(message=self.Messages["Do_trackWarn1"].format(self.list_vid_minus[V].User_Name,e), title=self.Messages["Do_trackWarnT1"])
 
-                            else:
-                                self.list_vid_minus[V].clear_files()
-                                self.list_vid_minus[V].Tracked=False
+                        else:
+                            try:
+                                self.running = "Variable"
+                                succeed, Nb_targets= Do_the_track_variable.Do_tracking(self, Vid=self.list_vid_minus[V], folder=self.boss.folder)
+                                self.running = None
+                                if succeed:
+                                    try:#For old version, Track stopped at [1][7]
+                                        self.list_vid_minus[V].Track[1][8]=False
+                                    except:
+                                        self.list_vid_minus[V].Track[1].append(False)
 
-                        except Exception as e:
-                            messagebox.showinfo(message=self.Messages["Do_trackWarn1"].format(self.list_vid_minus[V].User_Name,e), title=self.Messages["Do_trackWarnT1"])
+                                    self.list_vid_minus[V].Tracked = True
+                                    self.list_vid_minus[V].Identities = []
+                                    min_1=False
+                                    for Ar_inds in range(len(self.list_vid_minus[V].Track[1][6])):
+                                        self.list_vid_minus[V].Track[1][6][Ar_inds]=len(Nb_targets[Ar_inds])
+                                        for num in Nb_targets[Ar_inds]:
+                                            min_1=True
+                                            self.list_vid_minus[V].Identities.append([Ar_inds, "Ind" + str(num),Diverse_functions.random_color()[0]])  # 0: identity of target, from 0 to N, 1: in which arene, 2:Name of the target, 3:Color of the target
+                                    if not min_1:
+                                        self.list_vid_minus[V].Identities.append([0, "Ind" + str(0), Diverse_functions.random_color()[0]])
+
+                                else:
+                                    self.list_vid_minus[V].clear_files()
+                                    self.list_vid_minus[V].Tracked=False
+
+                            except Exception as e:
+                                messagebox.showinfo(message=self.Messages["Do_trackWarn1"].format(self.list_vid_minus[V].User_Name,e), title=self.Messages["Do_trackWarnT1"])
+
                 if self.urgent_close:
                     break
 
@@ -409,11 +438,11 @@ class Extend(Frame):
                                 SHID=0
                                 for Shape in self.Vid.Analyses[1][Area]:
                                     if Shape[0]=="Point":
-                                        Mean_dist, Latency, Prop_Time, all_dat = Calc_speed.calculate_dist_lat(self, Shape[1][0],ind=ID, Dist=Shape[2], return_vals=True)
+                                        Mean_dist, Latency, Prop_Time, Nb_entries,Prop_Time_lost_in,Mean_time_moving_in,Distance_traveled_in,Distance_traveled_moving_in,Speed_in,Speed_moving_in,Meander_in,Meander_moving_in, all_dat = Calc_speed.calculate_dist_lat(self, Shape[1][0],ind=ID, Dist=Shape[2], return_vals=True)
                                         if Shape[3] in Shapes_infos:
-                                            Shapes_infos[Shape[3]].append([self.Vid.User_Name, Area, list_inds[I], Mean_dist,Latency,Prop_Time])
+                                            Shapes_infos[Shape[3]].append([self.Vid.User_Name, Area, list_inds[I], Mean_dist,Latency,Prop_Time,Nb_entries,Prop_Time_lost_in,Mean_time_moving_in,Distance_traveled_in,Distance_traveled_moving_in,Speed_in,Speed_moving_in,Meander_in,Meander_moving_in])
                                         else:
-                                            Shapes_infos[Shape[3]]=[Shape[0],[self.Vid.User_Name, Area, list_inds[I], Mean_dist, Latency, Prop_Time]]
+                                            Shapes_infos[Shape[3]]=[Shape[0],[self.Vid.User_Name, Area, list_inds[I], Mean_dist, Latency, Prop_Time,Nb_entries,Prop_Time_lost_in,Mean_time_moving_in,Distance_traveled_in,Distance_traveled_moving_in,Speed_in,Speed_moving_in,Meander_in,Meander_moving_in]]
                                         Details.append(all_dat)
 
 
@@ -459,11 +488,11 @@ class Extend(Frame):
                                         else:
                                             cnt = []
 
-                                        Prop_inside, Lat_inside, all_dat = Calc_speed.calculate_time_inside(parent=self, cnt=cnt,ind=ID, return_vals=True)
+                                        Prop_inside, Lat_inside, Nb_entries,Prop_Time_lost_in,Mean_time_moving_in,Distance_traveled_in,Distance_traveled_moving_in,Speed_in,Speed_moving_in,Meander_in,Meander_moving_in, all_dat = Calc_speed.calculate_time_inside(parent=self, cnt=cnt,ind=ID, return_vals=True)
                                         if (Shape[3]) in Shapes_infos:
-                                            Shapes_infos[Shape[3]].append([self.Vid.User_Name, Area, list_inds[I], Prop_inside, Lat_inside])
+                                            Shapes_infos[Shape[3]].append([self.Vid.User_Name, Area, list_inds[I], Prop_inside, Lat_inside, Nb_entries,Prop_Time_lost_in,Mean_time_moving_in,Distance_traveled_in,Distance_traveled_moving_in,Speed_in,Speed_moving_in,Meander_in,Meander_moving_in])
                                         else:
-                                            Shapes_infos[Shape[3]] = [Shape[0],[self.Vid.User_Name, Area, list_inds[I], Prop_inside, Lat_inside]]
+                                            Shapes_infos[Shape[3]] = [Shape[0],[self.Vid.User_Name, Area, list_inds[I], Prop_inside, Lat_inside, Nb_entries,Prop_Time_lost_in,Mean_time_moving_in,Distance_traveled_in,Distance_traveled_moving_in,Speed_in,Speed_moving_in,Meander_in,Meander_moving_in]]
                                         Details.append(all_dat)
                                     SHID+=1
 
@@ -486,7 +515,6 @@ class Extend(Frame):
                                     mask = np.zeros([self.Vid.shape[0], self.Vid.shape[1], 1], np.uint8)
                                     mask = cv2.drawContours(mask, [self.Arenas[Area]], -1, (255), -1)
                                     empty = cv2.bitwise_and(mask, empty)
-
 
                                     new_row.append(len(np.where(empty > [0])[0]) / len(np.where(mask == [255])[0]))#Value
                                     new_row.append("Modern")#Method
@@ -643,10 +671,11 @@ class Extend(Frame):
                     self.show_load()
                     pos += 1
 
+
                     with open(os.path.join(self.list_vid_minus[0].Folder, "Results","Spatial","Element" + "_" + Shape_name +".csv"), 'w', newline='', encoding="utf-8") as file:
                         writer = csv.writer(file, delimiter=";")
                         if Shapes_infos[Shape_name][0] == "Point":
-                            writer.writerow(["Video", "Arena", "Individual", "Mean_Distance", "Latency", "Prop_time_inside"])
+                            writer.writerow(["Video", "Arena", "Individual", "Mean_Distance", "Latency", "Prop_time_inside","Nb_entries","Prop_time_lost","Prop_time_moving","Traveled_Dist","Traveled_Dist_Moving","Average_Speed","Average_Speed_moving","Meander","Meander_moving"])
                             for Ind_infos in Shapes_infos[Shape_name][1:]:
                                 writer.writerow(Ind_infos)
 
@@ -684,7 +713,7 @@ class Extend(Frame):
                                 writer.writerow(Ind_infos)
 
                         elif Shapes_infos[Shape_name][0] == "Ellipse" or Shapes_infos[Shape_name][0] == "Rectangle" or Shapes_infos[Shape_name][0] == "Polygon":
-                            writer.writerow(["Video", "Arena", "Individual", "Prop_time_inside", "Lat_inside"])
+                            writer.writerow(["Video", "Arena", "Individual", "Prop_time_inside", "Lat_inside", "Nb_entries","Prop_time_lost","Prop_time_moving","Traveled_Dist","Traveled_Dist_Moving","Average_Speed","Average_Speed_moving","Meander","Meander_moving"])
                             for Ind_infos in Shapes_infos[Shape_name][1:]:
                                 writer.writerow(Ind_infos)
 
@@ -773,15 +802,6 @@ class Extend(Frame):
             ind_coo = ind_coo.astype(dtype=float)
             self.Coos[ind] = ind_coo
 
-    def random_color(self, ite=1):
-        #We associate a color to each target
-        cols=[]
-        for replicate in range(ite):
-            levels = range(32, 256, 32)
-            levels = str(tuple(random.choice(levels) for _ in range(3)))
-            cols.append(tuple(int(s) for s in levels.strip("()").split(",")))
-        return (cols)
-
     def close(self):
         if self.running == None:
             self.parent.destroy()
@@ -794,6 +814,51 @@ class Extend(Frame):
             Do_the_track_variable.urgent_close(self.list_vid_minus[self.curr_vid])
 
         self.boss.bind_all("<MouseWheel>", self.boss.on_mousewheel)
+
+    def create_empty(self, Vid):
+        #Create an empty data frame to store manual tracking data
+        if Vid.Track[0]:
+            nb_ind=sum(Vid.Track[1][6])
+            Vid.Track[1][8] = True#For manual tracking, we cannot have a variable number of targets
+        else:
+            nb_ind=len(Vid.Track[1][6])
+            Vid.Track[1][6]=[1 for i in Vid.Track[1][6]]
+            Vid.Track[1][8]=True
+
+        one_every = int(round(round(Vid.Frame_rate[0], 2) / Vid.Frame_rate[1]))
+        all_frames=Vid.Cropped[1][1]-Vid.Cropped[1][0]
+        nb_frames=int(all_frames/one_every)
+        General_Coos = np.zeros([nb_frames+2, nb_ind*2 +2], dtype="object")
+        General_Coos.fill("NA")
+
+        liste_times = list(range(Vid.Cropped[1][0], (nb_frames + 1) * one_every + Vid.Cropped[1][0] + one_every, one_every))
+        General_Coos[1:, 0] = liste_times[0:len(General_Coos[1:, 0])]
+
+        tmp = np.array(General_Coos[1:, 0] / one_every / Vid.Frame_rate[1], dtype="float")
+        General_Coos[1:, 1] = np.around(tmp, 2)
+        if Vid.Track[0]:
+            General_Coos[0, :] = ["Frame","Time"]+[Col+"_Arena"+str(Ar)+"_"+str(ind) for Ar in range(len(Vid.Track[1][6])) for ind in range(Vid.Track[1][6][Ar]) for Col in ["X","Y"]]
+        else:
+            General_Coos[0, :] = ["Frame", "Time"] + [Col + "_Arena" + str(Ar) + "_0" for Ar in range(nb_ind) for Col in ["X", "Y"]]
+
+        # Where coordinates will be saved, if the folder did not exists, it is created.
+        if Vid.User_Name == Vid.Name:
+            file_name = Vid.Name
+            point_pos = file_name.rfind(".")
+            if file_name[point_pos:].lower() != ".avi":
+                file_name = Vid.User_Name
+            else:
+                file_name = file_name[:point_pos]
+        else:
+            file_name = Vid.User_Name
+
+        if not os.path.isdir(os.path.join(self.boss.folder, "coordinates")):
+            os.makedirs(os.path.join(self.boss.folder, "coordinates"))
+
+        To_save = os.path.join(self.boss.folder, "Coordinates", file_name + "_Coordinates.csv")
+        np.savetxt(To_save, General_Coos, delimiter=';', encoding="utf-8", fmt='%s')
+
+
 
 
 """

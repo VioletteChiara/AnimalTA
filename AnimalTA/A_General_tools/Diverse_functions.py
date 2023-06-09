@@ -1,4 +1,7 @@
 import numpy
+import random
+
+
 """Demonstration of least-squares fitting of ellipses
     __author__ = "Ben Hammel, Nick Sullivan-Molina"
     __credits__ = ["Ben Hammel", "Nick Sullivan-Molina"]
@@ -18,7 +21,6 @@ import numpy
     (***) White, A. McHale, B. 'Faraday rotation data analysis with least-squares 
         elliptical fitting'
 """
-
 class LSqEllipse:
     def fit(self, data):
         """Lest Squares fitting algorithm
@@ -158,3 +160,12 @@ def make_test_ellipse(center=[1, 1], width=1, height=.6, phi=3.14 / 5):
 
     return [ellipse_x, ellipse_y]
 
+
+
+def random_color(ite=1):#Create a random color
+        cols=[]
+        for replicate in range(ite):
+            levels = range(32, 256, 32)
+            levels = str(tuple(random.choice(levels) for _ in range(3)))
+            cols.append(tuple(int(s) for s in levels.strip("()").split(",")))
+        return (cols)

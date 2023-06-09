@@ -39,7 +39,7 @@ class Information_panel(Frame):
         Grid.columnconfigure(self, 1, weight=100)
 
         #Short summary about current version, how to cite and how to find guidelines.
-        Lab_version=Label(self, text="AnimalTA. v2.2.3", font=("Arial", "14", "bold"))
+        Lab_version=Label(self, text="AnimalTA. v2.3.1", font=("Arial", "14", "bold"))
         Lab_version.grid(row=0, column=0,columnspan=2, sticky="nsw")
 
         Lab_cite=Label(self, text="How to cite:")
@@ -626,7 +626,6 @@ class Interface(Frame):
                         if not os.path.exists(dst_dir):
                             os.makedirs(dst_dir)
                         for file_ in files:
-                            print(file_[-3:])
                             if file_[-4:]!=".avi":
                                 src_file = os.path.join(src_dir, file_)
                                 shutil.copy(src_file, dst_dir)
@@ -685,6 +684,16 @@ class Interface(Frame):
                 if len(self.liste_of_videos[V].Analyses)<5:
                     self.liste_of_videos[V].Analyses.append([[],[],[]])#Deformation of images
 
+
+                '''
+                ####For bebugging pruposes only!
+                name=self.liste_of_videos[V].File_name[-18:]#For debugging other users problems
+                self.liste_of_videos[V].File_name="G:/"+name#For debugging
+                self.liste_of_videos[V].Fusion[0][1] = "G:/" + name#For debugging
+                self.folder="G:/Project_folder_01012023_03012023_M"#For debugging
+                '''
+
+
                 if not os.path.isfile(self.liste_of_videos[V].File_name):
                     resp = messagebox.askyesno(self.Messages["GWarnT5"],self.Messages["GWarn5"].format(self.liste_of_videos[V].File_name))
                     if resp and self.liste_of_videos[V].clear_files():
@@ -694,6 +703,7 @@ class Interface(Frame):
                             self.liste_of_videos.pop(to_suppr)
                         self.close()
                         return
+
             if len(to_suppr) > 0:
                 for elem in sorted(to_suppr, reverse=True):
                     del self.liste_of_videos[elem]
@@ -861,16 +871,21 @@ class Interface(Frame):
     ##Actions toward videos
     def begin_track(self):
         #Open the window to ask for which videos to begin the tracking
-        nb_vid_T = 0
+        nb_vid_T = False
         for Vid in self.liste_of_videos:
             if Vid.Track[0]:
-                nb_vid_T += 1
+                nb_vid_T = True
+                break #As soon as we found one video
 
-        if nb_vid_T > 0:
+        if nb_vid_T:#If there is at least one video ready
             newWindow = Toplevel(self.parent)
-            interface = Interface_selection_track_and_analyses.Extend(parent=newWindow, boss=self, type="Tracking")
+            interface = Interface_selection_track_and_analyses.Extend(parent=newWindow, boss=self, type="Tracking", any_tracked=True)
         else:
-            messagebox.showinfo(message=self.Messages["GError1"], title=self.Messages["GErrorT1"])
+            #If the user did not set any tracking parameters, we aske if he want's to go for manual tracking. We left this pannel to avoid users to think the tracking was done but did not work
+            response=messagebox.askyesno(message=self.Messages["GError1"], title=self.Messages["GErrorT1"])
+            if response:
+                newWindow = Toplevel(self.parent)
+                interface = Interface_selection_track_and_analyses.Extend(parent=newWindow, boss=self, type="Tracking", any_tracked=False)
 
     def run_analyses(self):
         #Open a window to ask the user to select the videos wanted for analyses
@@ -1080,14 +1095,20 @@ class Interface(Frame):
                     second_Vid.Frame_nb[1] = second_Vid.Frame_nb[0] / int(round(round(second_Vid.Frame_rate[0], 2) / second_Vid.Frame_rate[1]))
                     del capture
 
-                # We add the second part after the first one
-                self.selected_vid.Fusion.append([self.selected_vid.Frame_nb[0], second_Vid.File_name])
+                    # We add the second part after the first one
+                    self.selected_vid.Fusion.append([self.selected_vid.Frame_nb[0], second_Vid.File_name])
+
+                else:#Allow fusion of fusions
+                    for subVid in second_Vid.Fusion:
+                        self.selected_vid.Fusion.append([subVid[0]+self.selected_vid.Frame_nb[0], subVid[1]])
+
                 self.selected_vid.Frame_nb[0] += second_Vid.Frame_nb[0]
                 self.selected_vid.Frame_nb[1] = self.selected_vid.Frame_nb[0] / int(round(round(self.selected_vid.Frame_rate[0], 2) / self.selected_vid.Frame_rate[1]))
-                self.selected_vid.Cropped = [False, [0, self.selected_vid.Frame_nb[0]-1]]
+                self.selected_vid.Cropped = [False, [0, self.selected_vid.Frame_nb[0] - 1]]
                 self.supr_video(Vid=second_Vid)
                 self.wait_for_vid = False
                 self.afficher_projects()
+
             else:#If the two videos does not share the same charcateristic, we inform the user
                 self.wait_for_vid = False
                 messagebox.showinfo(message=self.Messages["GWarn4"], title=self.Messages["GWarnT4"])
@@ -1113,7 +1134,7 @@ class Interface(Frame):
             self.bouton_save_TVid.config(state="active")
             #self.bouton_import_dat.config(state="active")
 
-            if not self.selected_vid.Track[0]:
+            if not self.selected_vid.Track[0] and not self.selected_vid.Tracked:
                 self.Beginn_track.config(state="active", activebackground="#ff8a33", bg="#ff8a33")
                 self.Infos_track.set(self.no_track)
                 self.BExtend_track.config(state="disable")
@@ -1125,32 +1146,40 @@ class Interface(Frame):
             else:
                 self.Beginn_track.config(state="active", activebackground="#3aa6ff", bg="#3aa6ff")
                 self.BExtend_track.config(state="active")
-                if int(self.selected_vid.Track[1][7]):
-                    corr = self.Messages["Yes"]
-                else:
-                    corr = self.Messages["No"]
 
-                if int(self.selected_vid.Track[1][9]):
-                    corr_f = self.Messages["Yes"]
-                else:
-                    corr_f = self.Messages["No"]
+                if self.selected_vid.Track[0]:#If the user choose manual tracking, we may have tracked data without tracking parameters
+                    if int(self.selected_vid.Track[1][7]):
+                        corr = self.Messages["Yes"]
+                    else:
+                        corr = self.Messages["No"]
 
-                if self.selected_vid.Track[1][8]:#If there is a known number of targets
-                    NB_tar=str(self.selected_vid.Track[1][6])
-                else:
-                    NB_tar = self.Messages["Param13"]
+                    if int(self.selected_vid.Track[1][9]):
+                        corr_f = self.Messages["Yes"]
+                    else:
+                        corr_f = self.Messages["No"]
 
-                self.Infos_track.set(self.Messages["Param10"] + ": " + corr + "\n" +
-                                     self.Messages["Param14"] + ": " + corr_f + "\n" +
-                                     self.Messages["Names1"] + ": " + str(int(self.selected_vid.Track[1][0])) + "\n" +
-                                     self.Messages["Names2"] + ": " + str(int(self.selected_vid.Track[1][1])) + "\n" +
-                                     self.Messages["Names3"] + ": " + str(int(self.selected_vid.Track[1][2])) + "\n" +
-                                     self.Messages["Names4"] + ": " + str(
-                    round(float(self.selected_vid.Track[1][3][0]), 2)) + "-" + str(
-                    round(float(self.selected_vid.Track[1][3][1]), 2)) + "\n" +
-                                     self.Messages["Names6"] + ": " + str(
-                    round(float(self.selected_vid.Track[1][5]), 2)) + "\n" +
-                                     self.Messages["Names9"] + ": " + NB_tar)
+                    if self.selected_vid.Track[1][8]:#If there is a known number of targets
+                        NB_tar=str(self.selected_vid.Track[1][6])
+                    else:
+                        NB_tar = self.Messages["Param13"]
+
+                    self.Infos_track.set(self.Messages["Param10"] + ": " + corr + "\n" +
+                                         self.Messages["Param14"] + ": " + corr_f + "\n" +
+                                         self.Messages["Names1"] + ": " + str(int(self.selected_vid.Track[1][0])) + "\n" +
+                                         self.Messages["Names2"] + ": " + str(int(self.selected_vid.Track[1][1])) + "\n" +
+                                         self.Messages["Names3"] + ": " + str(int(self.selected_vid.Track[1][2])) + "\n" +
+                                         self.Messages["Names4"] + ": " + str(
+                        round(float(self.selected_vid.Track[1][3][0]), 2)) + "-" + str(
+                        round(float(self.selected_vid.Track[1][3][1]), 2)) + "\n" +
+                                         self.Messages["Names6"] + ": " + str(
+                        round(float(self.selected_vid.Track[1][5]), 2)) + "\n" +
+                                         self.Messages["Names9"] + ": " + NB_tar)
+                else:
+                    if self.selected_vid.Track[1][8]:#If there is a known number of targets
+                        NB_tar=str(self.selected_vid.Track[1][6])
+                    else:
+                        NB_tar = self.Messages["Param13"]
+                    self.Infos_track.set(self.Messages["Names9"] + ": " + NB_tar)
 
                 point_pos = self.selected_vid.Name.rfind(".")
                 file_tracked = os.path.join(self.selected_vid.Folder, "coordinates", self.selected_vid.Name[:point_pos] + "_Coordinates.csv")

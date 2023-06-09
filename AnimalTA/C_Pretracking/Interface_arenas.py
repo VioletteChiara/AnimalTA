@@ -375,7 +375,6 @@ class Mask(Frame):
 
             pts_rotated = pts_norm + self.selected_shapes_rot[3]
 
-
             count=0
             for sh in range(len(self.selected_shapes_rot[1])):
                 for pt in range(len(self.selected_shapes_rot[2][sh][0])):
@@ -384,7 +383,6 @@ class Mask(Frame):
                     count+=1
             self.dessiner_Formes()  # Show the result
             self.afficher()
-
 
     def move_pt_mask(self, event):
         if not self.Ctrlpressed:
@@ -470,7 +468,7 @@ class Mask(Frame):
                         self.selected_shapes_rot[3]=[int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"])]
                         for j in range(len(self.liste_points)):
                             if len(self.liste_points[j][0])>0:
-                                if cv2.pointPolygonTest(cnt,[self.liste_points[j][0][0],self.liste_points[j][1][0]],False)>=0:
+                                if cv2.pointPolygonTest(cnt,[self.liste_points[j][0][0],self.liste_points[j][1][0]],True) >= -(self.ratio * 3.5):
                                     self.selected_shapes_rot[1].append(j)
                                     self.selected_shapes_rot[2].append(deepcopy(self.liste_points[j]))
                         break
@@ -482,6 +480,7 @@ class Mask(Frame):
 
         empty = np.zeros([self.image_to_show.shape[0], self.image_to_show.shape[1], 1], np.uint8)
         empty2 = self.draw_binaries(empty, thick=int(self.ratio * 7))
+
         if empty2[int(event.y), int(event.x)] == 255:
             empty = self.draw_binaries(empty)
             self.cnts, _ = cv2.findContours(empty, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -490,8 +489,7 @@ class Mask(Frame):
                 if res >= 0:
                     for j in range(len(self.liste_points)):
                         if len(self.liste_points[j][0]) > 0:
-                            if cv2.pointPolygonTest(cnt, [self.liste_points[j][0][0], self.liste_points[j][1][0]],
-                                                    False) >= 0:
+                            if cv2.pointPolygonTest(cnt, [self.liste_points[j][0][0], self.liste_points[j][1][0]],True) >= -(self.ratio * 3.5):
                                 self.selected_shapes[2].append(deepcopy(self.liste_points[j]))
                                 self.liste_points.append(deepcopy(self.liste_points[j]))
                                 self.selected_shapes[1].append(len(self.liste_points)-1)
@@ -522,7 +520,7 @@ class Mask(Frame):
         if len(self.Pt_select) < 1: #If the user did not press on a point
             empty=np.zeros([self.image_to_show.shape[0],self.image_to_show.shape[1],1],np.uint8)
             empty2=self.draw_binaries(empty, thick=int(self.ratio*7))
-            if empty2[int(event.y),int(event.x)]==255:
+            if empty2[int(event.y),int(event.x)]==255:#If we click on an existing arena
                 empty = self.draw_binaries(empty)
                 self.cnts,_=cv2.findContours(empty, cv2.RETR_EXTERNAL , cv2.CHAIN_APPROX_SIMPLE)
                 for cnt in self.cnts:

@@ -9,8 +9,6 @@ from AnimalTA.A_General_tools import Function_draw_mask as Dr, Interface_extend,
 from AnimalTA.C_Pretracking import Interface_cropping, Interface_back, Interface_arenas, Interface_scaling, \
     Interface_stabilis
 from tkinter import font
-import numpy as np
-from watchpoints import watch
 
 
 class Row_Can(Canvas):
@@ -140,18 +138,24 @@ class Row_Can(Canvas):
             self.Frame_rate_status=Label(self.subcanvas_Fr_rate,text=self.Messages["RowL11"])
             self.Frame_rate_status.grid(row=0,column=0, sticky="we")
 
-
-
             self.Fr_rate=[60,60]
-            if self.Video!=None:
+            self.Fr_nb=1
+            if self.Video!=None:#In some cases we won't have a video set while creating the row(will never be shown to user)
                 self.Fr_rate[0]=self.Video.Frame_rate[0]
                 self.Fr_rate[1] = self.Video.Frame_rate[1]
+                self.Fr_nb = self.Video.Frame_nb[0]
+
 
             self.List_poss_FrRate =[self.Messages["RowL12"]+ " " +str(round(self.Fr_rate[0],2))]
             value=self.Fr_rate[0]
-            while value > 1:
+            while value > 0.01 and (self.Fr_nb / round(self.Fr_rate[0] / value))>50: #We put a minimum number of frames displayed per video to avoid later problems
                 value=value/2
-                self.List_poss_FrRate.append(round(value,2))
+                if value>1:
+                    self.List_poss_FrRate.append(round(value,2))
+                elif value>0.1:# we adapt the round to the value size
+                    self.List_poss_FrRate.append(round(value, 3))
+                else:
+                    self.List_poss_FrRate.append(round(value, 4))
             self.holder=StringVar()
 
             if self.Fr_rate[0]==self.Fr_rate[1]:
@@ -338,6 +342,7 @@ class Row_Can(Canvas):
                 self.Video.clear_files()
             self.update()
 
+
     def resize_font(self, _):
         '''Change the size of the displayed name of the video (according to the length of the title)'''
         height=12
@@ -399,15 +404,23 @@ class Row_Can(Canvas):
     def update_fps(self):
         # We change the displayed fps
         self.Fr_rate = [-1, -1]
+        self.Fr_nb = 1
         if self.Video != None:
             self.Fr_rate[0] = self.Video.Frame_rate[0]
             self.Fr_rate[1] = self.Video.Frame_rate[1]
+            self.Fr_nb = self.Video.Frame_nb[0]
 
         self.List_poss_FrRate = [self.Messages["RowL12"] + " " + str(round(self.Fr_rate[0], 2))]
         value = self.Fr_rate[0]
-        while value > 1:
+
+        while value > 0.01 and (self.Fr_nb / round(self.Fr_rate[0] / value))>50:
             value = value / 2
-            self.List_poss_FrRate.append(round(value, 2))
+            if value > 1:
+                self.List_poss_FrRate.append(round(value, 2))
+            elif value > 0.1:
+                self.List_poss_FrRate.append(round(value, 3))
+            else:
+                self.List_poss_FrRate.append(round(value, 4))
 
         menu = self.bouton_Fr_rate["menu"]
         menu.delete(0, "end")
@@ -498,7 +511,7 @@ class Row_Can(Canvas):
 
     def update(self):
         #Update the states of the video
-        self.main_frame.Change_win
+        self.main_frame.update_selections()
         self.update_scale()
         self.update_stab()
         self.update_mask()

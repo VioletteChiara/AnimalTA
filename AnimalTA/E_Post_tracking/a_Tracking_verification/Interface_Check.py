@@ -4,7 +4,7 @@ import numpy as np
 from AnimalTA.E_Post_tracking.a_Tracking_verification import Interface_portion
 from AnimalTA.E_Post_tracking import Coos_loader_saver as CoosLS
 from AnimalTA.A_General_tools import Class_change_vid_menu, Class_Lecteur, Function_draw_mask as Dr, UserMessages, \
-    User_help, Class_stabilise
+    User_help, Class_stabilise, Diverse_functions
 
 from tkinter import messagebox
 import csv
@@ -122,6 +122,13 @@ class Lecteur(Frame):
         self.bouton_redo_track.grid(row=4, column=1,  sticky="we")
         self.bouton_redo_track.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Control13"]))
         self.bouton_redo_track.bind("<Leave>", self.HW.remove_tmp_message)
+
+        #If the user wants to do a manual tracking, we allow the possibility to add new individuals
+        self.bouton_add_new=Button(self.User_params_cont, text=self.Messages["Control22"], command=self.add_ind)
+        self.bouton_add_new.grid(row=4, column=1,  sticky="we")
+        self.bouton_add_new.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Control23"]))
+        self.bouton_add_new.bind("<Leave>", self.HW.remove_tmp_message)
+
 
         #Save the modified coordinates
         self.bouton_save=Button(self.User_params_cont, text=self.Messages["Control3"], bg="#6AED35", command=self.save)
@@ -319,7 +326,7 @@ class Lecteur(Frame):
 
         self.redo_Lecteur()
         # We place the reader at the last corrected frame
-        self.Scrollbar.active_pos = int(( self.first +len(or_table[:,0])-1) / self.Vid_Lecteur.one_every)
+        self.Scrollbar.active_pos = int((self.first +len(or_table[:,0])-1))
         self.Scrollbar.refresh()
 
         self.last_shown=None
@@ -426,15 +433,17 @@ class Lecteur(Frame):
         displayed_frame=self.Scrollbar.active_pos - self.to_sub #To avoid that the scrollbar position changes before the table is updated, the position of the displayed frame
 
         if actual_pos >= round(((self.Vid.Cropped[1][0] - 1) / self.Vid_Lecteur.one_every)) and actual_pos <= int(((self.Vid.Cropped[1][1] - 1) / self.Vid_Lecteur.one_every) + 1):
-
             if actual_pos - self.to_sub - int(self.table_heigh / 2) < 0:
                 deb = -(actual_pos - self.to_sub)
             else:
                 deb = -int(self.table_heigh / 2)
 
             if actual_pos - self.to_sub + int(self.table_heigh / 2) > len(self.Coos[0]):
+                redo=True #If there is not enought lines to be displayed, we redo the graph with less rows
                 end = len(self.Coos[0]) - (actual_pos - self.to_sub)
                 deb = end - self.table_heigh
+                if deb<0:
+                    deb=0
             else:
                 end = deb + self.table_heigh
 
@@ -667,15 +676,35 @@ class Lecteur(Frame):
         self.Scale_tail.config(to=self.max_tail.get(), command=self.modif_image)
 
         #The redo-tracking option is not available for unknown number of targets:
-        if self.Vid.Track[1][8]:
+        if self.Vid.Track[1][8] and self.Vid.Track[0]:
             self.bouton_redo_track.grid(row=4, column=1, sticky="we")
             self.bouton_inter.grid(row=4, column=0, sticky="we", columnspan=1)
+        elif not self.Vid.Track[0]:#If the user choose manual tracking, we add the possibility to manually add new indivduals
+            self.bouton_inter.grid(row=4, column=0, sticky="we", columnspan=1)
+            self.bouton_add_new.grid(row=4, column=1, sticky="we", columnspan=1)
         else:
             self.bouton_inter.grid(row=4, column=0, sticky="we", columnspan=2)
             self.bouton_redo_track.grid_forget()
 
         self.Check_Bs=[]
         self.look_for_NA(move_to=False)
+
+
+    def add_ind(self):#If the user wants to add a new individual (only available for manual tracking)
+        Arena= self.Vid.Identities[self.selected_ind][0]
+        self.Vid.Identities.append([Arena,"Ind"+str(self.Vid.Track[1][6][Arena]),Diverse_functions.random_color()[0]])
+        self.Vid.Track[1][6][Arena]+=1
+
+        empty_new_rows=np.zeros([len(self.Coos[0]),2], dtype="object")
+        empty_new_rows.fill(-1000)
+
+        shape=self.Coos.shape
+        self.Coos=np.append(self.Coos, empty_new_rows)
+        self.Coos.shape=(shape[0]+1, shape[1],shape[2])
+
+        self.who_is_here=[list(range(len(self.Vid.Identities)))]*len(self.Coos[0])
+        self.afficher_table()
+
 
     def correct_NA(self):
         self.Blancs = []

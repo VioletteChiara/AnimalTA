@@ -102,7 +102,6 @@ class Video:
                 except:
                     pass
 
-
                 return True
 
             except PermissionError as e:
@@ -139,7 +138,13 @@ class Video:
             if len(self.Fusion) > 1:  # If the video results from concatenation
                 Which_part = [index for index, Fu_inf in enumerate(self.Fusion) if Fu_inf[0] <= image_ID][-1]
                 Capture.release()
+
+                #Only for debugg purposes
+                #name = self.Fusion[Which_part][1][-18:]
+                #self.Fusion[Which_part][1]= "G:/videos/" + name
+
                 Capture = cv2.VideoCapture(self.Fusion[Which_part][1])
+
             Capture.set(cv2.CAP_PROP_POS_FRAMES, int(image_ID-self.Fusion[Which_part][0]))
             _, frame=Capture.read()
             if self.Cropped_sp[0]:

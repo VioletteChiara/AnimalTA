@@ -26,12 +26,12 @@ stop_threads=False
 
 def check_memory_overload():
     '''Some problems of memory leak were encountered with decord, these problems have been fixed but this is a security to control potential loss of memory.'''
-    if psutil.virtual_memory()._asdict()["percent"] > 99.8:
+    if psutil.virtual_memory()._asdict()["percent"] > 99.8:#Too much memory of the computer is used, we trigger a security that will stop immediatly the program
         return 1
-    elif psutil.virtual_memory()._asdict()["percent"] > 85:
+    elif psutil.virtual_memory()._asdict()["percent"] > 90: #The computer is reaching it's limit, it could come from a memory leak of decord, we add a security that will limity decord's memory leaks
         return 0
     else:
-        return -1
+        return -1 #The memory usage is back to normal, we remove previous security as it slow down the rocess a bit
 
 
 def Do_tracking(parent, Vid, folder, portion=False, prev_row=None):
@@ -91,7 +91,7 @@ def Do_tracking(parent, Vid, folder, portion=False, prev_row=None):
     global first_protection
     activate_protection=False
     first_protection=False
-    capture = decord.VideoReader( Vid.Fusion[Which_part][1])  # Open video
+    capture = decord.VideoReader(Vid.Fusion[Which_part][1])  # Open video
     Prem_image_to_show = capture[start - Vid.Fusion[Which_part][0]].asnumpy()  # Take the first image
     capture.seek(0)
     if Vid.Cropped_sp[0]:
@@ -139,15 +139,19 @@ def Do_tracking(parent, Vid, folder, portion=False, prev_row=None):
     Th_associate_cnts.start()
 
     while Th_associate_cnts.is_alive():
-        parent.timer=(AD.get()-start)/(end-start)
+        parent.timer=(AD.get()-start)/(end + one_every - start)
         parent.show_load()
 
         overload = check_memory_overload()#Avoid memory leak problems
-        if overload==0:
-            activate_protection=True
-            first_protection=True
-        elif overload==1:
+        if overload==1:
             break
+
+        elif overload==0:
+            activate_protection=True
+
+        elif overload==-1:
+            activate_protection=False
+
 
     if overload==1:  # To prevent the effects of memory leak.
         stop_threads = True
@@ -377,21 +381,15 @@ def Image_modif(Vid, start, end, one_every, Which_part, Prem_image_to_show, mask
         if stop_threads:
             break
 
-        if len(Vid.Fusion) > 1 and Which_part < (len(Vid.Fusion) - 1) and frame >= (
-                Vid.Fusion[Which_part + 1][0]):
+        if len(Vid.Fusion) > 1 and Which_part < (len(Vid.Fusion) - 1) and frame >= (Vid.Fusion[Which_part + 1][0]):
             Which_part += 1
             del capture
             capture = decord.VideoReader(Vid.Fusion[Which_part][1])
             capture.seek(0)
             activate_protection=False
-            first_protection=False
         img = capture[frame - Vid.Fusion[Which_part][0]].asnumpy()
+
         if activate_protection:
-            if first_protection:
-                capture.seek(0)
-                del capture
-                capture = decord.VideoReader(Vid.Fusion[Which_part][1])
-                first_protection=False
             capture.seek(0)
 
         if Vid.Cropped_sp[0]:

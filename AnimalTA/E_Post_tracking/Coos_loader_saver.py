@@ -156,6 +156,7 @@ def save_fixed(Vid, Coos, path, location=None):
 
     liste_times=list(range(Vid.Cropped[1][0],(Coos.shape[1]+1)*one_every +Vid.Cropped[1][0] + one_every,one_every))
     General_Coos[1:,0]=liste_times[0:len(General_Coos[1:,0])]
+
     tmp=np.array(General_Coos[1:, 0]/one_every/Vid.Frame_rate[1], dtype="float")
     General_Coos[1:, 1]=np.around(tmp,2)
     General_Coos[0,:]=["Frame","Time"]+[Col+"_Arena"+str(ind[0])+"_"+str(ind[1]) for ind in Vid.Identities for Col in ["X","Y"]]
