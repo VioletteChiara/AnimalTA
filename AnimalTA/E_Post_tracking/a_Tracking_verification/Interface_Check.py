@@ -679,12 +679,15 @@ class Lecteur(Frame):
         if self.Vid.Track[1][8] and self.Vid.Track[0]:
             self.bouton_redo_track.grid(row=4, column=1, sticky="we")
             self.bouton_inter.grid(row=4, column=0, sticky="we", columnspan=1)
+            self.bouton_add_new.grid_forget()
         elif not self.Vid.Track[0]:#If the user choose manual tracking, we add the possibility to manually add new indivduals
             self.bouton_inter.grid(row=4, column=0, sticky="we", columnspan=1)
             self.bouton_add_new.grid(row=4, column=1, sticky="we", columnspan=1)
-        else:
+            self.bouton_redo_track.grid_forget()
+        else:#If it was a variable number of targets.
             self.bouton_inter.grid(row=4, column=0, sticky="we", columnspan=2)
             self.bouton_redo_track.grid_forget()
+            self.bouton_add_new.grid_forget()
 
         self.Check_Bs=[]
         self.look_for_NA(move_to=False)

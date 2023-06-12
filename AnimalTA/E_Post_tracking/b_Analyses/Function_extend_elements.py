@@ -207,15 +207,9 @@ def match_shapes(cnt1,cnt2, pts):
         # We put the shape horizontaly to change its size
         approx2, pts=rotate_contour(approx2, -min_rect2[2], pts=pts)
 
-        empty1 = np.zeros([max(np.max(approx1[:, :, 1]), np.max(approx2[:, :, 1])) + 10,
-                           max(np.max(approx1[:, :, 0]), np.max(approx2[:, :, 0])) + 10, 3], np.uint8)
-
         #We calculate the size difference between the two arenas:
         resize_val=(min_rect1[1][0]/min_rect2[1][0],min_rect1[1][1]/min_rect2[1][1])
         approx2=resize(approx2,center2,center1,resize_val)
-
-        empty1 = cv2.drawContours(empty1, [approx2], -1, (0, 255, 0), 3)
-        empty1 = cv2.drawContours(empty1, [approx1], -1, (255, 0, 0), 3)
 
         pts = resize_pt(np.array(pts),center2,center1,resize_val)
 
@@ -236,7 +230,6 @@ def match_shapes(cnt1,cnt2, pts):
             approx2, pts = rotate_contour(approx2, min_rect1[2] , pts=pts)
         else:
             approx2, pts = rotate_contour(approx2, min_rect2[2], pts=pts)
-
 
         # We update the points position:
         list_of_pts2=[]
