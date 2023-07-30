@@ -346,8 +346,10 @@ class Background(Frame):
         if len(self.liste_paints)>0:
             for paint in self.liste_paints:
                 cv2.drawContours(empty_back,paint[0],-1,paint[1],-1)
+
+        self.saved_drawn = empty_back.copy()
         self.image_to_show=empty_back[self.zoom_sq[1]:self.zoom_sq[3],self.zoom_sq[0]:self.zoom_sq[2]]
-        self.saved_drawn=self.image_to_show.copy()
+
 
         self.image_to_show=cv2.resize(self.image_to_show,(self.final_width,int(self.final_width*(self.Size[0]/self.Size[1]))))
         self.image_to_show = PIL.ImageTk.PhotoImage(image=PIL.Image.fromarray(self.image_to_show))
