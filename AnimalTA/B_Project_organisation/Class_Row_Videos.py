@@ -9,7 +9,7 @@ from AnimalTA.A_General_tools import Function_draw_mask as Dr, Interface_extend,
 from AnimalTA.C_Pretracking import Interface_cropping, Interface_back, Interface_arenas, Interface_scaling, \
     Interface_stabilis
 from tkinter import font
-
+import pickle
 
 class Row_Can(Canvas):
     '''
@@ -24,7 +24,12 @@ class Row_Can(Canvas):
             self.parent=parent
             self.proj_pos=proj_pos #The position of the row in the table
             self.config(width=500)
-            self.width_show=600
+
+            Param_file = UserMessages.resource_path(os.path.join("AnimalTA", "Files", "Settings"))
+            with open(Param_file, 'rb') as fp:
+                self.Params = pickle.load(fp)
+
+            self.width_show = self.Params["Size_img_display"]  # How big are the displayed frames
 
 
             self.Language = StringVar()
@@ -55,7 +60,6 @@ class Row_Can(Canvas):
 
             self.Concat_im = PIL.Image.open(UserMessages.resource_path(os.path.join("AnimalTA","Files","Concat.png")))
             self.Concat_im = PIL.ImageTk.PhotoImage(self.Concat_im)
-
 
             #Video name and representation:
             self.subcanvas_First = Canvas(self, bd=0, highlightthickness=0, relief='flat', width=300, height=10)
@@ -112,7 +116,7 @@ class Row_Can(Canvas):
             Bconcat.grid(row=0,column=2)
             Bconcat.bind("<Enter>", partial(self.main_frame.HW.change_tmp_message, self.Messages["General15"]))
             Bconcat.bind("<Leave>", self.main_frame.HW.remove_tmp_message)
-            Bconcat.config(bg="SystemButtonFace", activebackground="SystemButtonFace")
+            Bconcat.config(bg="#f0f0f0", activebackground="#f0f0f0")
 
             self.view_first = Canvas(self.subcanvas_First)
             self.view_first.grid(row=1, column=2)
@@ -374,8 +378,8 @@ class Row_Can(Canvas):
         Y_Cur = self.master.winfo_pointery()
 
         #To avoid the image to appear above the cursor
-        if X_Cur<50+self.width_show+100 and Y_Cur<50+self.Video.or_shape[0]*ratio:
-            X_Pos=X_Cur+100
+        if X_Cur<50+self.width_show+50 and Y_Cur<50+self.Video.or_shape[0]*ratio:
+            X_Pos=X_Cur+50
         else:
             X_Pos=50
         cv2.moveWindow(" ", X_Pos, 50)
@@ -489,7 +493,7 @@ class Row_Can(Canvas):
             self.crop_it.set(self.Messages["RowB8"])
 
         if self.Video.Tracked:
-            self.cropping_button.config(bg="SystemButtonFace")
+            self.cropping_button.config(bg="#f0f0f0")
 
 
     def crop_vid(self, speed=0):
@@ -510,6 +514,12 @@ class Row_Can(Canvas):
         interface = Interface_extend.Extend(parent=newWindow, value=crop, boss=self.main_frame, Video_file=self.Video, type="crop")
 
     def update(self):
+        #Update the view according to the parameters:
+        Param_file = UserMessages.resource_path(os.path.join("AnimalTA", "Files", "Settings"))
+        with open(Param_file, 'rb') as fp:
+            self.Params = pickle.load(fp)
+        self.width_show = self.Params["Size_img_display"]  # How big are the displayed frames
+
         #Update the states of the video
         self.main_frame.update_selections()
         self.update_scale()
@@ -547,7 +557,7 @@ class Row_Can(Canvas):
             self.extend_stab_button.config(text=self.Messages["RowB18"])
 
         if self.Video.Tracked:
-            self.stab_button.config(bg="SystemButtonFace")
+            self.stab_button.config(bg="#f0f0f0")
 
     def stab_vid(self):
         # Add/Remove the stabilization
@@ -586,20 +596,20 @@ class Row_Can(Canvas):
         if self.Video.Tracked:
             response=messagebox.askyesno(message=self.Messages["GWarn1"])
             if response and self.Video.clear_files():
-                if not self.Video.Back[0]:
+                if self.Video.Back[0]!=1:
                     self.Video.make_back()
                     self.update_back()
 
-                elif self.Video.Back[0]:
+                elif self.Video.Back[0]==1:
                     self.main_frame.Change_win(Interface_back.Background(parent=self.main_frame.canvas_main, boss=self,
                                                                          main_frame=self.main_frame, Video_file=self.Video))
 
         else:
-            if not self.Video.Back[0]:
+            if self.Video.Back[0]!=1:
                 self.Video.make_back()
                 self.update_back()
 
-            elif self.Video.Back[0]:
+            elif self.Video.Back[0]==1:
                 self.main_frame.Change_win(Interface_back.Background(parent=self.main_frame.canvas_main, boss=self,
                                                                      main_frame=self.main_frame, Video_file=self.Video))
         self.update()
@@ -614,7 +624,7 @@ class Row_Can(Canvas):
 
     def update_back(self):
         # Update the color/info of the background cell
-        if not self.Video.Back[0]:
+        if self.Video.Back[0]!=1:
             self.text_back.set(self.Messages["RowL5"])
             self.back_it.set(self.Messages["RowB11"])
             self.back_button.config( bg="#ff8a33")
@@ -630,7 +640,7 @@ class Row_Can(Canvas):
             self.view_back.config(width=int(self.Size_oe[1]/4), height=int(self.Size_oe[0]/4))
 
         if self.Video.Tracked:
-            self.back_button.config(bg="SystemButtonFace")
+            self.back_button.config(bg="#f0f0f0")
             self.back_supress_button.config(bg='SystemButtonFace')
 
     def supress_back(self):
@@ -646,15 +656,15 @@ class Row_Can(Canvas):
 
     def show_back(self, *arg):
         # Display an image of the background on a temporary window
-        if self.Video.Back[0]:
+        if self.Video.Back[0]==1:
             self.main_frame.HW.change_tmp_message(self.Messages["Row14"])
             cv2.namedWindow(" ")
             ratio = self.width_show / self.Video.shape[1]
             X_Cur = self.master.winfo_pointerx()
             Y_Cur = self.master.winfo_pointery()
             #To avoid that the window appears on the top of the cursor
-            if X_Cur < 50 + self.width_show + 100 and Y_Cur < 50 + self.Video.shape[0] * ratio:
-                X_Pos = X_Cur + 100
+            if X_Cur < 50 + self.width_show + 50 and Y_Cur < 50 + self.Video.shape[0] * ratio:
+                X_Pos = X_Cur + 50
             else:
                 X_Pos = 50
             cv2.moveWindow(" ", X_Pos, 50)
@@ -664,7 +674,7 @@ class Row_Can(Canvas):
     def stop_show_back(self, *arg):
         # Remove the displayed image of the background
         self.main_frame.HW.remove_tmp_message()
-        if self.Video.Back[0]:
+        if self.Video.Back[0]==1:
             cv2.destroyAllWindows()
 
     def extend_back(self):
@@ -691,7 +701,7 @@ class Row_Can(Canvas):
             self.view_mask.create_image(0, 0, image=self.oeuil2, anchor=NW)
             self.view_mask.config(width=int(self.Size_oe[1]/4), height=int(self.Size_oe[0]/4))
         if self.Video.Tracked:
-            self.mask_button.config(bg="SystemButtonFace")
+            self.mask_button.config(bg="#f0f0f0")
             self.mask_supress_button.config(bg='SystemButtonFace')
 
     def supress_mask(self):
@@ -739,14 +749,14 @@ class Row_Can(Canvas):
             #To avoid the window to appear on the top of the cursor
             X_Cur = self.master.winfo_pointerx()
             Y_Cur = self.master.winfo_pointery()
-            if X_Cur < 50 + self.width_show + 100 and Y_Cur < 50 + self.Video.shape[0] * ratio:
-                X_Pos = X_Cur + 100
+            if X_Cur < 50 + self.width_show + 50 and Y_Cur < 50 + self.Video.shape[0] * ratio:
+                X_Pos = X_Cur + 50
             else:
                 X_Pos = 50
             cv2.moveWindow(" ", X_Pos, 50)
             mask = Dr.draw_mask(self.Video)
 
-            if self.Video.Back[0]:#Create the image
+            if self.Video.Back[0]==1:#Create the image
                 mask_to_show=cv2.bitwise_and(self.Video.Back[1],self.Video.Back[1],mask=mask)
             else:
                 if self.Video.Cropped_sp[0]:
@@ -783,8 +793,8 @@ class Row_Can(Canvas):
             self.scale_supress_button.config(state="active")
             self.scale_extend_button.config(state="active")
         if self.Video.Tracked:
-            self.scale_button.config(bg="SystemButtonFace")
-            self.scale_button.config(bg="SystemButtonFace")
+            self.scale_button.config(bg="#f0f0f0")
+            self.scale_button.config(bg="#f0f0f0")
 
     def supress_scale(self):
         # Remove the scale associated with the video

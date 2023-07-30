@@ -62,7 +62,7 @@ class Help_win(Frame):
         #Make the text blink to attract user's attention
         curcol = self.User_help.cget("bg")
         if curcol == "red":
-            self.User_help.config(bg="SystemButtonFace")
+            self.User_help.config(bg="#f0f0f0")
         else:
             self.User_help.config(bg="red")
         if (count) < 5:

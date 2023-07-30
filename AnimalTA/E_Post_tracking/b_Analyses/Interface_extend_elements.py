@@ -134,7 +134,6 @@ class Lists(Frame):
 
         self.check_button()#On actualise le bouton de validation
 
-
     def select_all_objs(self):
         #Select all the elements of interest inside the current arena
         if not self.all_sel_objs:
@@ -273,7 +272,7 @@ class Lists(Frame):
         if len(self.Liste_Vids.curselection())>0 and len(self.Liste_objects.curselection())>0:
             self.Validate_button.config(state="active", activebackground="green", bg="#6AED35")
         else:
-            self.Validate_button.config(state="disable", activebackground="SystemButtonFace", bg="SystemButtonFace")
+            self.Validate_button.config(state="disable", activebackground="#f0f0f0", bg="#f0f0f0")
 
 
     def show_Arenas(self, event):

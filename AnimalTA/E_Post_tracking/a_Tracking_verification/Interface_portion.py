@@ -1,7 +1,7 @@
 from tkinter import *
 import cv2
 import numpy as np
-from AnimalTA.D_Tracking_process import Do_the_track_variable, Do_the_track_fixed
+from AnimalTA.D_Tracking_process import Do_the_track
 from AnimalTA.E_Post_tracking import Coos_loader_saver as CoosLS
 from AnimalTA.A_General_tools import Class_Lecteur, UserMessages, Class_stabilise
 from AnimalTA.C_Pretracking import Interface_back, Interface_arenas
@@ -70,7 +70,7 @@ class Show(Frame):
 
         #Background
         self.B_change_back=Button(self.User_buttons, text=self.Messages["Portion5"], command=self.change_back)
-        if self.Vid.Back[0]:
+        if self.Vid.Back[0]==1:
             self.B_change_back.grid(row=3,column=0, columnspan=2, sticky="ew")
 
         #Tracking parameters
@@ -133,9 +133,9 @@ class Show(Frame):
         self.Vid_Lecteur.proper_close()#We ensure the last decord is well closed
 
         if self.Vid.Track[1][8]:
-            Do_the_track_fixed.Do_tracking(self, self.Vid, self.Folder, portion=True, prev_row=self.prev_row)
+            Do_the_track.Do_tracking(self, self.Vid, self.Folder, type="fixed", portion=True, prev_row=self.prev_row)
         else:
-            Do_the_track_variable.Do_tracking(self, self.Vid, self.Folder, portion=True, prev_row=self.prev_row)
+            Do_the_track.Do_tracking(self, self.Vid, self.Folder, type="fixed", portion=True, prev_row=self.prev_row)
 
         self.Coos, self.who_is_here = CoosLS.load_coos(self.Vid, TMP=True, location=self)
 

@@ -99,9 +99,9 @@ class Draw_ent(Frame):
     def active_selection(self):
         self.selection = not self.selection
         if self.selection:
-            self.Choose_borders_B.config(background="grey")
+            self.Choose_borders_B.config(background="#f0f0f0")
         else:
-                self.Choose_borders_B.config(background="SystemButtonFace")
+                self.Choose_borders_B.config(background="#f0f0f0")
 
     def draw_borders(self, event):
         self.delete()

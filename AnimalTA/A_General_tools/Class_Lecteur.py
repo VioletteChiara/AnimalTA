@@ -55,7 +55,7 @@ class Lecteur(Frame):
         self.Scrollbar = Class_Scroll_crop.Pers_Scroll(self.Frame_scrollbar, container=self, bd=2, highlightthickness=1, relief='ridge', ecart=self.ecart)  #################NEWWWW
         self.Scrollbar.grid(sticky="ew")
 
-        self.canvas_buttons = Frame(self, bd=2, highlightthickness=1, background="grey")
+        self.canvas_buttons = Frame(self, bd=2, highlightthickness=1, background="#f0f0f0")
         self.canvas_buttons.grid(row=3, column=0, sticky="nsew")
         Grid.columnconfigure(self.canvas_buttons, 0, weight=1)
 
@@ -73,7 +73,7 @@ class Lecteur(Frame):
         #Speed of playback
         self.speed=IntVar()
         self.speed.set(0)
-        self.Speed_S = Scale(self.canvas_buttons, label=self.Messages["Control10"], variable=self.speed, from_=-10, to=100, orient=HORIZONTAL, command=self.change_speed, background="SystemButtonFace")
+        self.Speed_S = Scale(self.canvas_buttons, label=self.Messages["Control10"], variable=self.speed, from_=-10, to=100, orient=HORIZONTAL, command=self.change_speed, background="#f0f0f0")
         self.Speed_S.grid(row=0, column=9, sticky="we")
 
         self.canvas_buttons.grid_columnconfigure((1,3,5,7,9), weight=3, uniform="column")
@@ -236,7 +236,7 @@ class Lecteur(Frame):
             #If there is a background, we use the background as reference frame
 
             if type(self.parent).__name__!="Cropping":
-                if not self.Vid.Back[0]:
+                if self.Vid.Back[0]!=1:
                     grey = cv2.cvtColor(self.Prem_image_to_show, cv2.COLOR_BGR2GRAY)
                 else:
                     grey = self.Vid.Back[1].copy()

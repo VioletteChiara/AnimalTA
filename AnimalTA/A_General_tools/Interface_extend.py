@@ -118,13 +118,26 @@ class Extend(Frame):
                 elif self.type == "mask":
                     self.list_vid_minus[V].Mask[0] = 1
                     self.list_vid_minus[V].Mask[1] = deepcopy(self.value)
+                    mask = Function_draw_mask.draw_mask(self.list_vid_minus[V])
+                    Arenas, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                    nb_ar = len(Arenas)
+                    nb_ar = max([1,nb_ar])
+                    if len(self.list_vid_minus[V].Track[1][6])<nb_ar:#If the number of arenas in the video to copy does not match the number of arenas in the receiving video
+                        self.list_vid_minus[V].Track[1][6]=self.list_vid_minus[V].Track[1][6] + ([self.list_vid_minus[V].Track[1][6][0]] * (nb_ar-len(self.list_vid_minus[V].Track[1][6])))
+                    elif len(self.list_vid_minus[V].Track[1][6])>nb_ar:
+                        self.list_vid_minus[V].Track[1][6] = self.list_vid_minus[V].Track[1][6][0:nb_ar]
+
                 elif self.type == "track":
                     self.list_vid_minus[V].Track[0] = 1
                     mask = Function_draw_mask.draw_mask(self.list_vid_minus[V])
                     Arenas, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                     nb_ar = len(Arenas)
+                    nb_ar = max([1,nb_ar])
                     self.list_vid_minus[V].Track[1] = deepcopy(self.value)
                     self.list_vid_minus[V].Track[1][6] = deepcopy(self.value)[6][0:nb_ar]
+
+                    if len(self.list_vid_minus[V].Track[1][6])<nb_ar:#If the number of arenas from the video to copy does not fit the real number of arenas, we add some
+                        self.list_vid_minus[V].Track[1][6]=self.list_vid_minus[V].Track[1][6] + ([self.list_vid_minus[V].Track[1][6][0]] * (nb_ar-len(self.list_vid_minus[V].Track[1][6])))
 
                 elif self.type == "fps":
                     if self.list_vid_minus[V].Frame_rate[1] != self.list_vid_minus[V].Frame_rate[0] / self.value:
@@ -218,7 +231,7 @@ class Extend(Frame):
                     if self.list_vid_minus[V].Cropped_sp[0]:
                         new_shape=(self.list_vid_minus[V].Cropped_sp[1][2] - self.list_vid_minus[V].Cropped_sp[1][0],self.list_vid_minus[V].Cropped_sp[1][3] - self.list_vid_minus[V].Cropped_sp[1][1])
                         if self.list_vid_minus[V].shape!=new_shape:
-                            self.list_vid_minus[V].Back = [False, []]
+                            self.list_vid_minus[V].Back = [0, []]
                             self.list_vid_minus[V].Track[1][6] = [1]
                             self.list_vid_minus[V].Mask[0] = False
                         self.list_vid_minus[V].shape=(self.list_vid_minus[V].Cropped_sp[1][2] - self.list_vid_minus[V].Cropped_sp[1][0],self.list_vid_minus[V].Cropped_sp[1][3] - self.list_vid_minus[V].Cropped_sp[1][1])

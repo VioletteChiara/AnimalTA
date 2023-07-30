@@ -5,6 +5,7 @@ from AnimalTA.C_Pretracking.a_Parameters_track import Interface_nb_per_Ar, Draw_
 from AnimalTA.A_General_tools import Class_change_vid_menu, Class_Lecteur, Function_draw_mask as Dr, UserMessages, \
     User_help, Class_stabilise
 from functools import partial
+import math
 
 class Param_definer(Frame):
     #This Frame show the video and how the tracking parameters are affecting it.
@@ -18,7 +19,6 @@ class Param_definer(Frame):
         self.Vid = Video_file
         self.portion = portion
         self.cnts_entrance=self.Vid.Entrance#By defaults, there is no entrance area (known number of individuals)
-
 
         if self.portion:
             Grid.columnconfigure(self.parent, 0, weight=1)
@@ -45,6 +45,11 @@ class Param_definer(Frame):
             self.correct_flicker=self.Vid.Track[1][9]
         except:
             self.correct_flicker = False
+
+        if self.Vid.Back[0]==2:
+            self.Dynamical_back = True
+        else:
+            self.Dynamical_back = False
 
         self.thresh_value = StringVar()
         self.thresh_value.set(self.Vid.Track[1][0])
@@ -118,7 +123,8 @@ class Param_definer(Frame):
         if self.correct_light:
             self.Button_grey.config(background="grey")
         else:
-            self.Button_grey.config(background="SystemButtonFace")
+            self.Button_grey.config(background="#f0f0f0")
+
         self.Button_grey.grid(sticky="snwe", row=0, column=1)
         self.Button_grey.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Param11"]))
         self.Button_grey.bind("<Leave>", self.HW.remove_tmp_message)
@@ -128,21 +134,36 @@ class Param_definer(Frame):
         if self.correct_flicker:
             self.Button_flicker.config(background="grey")
         else:
-            self.Button_flicker.config(background="SystemButtonFace")
+            self.Button_flicker.config(background="#f0f0f0")
         self.Button_flicker.grid(sticky="snwe", row=0, column=2)
         self.Button_flicker.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Param17"]))
         self.Button_flicker.bind("<Leave>", self.HW.remove_tmp_message)
 
-
         # Subtracked background greyscale
-        if self.Vid.Back[0]:
-            F_Sub=Frame(self.canvas_options, background="grey80")
-            F_Sub.grid(sticky="nsew")
-            Subtract_vis = Checkbutton(F_Sub, text=self.Messages["Names7"], variable=self.CheckVar,
-                                            onvalue=2, offvalue=0, width=width_labels, command=self.modif_image, anchor="w", background="grey80")
-            F_Sub.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Param2"]))
-            F_Sub.bind("<Leave>", self.HW.remove_tmp_message)
-            Subtract_vis.grid(sticky="w")
+        F_Sub = Frame(self.canvas_options, background="grey80")
+        F_Sub.grid(sticky="nsew")
+        Subtract_vis = Checkbutton(F_Sub, text=self.Messages["Names7"], variable=self.CheckVar,
+                                   onvalue=2, offvalue=0, width=width_labels, command=self.modif_image, anchor="w",
+                                   background="grey80")
+        F_Sub.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Param2"]))
+        F_Sub.bind("<Leave>", self.HW.remove_tmp_message)
+        Subtract_vis.grid(row=0,column=0,sticky="w")
+
+        '''
+        if self.Vid.Back[0]!=1:
+            self.Button_dynamical = Button(F_Sub, text="Dynamical background", command=self.change_2_dyn)
+            self.Button_adaptive = Button(F_Sub, text="Adaptive background", command=self.change_2_ada)
+
+            if self.Dynamical_back:
+                self.Button_dynamical.config(background="grey")
+                self.Button_adaptive.config(background="#f0f0f0")
+            else:
+                self.Button_dynamical.config(background="#f0f0f0")
+                self.Button_adaptive.config(background="grey")
+
+            self.Button_dynamical.grid(row=0, column=1)
+            self.Button_adaptive.grid(row=0, column=2)
+        '''
 
         # Thresholded image
         F_Thresh=Frame(self.canvas_options, background="white")
@@ -153,12 +174,11 @@ class Param_definer(Frame):
         F_Thresh.bind("<Leave>", self.HW.remove_tmp_message)
         Threshol_vis.grid(sticky="w")
 
-        if self.Vid.Back[0]:
+        if self.Vid.Back[0] or self.Dynamical_back:
             Thresh_scroll = Scale(F_Thresh, from_=0, to=255, variable=self.thresh_value, orient=HORIZONTAL, background="white",highlightbackground="white")
         else:
             if (int(self.thresh_value.get()) % 2) == 0:
                 self.thresh_value.set(int(self.thresh_value.get())+1)
-
             Thresh_scroll = Scale(F_Thresh, from_=2, to=1000, resolution=2, variable=self.thresh_value, orient=HORIZONTAL,background="white", highlightbackground="white")
         Thresh_scroll.grid(row=0,column=1, sticky="NSEW")
 
@@ -171,7 +191,11 @@ class Param_definer(Frame):
         F_Thresh.grid_columnconfigure(2, weight=1)
 
         #Eroded image
-        F_Ero=Frame(self.canvas_options, background="grey80")
+        F_Ero_Dil=Frame(self.canvas_options, background="grey80")
+        F_Ero_Dil.grid(sticky="nsew")
+        F_Ero_Dil.columnconfigure(0, weight=10)
+        F_Ero_Dil.columnconfigure(1, weight=1)
+        F_Ero=Frame(F_Ero_Dil, background="grey80")
         F_Ero.grid(sticky="nsew")
 
         Erode_vis = Checkbutton(F_Ero, text=self.Messages["Names2"], variable=self.CheckVar,
@@ -192,7 +216,7 @@ class Param_definer(Frame):
         F_Ero.grid_columnconfigure(2, weight=1)
 
         #Dilated image
-        F_Dil=Frame(self.canvas_options, background="white")
+        F_Dil=Frame(F_Ero_Dil, background="white")
         F_Dil.grid(sticky="nsew")
         F_Dil.grid_columnconfigure(0, weight=1)
         F_Dil.grid_columnconfigure(1, weight=6)
@@ -276,20 +300,22 @@ class Param_definer(Frame):
             F_Nb.grid_columnconfigure(0, weight=1)
             self.Sub_F_Nb = Frame(F_Nb, background="grey80")
 
-
             #For the next update: proposes to track videos with unknown number of individuals.
             #self.Unknown_Nb_B=Button(F_Nb, text=self.Messages["Param12"], command=self.change_var_nb)#We allow the user to determine wether he knows how much targets they are or not
             #self.Sub_V_Nb = Frame(F_Nb, background="grey80")
 
             #This is for the next update: alloww to redraw the areas throught which targets can enter the arenas
-            #self.draw_ent_B=Button(self.Sub_V_Nb, text="Redraw entrance area", command=self.redo_ent, background="grey80")
-            #self.draw_ent_B.grid(sticky="nsew")
-            #self.Sub_V_Nb.grid_columnconfigure(0, weight=1)
+            '''
+            self.draw_ent_B=Button(self.Sub_V_Nb, text="Redraw entrance area", command=self.redo_ent, background="grey80")
+            self.draw_ent_B.grid(sticky="nsew")
+            self.Sub_V_Nb.grid_columnconfigure(0, weight=1)
+            '''
 
 
             self.Sub_F_Nb.grid_columnconfigure(0, weight=1)
             self.Sub_F_Nb.grid_columnconfigure(1, weight=5)
             self.Sub_F_Nb.grid_columnconfigure(2, weight=1)
+
 
             Lab_three_per_Ar = Label(self.Sub_F_Nb, text=self.Messages["Param9"], width=width_labels+3, wraplength=120, background="grey80")
             Lab_three_per_Ar.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Param8"]))
@@ -314,10 +340,11 @@ class Param_definer(Frame):
                 self.Unknown_Nb_B.config(background="grey80")
                 self.Sub_F_Nb.grid(row=1, column=0, sticky="nsew")
             else:
-                self.Unknown_Nb_B.config(background="grey")
+                self.Unknown_Nb_B.config(background="#f0f0f0")
                 self.Sub_V_Nb.grid(row=1, column=0, sticky="nsew")
             self.Unknown_Nb_B.grid(row=0,column=0)
             '''
+
 
         if not len(self.Vid.Track[1][6]) == len(self.Arenas):
             self.Vid.Track[1][6] = [self.Vid.Track[1][6][0] for n in self.Arenas]
@@ -359,6 +386,18 @@ class Param_definer(Frame):
         self.bind_all("<Button-1>", self.give_focus)
         self.Vid_Lecteur.update_image(self.Vid_Lecteur.to_sub)
 
+    def change_2_dyn(self):
+        self.Dynamical_back=True
+        self.Button_dynamical.config(background="grey")
+        self.Button_adaptive.config(background="#f0f0f0")
+        self.modif_image()
+
+    def change_2_ada(self):
+        self.Dynamical_back=False
+        self.Button_dynamical.config(background="#f0f0f0")
+        self.Button_adaptive.config(background="grey")
+        self.modif_image()
+
     def redo_ent(self):
         self.Draw_Ent = Toplevel()
         Draw_entrance.Draw_ent(self.Draw_Ent, Img=self.last_empty, Entrances=self.cnts_entrance, Arenas=self.Arenas, boss=self, scale=self.Vid.Scale[0])
@@ -373,7 +412,7 @@ class Param_definer(Frame):
             self.KindTVar.set(self.Vid.Track[1][6][0])
         else:#If we change from a fixed to a variable number of targets
             self.liste_ind_per_ar = [0] * len(self.liste_ind_per_ar)
-            self.Unknown_Nb_B.config(background="grey")
+            self.Unknown_Nb_B.config(background="#f0f0f0")
             self.Sub_F_Nb.grid_forget()
             self.Sub_V_Nb.grid(row=1, column=0, sticky="nsew")
 
@@ -393,7 +432,7 @@ class Param_definer(Frame):
         if self.correct_light:
             self.Button_grey.config(background="grey")
         else:
-            self.Button_grey.config(background="SystemButtonFace")
+            self.Button_grey.config(background="#f0f0f0")
         self.modif_image()
 
     def change_flicker_corr(self):
@@ -402,7 +441,7 @@ class Param_definer(Frame):
         if self.correct_flicker:
             self.Button_flicker.config(background="grey")
         else:
-            self.Button_flicker.config(background="SystemButtonFace")
+            self.Button_flicker.config(background="#f0f0f0")
         self.modif_image()
 
     def changed_val(self, new_val, type):
@@ -456,7 +495,10 @@ class Param_definer(Frame):
             self.CheckVar.set(change_track)
 
         if len(img)==0:
-            img=np.copy(self.last_empty)
+            try:
+                img=np.copy(self.last_empty)
+            except:
+                self.last_empty = np.copy(img)
         else:
             self.last_empty = np.copy(img)
 
@@ -478,7 +520,6 @@ class Param_definer(Frame):
                     last_img=cv2.cvtColor(self.Vid_Lecteur.update_image(elem,return_img=True),cv2.COLOR_BGR2GRAY)
                     TMP_image_to_show2 = cv2.addWeighted(last_img, 0.5, TMP_image_to_show2, 1 - 0.5, 0)
 
-
             #Correct lightning
             if self.correct_light:
                 grey = np.copy(TMP_image_to_show2)
@@ -493,15 +534,61 @@ class Param_definer(Frame):
                 ratio = brightness / self.Vid_Lecteur.or_bright
                 TMP_image_to_show2 = cv2.convertScaleAbs(grey, alpha=1 / ratio, beta=0)
 
-
             if self.CheckVar.get() > 1:
                 #Show background subtraction
-                if self.Vid.Back[0]:
+                if self.Vid.Back[0]==1:
                     TMP_image_to_show2 = cv2.subtract(self.Vid.Back[1],TMP_image_to_show2) + cv2.subtract(TMP_image_to_show2,self.Vid.Back[1])
+
+                elif self.Dynamical_back:
+                    #Create a background based on 3 frames:
+                    frames=[]
+                    nb_passed=min(self.Scrollbar.active_pos,100)
+                    if nb_passed>4:
+                        rang = list(range(nb_passed - 1, 0, -math.floor(nb_passed / 4)))
+                    else:
+                        rang=[0]
+
+                    for imgID in rang:
+                        batch_img=self.Vid_Lecteur.update_image(frame=self.Scrollbar.active_pos + imgID, first=False, actual_pos=None, return_img=True)
+
+                        if self.Vid.Stab[0]:
+                            batch_img = Class_stabilise.find_best_position(Vid=self.Vid,Prem_Im=self.Vid_Lecteur.Prem_image_to_show,frame=batch_img, show=False, prev_pts=self.Vid.Stab[1])
+
+                        batch_img=cv2.cvtColor(batch_img,cv2.COLOR_BGR2GRAY)
+
+                        # Correct flicker
+                        if self.correct_flicker and self.Scrollbar.active_pos + imgID > (
+                                self.Vid.Cropped[1][0] / self.one_every):
+                            diff = int(self.Scrollbar.active_pos + imgID - (self.Vid.Cropped[1][0] / self.one_every))
+                            for elem in range(self.Scrollbar.active_pos + imgID - min(2, diff), self.Scrollbar.active_pos + imgID):
+                                last_img = cv2.cvtColor(self.Vid_Lecteur.update_image(elem, return_img=True),
+                                                        cv2.COLOR_BGR2GRAY)
+                                TMP_image_to_show2 = cv2.addWeighted(last_img, 0.5, batch_img, 1 - 0.5, 0)
+
+                        if self.correct_light:
+                            grey = np.copy(batch_img)
+                            if self.Vid.Mask[0]:
+                                bool_mask = self.mask[:, :, 0].astype(bool)
+                            else:
+                                bool_mask = np.full(grey.shape, True)
+                            grey2 = grey[bool_mask]
+                            brightness = np.sum(grey2) / (255 * grey2.size)  # Mean value
+
+                            # Inspired from: https://stackoverflow.com/questions/57030125/automatically-adjusting-brightness-of-image-with-opencv
+                            ratio = brightness / self.Vid_Lecteur.or_bright
+                            batch_img = cv2.convertScaleAbs(grey, alpha=1 / ratio, beta=0)
+
+                        frames.append(batch_img)
+
+                    frames[0] = np.max(frames, axis=0)  # We calculate the median value for all pixels
+                    frames[0] = frames[0].astype("uint8")
+
+                    TMP_image_to_show2 = cv2.subtract(frames[0], TMP_image_to_show2) + cv2.subtract(TMP_image_to_show2, frames[0])
+
 
                 if self.CheckVar.get()>2:
                     #Show thersholding and masking (remove outside of arenas)
-                    if self.Vid.Back[0]:
+                    if self.Vid.Back[0]==1 or self.Dynamical_back:
                         _, TMP_image_to_show2=cv2.threshold(TMP_image_to_show2, int(self.thresh_value.get()), 255, cv2.THRESH_BINARY)
                     else:
                         TMP_image_to_show2 = cv2.adaptiveThreshold(TMP_image_to_show2, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, int(self.thresh_value.get())+1,10)
@@ -572,20 +659,28 @@ class Param_definer(Frame):
                               cv2.FONT_HERSHEY_DUPLEX,  self.Vid_Lecteur.ratio, (255, 0, 0), max(int(3* self.Vid_Lecteur.ratio),1))
 
         #If we have an unknown number of targets, we show the entrance area:
+        ''' For next update
         if not self.liste_ind_per_ar[0] and self.CheckVar.get() == 8 and affi:
             overlay = TMP_image_to_show2.copy()
             for Ar in range(len(self.Arenas)):
                 overlay = cv2.drawContours(overlay, self.cnts_entrance[Ar],-1, (255, 255, 0),-1)
             TMP_image_to_show2=cv2.addWeighted(TMP_image_to_show2,0.5,overlay,0.5,1)
+        '''
 
         if affi:#If we want to  show the positions
             self.Vid_Lecteur.afficher_img(TMP_image_to_show2)
         else:# If we just wanted to get the positions of the targets but not displaying the image (look for previous frame target's positions)
             return(liste_positions)
 
-
     def Validate(self, follow=False):
         #Save and return to main menu
+
+        if self.Vid.Back[0]!=1:#We save whether we want to use adaptive or dynamic background
+            if self.Dynamical_back:
+                self.Vid.Back[0]=2
+            else:
+                self.Vid.Back[0]=0
+
         self.Vid.Track[0] = True
         self.Vid.Track[1][0] = int(self.thresh_value.get())
         self.Vid.Track[1][1] = int(self.erode_value.get())

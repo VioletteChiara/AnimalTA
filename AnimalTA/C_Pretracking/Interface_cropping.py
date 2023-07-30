@@ -330,16 +330,15 @@ class Cropping(Frame):
         #Save the cropping options.
         #If follow=True, open the next video in the list
 
-        #If the user selecte dthe whole video, we consider there are no cropping
+        #If the user selected the whole video, we consider there are no cropping
         if round((self.Scrollbar.crop_beg)*self.one_every) ==0 and round((self.Scrollbar.crop_end)*self.one_every)==self.Vid.Frame_nb[0]-1:
             self.Vid.Cropped = [False, [0,self.Vid.Frame_nb[0]-1]]
         else:
             self.Vid.Cropped=[True,[round((self.Scrollbar.crop_beg)*self.one_every),round((self.Scrollbar.crop_end)*self.one_every)]]
 
         if self.Vid.Cropped_sp[1]!=self.CSp:#If the user changed the spatial cropping (x/y), we remove existing background and arenas
-            self.Vid.Back = [False, []]
-            self.Vid.Track[1][6]=[1]
-            self.Vid.Mask[0] = False
+            self.Vid.effacer_back()
+            self.Vid.effacer_mask()
 
         if self.Vid.or_shape[0]==self.CSp[2]-self.CSp[0] and self.Vid.or_shape[1]==self.CSp[3]-self.CSp[1]:
             self.Vid.Cropped_sp=[False,[0,0,self.Vid.or_shape[0],self.Vid.or_shape[1]]]

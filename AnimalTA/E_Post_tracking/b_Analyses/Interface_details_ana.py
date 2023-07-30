@@ -1198,7 +1198,7 @@ class Details_explo(Frame):
         self.Explo_size_squares=StringVar(value=self.main.Infos_explo[1])
 
         scale_mm2=(1/float(self.main.Vid.Scale[0]))**2
-        self.min_explo_area=(cv2.contourArea(self.Arena_pts)*scale_mm2)/500
+        self.min_explo_area=(cv2.contourArea(self.Arena_pts)*scale_mm2)/1000
 
         #We can define it using the scale
         Squares_explo_lab=Label(Frame_Ana, text=self.Messages["Analyses_details_exp_Lab4"])

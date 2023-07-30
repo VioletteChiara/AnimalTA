@@ -1,6 +1,6 @@
 from tkinter import *
 from tkinter import messagebox
-from AnimalTA.D_Tracking_process import Do_the_track_variable, Do_the_track_fixed
+from AnimalTA.D_Tracking_process import Do_the_track
 from AnimalTA.A_General_tools import Function_draw_mask, UserMessages, Diverse_functions
 from AnimalTA.E_Post_tracking import Coos_loader_saver as CoosLS
 from AnimalTA.E_Post_tracking.b_Analyses import Functions_Analyses_Speed
@@ -13,7 +13,10 @@ import cv2
 import math
 from operator import itemgetter
 import shutil
-
+import time
+import playsound
+import pickle
+import pymsgbox
 
 
 class Extend(Frame):
@@ -38,6 +41,11 @@ class Extend(Frame):
         f.close()
         self.Messages = UserMessages.Mess[self.Language.get()]
         self.urgent_close = False
+
+        #We load the parameters
+        Param_file = UserMessages.resource_path(os.path.join("AnimalTA", "Files", "Settings"))
+        with open(Param_file, 'rb') as fp:
+            self.Params = pickle.load(fp)
 
         self.cache = False #The program is not minimised
 
@@ -132,6 +140,7 @@ class Extend(Frame):
         self.boss.parent.state('iconic')
 
     def validate(self):
+        deb=time.time()
         #Run the tracking/analyses
         self.boss.save()
         list_item = self.Liste.curselection()
@@ -143,7 +152,6 @@ class Extend(Frame):
 
         if self.type=="Tracking":
             for V in list_item:
-                #deb = time.time() #To see how fast is the process
                 self.curr_vid=V
                 cleared=self.list_vid_minus[V].clear_files()
                 if cleared:
@@ -167,7 +175,7 @@ class Extend(Frame):
                         if self.list_vid_minus[V].Track[1][6][0]:
                             try:
                                 self.running="Normal"
-                                succeed=Do_the_track_fixed.Do_tracking(self, Vid=self.list_vid_minus[V], folder=self.boss.folder)
+                                succeed=Do_the_track.Do_tracking(self, Vid=self.list_vid_minus[V], type="fixed", folder=self.boss.folder)
                                 self.running = None
                                 if succeed:
                                     self.list_vid_minus[V].Identities = []
@@ -185,7 +193,7 @@ class Extend(Frame):
                         else:
                             try:
                                 self.running = "Variable"
-                                succeed, Nb_targets= Do_the_track_variable.Do_tracking(self, Vid=self.list_vid_minus[V], folder=self.boss.folder)
+                                succeed, Nb_targets= Do_the_track.Do_tracking(self, Vid=self.list_vid_minus[V], folder=self.boss.folder, type="variable")
                                 self.running = None
                                 if succeed:
                                     try:#For old version, Track stopped at [1][7]
@@ -214,6 +222,12 @@ class Extend(Frame):
                 if self.urgent_close:
                     break
 
+            #Once the tracking is finished, we display a pop-up
+            if not self.manual_track.get():
+                if self.Params["Sound_alert_track"]:
+                    playsound.playsound(UserMessages.resource_path(os.path.join("AnimalTA", "Files", "Alert.mp3")))
+                if self.Params["Pop_alert_track"]:
+                    pymsgbox.alert(self.Messages["Do_track3"].format(round(float(time.time()-deb),2)), "AnimalTA: Finished")
 
         if self.type=="Analyses":
             Shapes_infos=dict()
@@ -255,7 +269,7 @@ class Extend(Frame):
                     writer = csv.writer(file, delimiter=";")
                     writer.writerow(["Video", "Arena", "Individual", "Prop_time_lost", "Smoothing_filter_window","Smoothing_Polyorder",
                                      "Moving_threshold", "Prop_time_moving", "Average_Speed", "Average_Speed_Moving", "Traveled_Dist", "Meander",
-                                     "Traveled_Dist_Moving", "Meander_moving","Exploration_value","Exploration_method","Exploration_area","Exploration_aspect_param",
+                                     "Traveled_Dist_Moving", "Meander_moving","Exploration_absolute_value","Exploration_relative_value","Exploration_method","Exploration_area","Exploration_aspect_param",
                                      "Mean_nb_neighbours", "Prop_time_with_at_least_one_neighbour", "Mean_shortest_dist_neighbour", "Mean_sum_distances_to_neighbours"])
                     pos=0
                     for V in list_item:
@@ -473,7 +487,7 @@ class Extend(Frame):
 
                                     elif Shape[0]=="Ellipse" or Shape[0] == "Rectangle" or Shape[0] == "Polygon":
                                         if len(Shape[1]) > 0:
-                                            if self.Vid.Back[0]:
+                                            if self.Vid.Back[0]==1:
                                                 empty = np.zeros([self.Vid.Back[1].shape[0], self.Vid.Back[1].shape[1], 1], np.uint8)
                                             else:
                                                 empty = np.zeros([self.Vid.shape[0], self.Vid.shape[1], 1], np.uint8)
@@ -516,7 +530,8 @@ class Extend(Frame):
                                     mask = cv2.drawContours(mask, [self.Arenas[Area]], -1, (255), -1)
                                     empty = cv2.bitwise_and(mask, empty)
 
-                                    new_row.append(len(np.where(empty > [0])[0]) / len(np.where(mask == [255])[0]))#Value
+                                    new_row.append(np.sum(empty > [0]) * (1 / float(self.Vid.Scale[0]) ** 2))# We want to save the total surface explored (independantly of the size of the arena)
+                                    new_row.append(len(np.where(empty > [0])[0]) / len(np.where(mask == [255])[0]))#Now relative to the arena area
                                     new_row.append("Modern")#Method
                                     new_row.append(self.Vid.Analyses[2][1])#Area
                                     new_row.append("NA")#Param_aspect
@@ -543,7 +558,9 @@ class Extend(Frame):
                                     unique = np.unique(XYs, axis=0, return_counts=False)
 
                                     new_row.append(len(unique))#Value
+                                    new_row.append(len(unique)/(nb_squares_v*nb_squares_h))  # Value divided by all possible
                                     new_row.append("Squares_mesh")#Method
+                                    new_row.append("NA")  # Param_aspect
                                     new_row.append(self.Vid.Analyses[2][1])#Area
                                     new_row.append("NA")#Param_aspect
 
@@ -600,6 +617,7 @@ class Extend(Frame):
                                     unique = np.unique(Pos, axis=0,return_counts=False)  # On regarde ou la bete est et combien de fois
 
                                     new_row.append(len(unique))#Value
+                                    new_row.append(len(unique)/sum(list_nb))  # Value divided by all possible cells
                                     new_row.append("Circular_mesh")#Method
                                     new_row.append(self.Vid.Analyses[2][1])#Area
                                     new_row.append(self.Vid.Analyses[2][2])#Param_aspect
@@ -807,11 +825,11 @@ class Extend(Frame):
             self.parent.destroy()
         if self.running=="Normal":
             self.urgent_close = True
-            Do_the_track_fixed.urgent_close(self.list_vid_minus[self.curr_vid])
+            Do_the_track.urgent_close(self.list_vid_minus[self.curr_vid])
 
         elif self.running=="Variable":
             self.urgent_close = True
-            Do_the_track_variable.urgent_close(self.list_vid_minus[self.curr_vid])
+            Do_the_track.urgent_close(self.list_vid_minus[self.curr_vid])
 
         self.boss.bind_all("<MouseWheel>", self.boss.on_mousewheel)
 

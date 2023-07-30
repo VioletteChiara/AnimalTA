@@ -6,79 +6,32 @@ import pickle
 import shutil
 from AnimalTA.C_Pretracking.a_Parameters_track import Interface_parameters_track
 from AnimalTA.A_General_tools import Interface_extend, Interface_Save_Vids, Interface_Vids_for_convert, UserMessages, \
-    User_help, Interface_selection_track_and_analyses, Class_loading_Frame
+    User_help, Interface_selection_track_and_analyses, Class_loading_Frame, Interface_info, Interface_settings
 from AnimalTA.E_Post_tracking.a_Tracking_verification import Interface_Check
 from AnimalTA.E_Post_tracking.b_Analyses import Interface_Analyses
 from AnimalTA.B_Project_organisation import Class_Row_Videos, Import_data
 from AnimalTA import Class_Video
 import os
 from functools import partial
-import math
 import decord
 from copy import deepcopy
-import webbrowser
 
 os.system("")  # enables ansi escape characters in terminal
-
-class Information_panel(Frame):
-    def __init__(self, parent, **kwargs):
-        Frame.__init__(self, parent, bd=5, **kwargs)
-        self.grid(sticky="nsew")
-
-        Grid.columnconfigure(parent, 0, weight=1)
-        Grid.rowconfigure(parent, 0, weight=1)
-
-        Grid.rowconfigure(self, 0, weight=1)
-        Grid.rowconfigure(self, 1, weight=1)
-        Grid.rowconfigure(self, 2, weight=100)
-        Grid.rowconfigure(self, 3, weight=1)
-        Grid.rowconfigure(self, 4, weight=1)
-        Grid.rowconfigure(self, 5, weight=1)
-
-        Grid.columnconfigure(self, 0, weight=1)
-        Grid.columnconfigure(self, 1, weight=100)
-
-        #Short summary about current version, how to cite and how to find guidelines.
-        Lab_version=Label(self, text="AnimalTA. v2.3.1", font=("Arial", "14", "bold"))
-        Lab_version.grid(row=0, column=0,columnspan=2, sticky="nsw")
-
-        Lab_cite=Label(self, text="How to cite:")
-        Lab_cite.grid(row=2, column=0,columnspan=2, sticky="nsw")
-        Citation= Text(self, height=5, width=75, wrap=WORD)
-        Citation.grid(row=3, column=0,columnspan=2, sticky="nswe")
-        Citation.insert("1.0", "Chiara, V., & Kim, S.-Y. (2023). AnimalTA: A highly flexible and easy-to-use program for tracking and analysing animal movement in different environments. Methods in Ecology and Evolution, 00, 1– 9. https://doi.org/10.1111/2041-210X.14115")
-        Citation.configure(state="disabled")
-
-        Lab_contact=Label(self, text="Contact:")
-        Lab_contact.grid(row=5, column=0, sticky="nsw")
-        mail= Text(self, height=1, width=30)
-        mail.insert("1.0", "contact.AnimalTA@vchiara.eu")
-        mail.configure(state="disabled")
-        mail.grid(row=5, column=1, sticky="nsw")
-
-        Lab_Help=Label(self, text="Need help? Go check the guidelines or the video tutorials:")
-        Lab_Help.grid(row=7, column=0,columnspan=2, sticky="nsew")
-        link = Label(self, text="http://vchiara.eu/index.php/animalta", fg="#b448cd", cursor="hand2")
-        link.grid(row=8, column=0,columnspan=2, sticky="nsew")
-        link.bind("<Button-1>", self.send_link)
-
-        self.rowconfigure(1, minsize=20)
-        self.rowconfigure(4, minsize=30)
-        self.rowconfigure(6, minsize=30)
-
-    def send_link(self, event):
-        webbrowser.open_new_tab("http://vchiara.eu/index.php/animalta")
 
 class Interface(Frame):
     """This is the main Frame of the project, it contains:
     1. A homemade menu option to allow to add, remove video, change the language, save projectes, open projects...
     2. A table with one row per video (see Class_Row_Videos
     3. A set of options to set tracking parameters, correct the trajectories or analyses them."""
-    def __init__(self, parent, liste_of_videos=[], **kwargs):
+    def __init__(self, parent, current_version, new_update, liste_of_videos=[], **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
-        self.config(background="grey")
+        self.config(background="#f0f0f0")
         self.parent = parent
+        self.current_version=current_version
         self.posX=0#At the beginning, horizontal scrollbar is at location 0
+
+        if new_update!=None:
+            self.show_infos(new_update)
 
         # Import language
         self.Language = StringVar()
@@ -98,7 +51,9 @@ class Interface(Frame):
         self.selected_vid = None
         self.Current_capture=None
         self.first = True #If an action have already be done or not
+
         self.folder = None #Where is the current directory
+
         self.wait_for_vid = False  # For fusion process, if we expect the user to select a second vid, = True
         self.liste_of_videos = liste_of_videos
         self.Infos_track = StringVar()
@@ -233,12 +188,15 @@ class Interface(Frame):
                                   font=("courier new", 12))
         self.Nom_Logiciel.grid(row=0, column=0, sticky="w")
         #More information about AnimalTA:
-        B_info=Button(self.canvas_title_bar, text="?",command=self.show_infos)
+        B_info=Button(self.canvas_title_bar, text="?",command=partial(self.show_infos, new_update))
         B_info.grid(row=0, column=1, sticky="w")
+
+        B_settings=Button(self.canvas_title_bar, text="...",command=self.show_settings)
+        B_settings.grid(row=0, column=2, sticky="w")
 
         #Create new project
         self.bouton_New = Button(self.canvas_title_bar, text=self.Messages["GButton1"], command=self.new_project)
-        self.bouton_New.grid(row=0, column=2, sticky="e")
+        self.bouton_New.grid(row=0, column=3, sticky="e")
         #Open existing project
         self.bouton_Open = Button(self.canvas_title_bar, text=self.Messages["GButton2"], command=self.open_file)
         self.bouton_Open.grid(row=0, column=4, sticky="e")
@@ -295,10 +253,15 @@ class Interface(Frame):
 
 
     ##Information about versio, citation and guidelines
-    def show_infos(self):
+    def show_infos(self, new_update=None):
         info_win=Toplevel(self.parent)
         info_win.title("Information")
-        interface = Information_panel(parent=info_win)
+        interface = Interface_info.Information_panel(parent=info_win, current_version=self.current_version, new_update=new_update)
+
+    def show_settings(self):
+        info_win=Toplevel(self.parent)
+        info_win.title("Settings")
+        interface = Interface_settings.Settings_panel(parent=info_win, main=self)
 
 
     ##Window management
@@ -534,17 +497,23 @@ class Interface(Frame):
     def save(self):
         # Save the project
         try:
+            load_frame= Class_loading_Frame.Loading(self)#Progression bar
+            load_frame.show_load(0)
             shutil.copyfile(self.file_to_save, self.file_to_save+"old")
+            load_frame.show_load(0.5)
             #This is a security to ensure that the old file will not be deleted before ensurong the new one can be proprly saved
 
             with open(self.file_to_save , 'wb') as fp:
-                data_to_save = dict(Project_name=self.project_name.get(), Folder=self.folder,
-                                    Videos=self.liste_of_videos)
+                data_to_save = dict(Project_name=self.project_name.get(), Folder=self.folder, Videos=self.liste_of_videos)
                 pickle.dump(data_to_save, fp)
+
+            load_frame.show_load(1)
 
             #If there was no problem during the save, we delete the security copy
             os.remove(self.file_to_save+"old")
 
+            load_frame.destroy()
+            del load_frame
 
         except Exception as e:
             #If the program was not properly saved, we restore the security copy
@@ -572,7 +541,6 @@ class Interface(Frame):
         self.project_name.set("Untitled")
         self.liste_of_videos = []
         self.folder = None
-
         self.afficher_projects()
 
         self.rows_optns.grid_forget()
@@ -611,11 +579,11 @@ class Interface(Frame):
                 self.file_to_open = filedialog.askopenfilename(filetypes=(("AnimalTA", "*.ata"),))
                 with open(self.file_to_open, 'rb') as fp:
                     data_to_load = pickle.load(fp)
-                    self.project_name.set(data_to_load["Project_name"])
-                    self.folder = data_to_load["Folder"]
-                    self.liste_of_videos = data_to_load["Videos"]
-                    self.file_to_save = self.file_to_open
 
+                self.project_name.set(data_to_load["Project_name"])
+                self.folder = data_to_load["Folder"]
+                self.liste_of_videos = data_to_load["Videos"]
+                self.file_to_save = self.file_to_open
             else:
                 with open(file, 'rb') as fp:
                     data_to_load = pickle.load(fp)
@@ -646,6 +614,11 @@ class Interface(Frame):
             # Check that videos are still available
             for V in range(len(self.liste_of_videos)):
                 # Look for all points of interest
+                if self.liste_of_videos[V].Back[0]==False:
+                    self.liste_of_videos[V].Back[0]=0# Old versions of animalTA had only two possible background methods (three possibilities since v2.3.2)
+                elif self.liste_of_videos[V].Back[0]==True:
+                    self.liste_of_videos[V].Back[0]=1
+
                 try:
                     self.liste_of_videos[V].Stab[2]  # Old versions of animalTA did not allowed parameter changes, we check for compatibility problems
                 except:
@@ -684,7 +657,6 @@ class Interface(Frame):
                 if len(self.liste_of_videos[V].Analyses)<5:
                     self.liste_of_videos[V].Analyses.append([[],[],[]])#Deformation of images
 
-
                 '''
                 ####For bebugging pruposes only!
                 name=self.liste_of_videos[V].File_name[-18:]#For debugging other users problems
@@ -692,7 +664,6 @@ class Interface(Frame):
                 self.liste_of_videos[V].Fusion[0][1] = "G:/" + name#For debugging
                 self.folder="G:/Project_folder_01012023_03012023_M"#For debugging
                 '''
-
 
                 if not os.path.isfile(self.liste_of_videos[V].File_name):
                     resp = messagebox.askyesno(self.Messages["GWarnT5"],self.Messages["GWarn5"].format(self.liste_of_videos[V].File_name))
@@ -724,10 +695,12 @@ class Interface(Frame):
                 self.grid_param_track()
 
             self.bouton_Close.config(state="active")
+
         except Exception as e:
             print(e)
             self.HW.default_message = self.Messages["General10"]
             self.HW.remove_tmp_message()
+
 
     def first_action(self, *arg):
         #At least one action has been done
@@ -807,8 +780,7 @@ class Interface(Frame):
                 self.load_projects()
                 self.rows_optns.grid(row=0, column=0, sticky="sewn")
                 with open(self.file_to_save, 'wb') as fp:
-                    data_to_save = dict(Project_name=self.project_name.get(), Folder=self.folder,
-                                        Videos=self.liste_of_videos)
+                    data_to_save = dict(Project_name=self.project_name.get(), Folder=self.folder, Videos=self.liste_of_videos)
                     pickle.dump(data_to_save, fp)
                 self.bouton_Save.config(state="active")
 
@@ -1082,18 +1054,25 @@ class Interface(Frame):
     def fusion_two_Vids(self, second_Vid):
         #When the concatenation button was activate and the user select a second video to be concatenated
         if self.selected_vid != second_Vid:#If the two videos are different
+            load_frame= Class_loading_Frame.Loading(self)#Progression bar
+            load_frame.show_load(0 / 2)
+
             if self.selected_vid.or_shape == second_Vid.or_shape and self.selected_vid.Frame_rate[0] == second_Vid.Frame_rate[0]:#And that they share the same characteristics
                 if len(self.selected_vid.Fusion) < 2: #If it was not done yet, we prepare the info for the Fusion process (can't be done before as opencv is not accurate in frame counting and decord too slow to manage all the videos at the same time)
                     capture = decord.VideoReader(self.selected_vid.File_name, ctx=decord.cpu(0))
+                    capture.seek(0)
                     self.selected_vid.Frame_nb[0] = len(capture)
                     self.selected_vid.Frame_nb[1] = self.selected_vid.Frame_nb[0] / int(round(round(self.selected_vid.Frame_rate[0], 2) / self.selected_vid.Frame_rate[1]))
                     del capture
+                    load_frame.show_load(1 / 2)
 
                 if len(second_Vid.Fusion) < 2: #If it was not done yet, we prepare the info for the Fusion process (can't be done before as opencv is not accurate in frame counting and decord too slow to manage all the videos at the same time)
                     capture = decord.VideoReader(second_Vid.File_name, ctx=decord.cpu(0))
+                    capture.seek(0)
                     second_Vid.Frame_nb[0] = len(capture)
                     second_Vid.Frame_nb[1] = second_Vid.Frame_nb[0] / int(round(round(second_Vid.Frame_rate[0], 2) / second_Vid.Frame_rate[1]))
                     del capture
+                    load_frame.show_load(2 / 2)
 
                     # We add the second part after the first one
                     self.selected_vid.Fusion.append([self.selected_vid.Frame_nb[0], second_Vid.File_name])
@@ -1105,13 +1084,21 @@ class Interface(Frame):
                 self.selected_vid.Frame_nb[0] += second_Vid.Frame_nb[0]
                 self.selected_vid.Frame_nb[1] = self.selected_vid.Frame_nb[0] / int(round(round(self.selected_vid.Frame_rate[0], 2) / self.selected_vid.Frame_rate[1]))
                 self.selected_vid.Cropped = [False, [0, self.selected_vid.Frame_nb[0] - 1]]
+                self.selected_vid.clear_files()
                 self.supr_video(Vid=second_Vid)
                 self.wait_for_vid = False
                 self.afficher_projects()
 
+                load_frame.destroy()
+                del load_frame
+
             else:#If the two videos does not share the same charcateristic, we inform the user
                 self.wait_for_vid = False
                 messagebox.showinfo(message=self.Messages["GWarn4"], title=self.Messages["GWarnT4"])
+
+
+
+
         else:
             self.fus_video()
         self.update_selections()
@@ -1123,11 +1110,11 @@ class Interface(Frame):
         #System, secondary or finished
         if self.selected_vid == None:
             self.Infos_track.set(self.Messages["General2"])
-            self.Beginn_track.config(state="active", bg="SystemButtonFace", activebackground="SystemButtonFace")
+            self.Beginn_track.config(state="active", bg="#f0f0f0", activebackground="#f0f0f0")
             self.BExtend_track.config(state="disable")
-            self.bouton_check_track.config(state="disable", activebackground="SystemButtonFace", bg="SystemButtonFace")
-            self.bouton_analyse_track.config(state="disable", activebackground="SystemButtonFace",
-                                             bg="SystemButtonFace")
+            self.bouton_check_track.config(state="disable", activebackground="#f0f0f0", bg="#f0f0f0")
+            self.bouton_analyse_track.config(state="disable", activebackground="#f0f0f0",
+                                             bg="#f0f0f0")
             self.bouton_save_TVid.config(state="disable")
             #self.bouton_import_dat.config(state="disable")
         else:
@@ -1138,10 +1125,10 @@ class Interface(Frame):
                 self.Beginn_track.config(state="active", activebackground="#ff8a33", bg="#ff8a33")
                 self.Infos_track.set(self.no_track)
                 self.BExtend_track.config(state="disable")
-                self.bouton_check_track.config(state="disable", activebackground="SystemButtonFace",
-                                               bg="SystemButtonFace")
-                self.bouton_analyse_track.config(state="disable", activebackground="SystemButtonFace",
-                                                 bg="SystemButtonFace")
+                self.bouton_check_track.config(state="disable", activebackground="#f0f0f0",
+                                               bg="#f0f0f0")
+                self.bouton_analyse_track.config(state="disable", activebackground="#f0f0f0",
+                                                 bg="#f0f0f0")
 
             else:
                 self.Beginn_track.config(state="active", activebackground="#3aa6ff", bg="#3aa6ff")
@@ -1186,13 +1173,13 @@ class Interface(Frame):
                 file_trackedP = os.path.join(self.selected_vid.Folder, "coordinates", self.selected_vid.User_Name + "_Coordinates.csv")
 
                 if not self.selected_vid.Tracked or not(os.path.isfile(file_tracked) or os.path.isfile(file_trackedP)):
-                    self.bouton_check_track.config(state="disable", activebackground="SystemButtonFace",
-                                                   bg="SystemButtonFace")
-                    self.bouton_analyse_track.config(state="disable", activebackground="SystemButtonFace",
-                                                     bg="SystemButtonFace")
+                    self.bouton_check_track.config(state="disable", activebackground="#f0f0f0",
+                                                   bg="#f0f0f0")
+                    self.bouton_analyse_track.config(state="disable", activebackground="#f0f0f0",
+                                                     bg="#f0f0f0")
 
                 elif os.path.isfile(file_tracked) or os.path.isfile(file_trackedP):
-                    self.Beginn_track.config(state="active", bg="SystemButtonFace", activebackground="SystemButtonFace")
+                    self.Beginn_track.config(state="active", bg="#f0f0f0", activebackground="#f0f0f0")
                     self.bouton_check_track.config(state="active")
                     self.bouton_analyse_track.config(state="active", activebackground="#ff8a33", bg="#ff8a33")
 

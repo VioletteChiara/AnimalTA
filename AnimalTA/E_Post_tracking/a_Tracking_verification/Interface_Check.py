@@ -69,7 +69,7 @@ class Lecteur(Frame):
         self.User_params_cont=Frame(self.parent)
         self.User_params_cont.grid(row=1,column=1)
 
-        Traj_param=Frame(self.User_params_cont, highlightbackground = "grey", highlightcolor= "grey",highlightthickness=4)
+        Traj_param=Frame(self.User_params_cont, highlightbackground = "#f0f0f0", highlightcolor= "#f0f0f0",highlightthickness=4)
         Traj_param.grid(row=0, column=0, columnspan=3, sticky="nsew")
         Grid.columnconfigure(Traj_param, 0, weight=1)
         Grid.columnconfigure(Traj_param, 1, weight=1)
@@ -216,7 +216,7 @@ class Lecteur(Frame):
         #This show/hide the complete trajectories of the targets
         if self.show_all:
             self.show_all = False
-            self.bouton_show_all_traj.config(background="SystemButtonFace")
+            self.bouton_show_all_traj.config(background="#f0f0f0")
         else:
             self.show_all = True
             self.bouton_show_all_traj.config(background="grey80")
@@ -262,7 +262,7 @@ class Lecteur(Frame):
             #We create a new coordinates file with only the selected frames:
             if self.Vid.Track[1][8]:
                 if self.first > self.Vid.Cropped[1][0]/self.Vid_Lecteur.one_every:
-                    prev_row = [self.first - 1, (self.first - 1) / self.Vid_Lecteur.one_every]  # We also check for the last known coordinates before the re-run to allow target's assigment.
+                    prev_row = [self.first - 1, (self.first - 1) / self.Vid_Lecteur.one_every]  # We also check for the last known coordinates before to re-run to allow target's assigment.
                     for ind in range(self.Coos.shape[0]):
                         prev_row = prev_row + list(self.Coos[ind,self.first - int(self.Vid.Cropped[1][0]/self.Vid_Lecteur.one_every) -1,:])
 
@@ -271,7 +271,7 @@ class Lecteur(Frame):
                         if i!=-1000:
                             prev_row2.append(i)
                         else:
-                            prev_row2.append(-1000)
+                            prev_row2.append("NA")
                     prev_row=prev_row2
                 else:
                     prev_row=None
@@ -732,18 +732,18 @@ class Lecteur(Frame):
                 nb_raws = int(correct[1] - correct[0])
                 if correct[0] != 0 and correct[1] != (len(self.Coos[col])-1):
                     for raw in range(correct[0], correct[1]+1):
-                        self.Coos[col][raw][0] = int(round(int(self.Coos[col][correct[0] - 1][0]) + ((int(self.Coos[col][correct[1]][0]) - int(self.Coos[col][correct[0] - 1][0])) * ((raw - correct[0]) / nb_raws)), 0))
-                        self.Coos[col][raw][1] = int(round(int(self.Coos[col][correct[0] - 1][1]) + ((int(self.Coos[col][correct[1]][1]) - int(self.Coos[col][correct[0] - 1][1])) * ((raw - correct[0]) / nb_raws)), 0))
+                        self.Coos[col][raw][0] = self.Coos[col][correct[0] - 1][0] + ((self.Coos[col][correct[1]][0] - self.Coos[col][correct[0] - 1][0]) * ((raw - correct[0]) / nb_raws))
+                        self.Coos[col][raw][1] = self.Coos[col][correct[0] - 1][1] + ((self.Coos[col][correct[1]][1] - self.Coos[col][correct[0] - 1][1]) * ((raw - correct[0]) / nb_raws))
 
                 elif correct[0] == 0 and correct[1]!=(len(self.Coos[col])-1):
                     for raw in range(correct[0], correct[1]+1):
-                        self.Coos[col][raw][0] = int(round(int(self.Coos[col][correct[1]][0]), 0))
-                        self.Coos[col][raw][1] = int(round(int(self.Coos[col][correct[1]][1]), 0))
+                        self.Coos[col][raw][0] = self.Coos[col][correct[1]][0]
+                        self.Coos[col][raw][1] = self.Coos[col][correct[1]][1]
 
                 elif correct[0] != 0 and correct[1]==(len(self.Coos[col])-1):
                     for raw in range(correct[0], correct[1]+1):
-                        self.Coos[col][raw][0] = int(round(int(self.Coos[col][correct[0]-1][0]), 0))
-                        self.Coos[col][raw][1] = int(round(int(self.Coos[col][correct[0]-1][1]), 0))
+                        self.Coos[col][raw][0] = self.Coos[col][correct[0]-1][0]
+                        self.Coos[col][raw][1] = self.Coos[col][correct[0]-1][1]
         self.modif_image()
 
 

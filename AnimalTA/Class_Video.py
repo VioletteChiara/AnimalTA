@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 import ntpath
-from AnimalTA.A_General_tools import UserMessages, Class_stabilise
+from AnimalTA.A_General_tools import UserMessages, Class_stabilise, Function_draw_mask as Dr
 import os
 from tkinter import messagebox
 
@@ -25,7 +25,7 @@ class Video:
             capture=cv2.VideoCapture(self.File_name)#We choose to use Opencv and not decord here because opencv is much faster at initiation. But, opencv is not calculating correcty the number of frames in videos, also this value is recalculated later.
             shape=(int(capture.get(4)),int(capture.get(3)))#The width/height of the frames
             nb_fr = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
-            fr_rate = int(capture.get(cv2.CAP_PROP_FPS))
+            fr_rate = capture.get(cv2.CAP_PROP_FPS)
 
         self.shape = shape
         self.or_shape = self.shape#In old version, it was not possible to crop spacially the videos, this is to avoid problems of compatibility
@@ -39,7 +39,7 @@ class Video:
         self.Cropped=[False,[0,self.Frame_nb[0]-1]]#0 whether the video has been cropped or not, 1 where the video begins and stops after cropping [frame at the beginning of the video, frame at the end of the video]
         self.Cropped_sp=[False,[0,0,self.or_shape[0],self.or_shape[1]]]#0 whether the video has been spacialy cropped or not, 1 x0, y0, x1 and y1 coordinates of the cropping rectangle
         self.Stab = [False,None,[30,3,0.05,200]] #0: False if no stabilisation, true if stabilisation. 1: array with the coordinates for the stabilisation.
-        self.Back = [False,[]] #0: False if no background defined,True if so. 1 Background used with this video.
+        self.Back = [0,[]] #0: 0=Adaptive background, 1=subtract back, 2= Dynamical back. 1 Background used with this video.
         self.Mask = [False,[]] #0: False if no mask defined,True if so. 1 List of shapes used to draw the mask.
         self.Entrance=[]#It is a list of contours used to draw then entrance areas in case of unknown number of targets
         self.Scale=[1,"px"] # The scale and its unit
@@ -165,15 +165,33 @@ class Video:
         Liste_Images[0] = np.median(Liste_Images, axis=0)#We calculate the median value for all pixels
         Liste_Images[0]=Liste_Images[0].astype("uint8")
 
-        self.Back[0]=True
+        self.Back[0]=1
         self.Back[1] = Liste_Images[0]#Save the background
+
+    def draw_entrance(self, distance_max=20):#If no entrance, we propose the external borders of the arena as entrance area.
+        self.Entrance=[]
+        mask = Dr.draw_mask(self)
+        Arenas, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        Arenas = Dr.Organise_Ars(Arenas)
+
+        for Ar in Arenas:
+            empty=np.zeros([self.shape[0],self.shape[1],1], np.uint8)
+            empty=cv2.drawContours(empty,[Ar],-1,255,int(round(distance_max*float(self.Scale[0])))*4)
+            empty = cv2.drawContours(empty, [Ar], -1, 0,-1)
+            cnts,_=cv2.findContours(empty, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            self.Entrance.append(cnts)
+
 
     def effacer_back(self):
         #Remove the background associated with the video
-        self.Back[0]=False
+        self.Back[0]=0
         self.Back[1]=[]
 
     def effacer_mask(self):
         # Remove the arenas associated with the video
         self.Mask[0]=False
         self.Mask[1]=[]
+        self.Track[1][6] = [1]
+        self.Entrance = []
+
+

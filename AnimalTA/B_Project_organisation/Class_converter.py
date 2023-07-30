@@ -13,7 +13,7 @@ def convert_to_avi(parent, file, folder):
         cap = cv2.VideoCapture(file)
         frame_width = int(cap.get(3))
         frame_height = int(cap.get(4))
-        frame_rate=int(cap.get(cv2.CAP_PROP_FPS))
+        frame_rate=cap.get(cv2.CAP_PROP_FPS)
         size = (frame_width, frame_height)
 
         result = cv2.VideoWriter(new_file,cv2.VideoWriter_fourcc(*'XVID'), frame_rate, size)

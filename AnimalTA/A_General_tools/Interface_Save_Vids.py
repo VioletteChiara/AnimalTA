@@ -72,7 +72,7 @@ class Lecteur(Frame):
             Light_Corr.grid(row=6, sticky="w")
 
         #Background substraction
-        if self.Vid.Back[0]:
+        if self.Vid.Back[0]==1:
             Back=Checkbutton(Right_Frame, variable=self.CheckVar, onvalue=5, text=self.Messages["Names7"], command=self.change_type)
             Back.grid(row=7, sticky="w")
 
@@ -158,7 +158,7 @@ class Lecteur(Frame):
         #Should the trajectories be displayed.
         if self.show_track:
             self.show_track=False
-            self.show_track_B.config(background="SystemButtonFace")
+            self.show_track_B.config(background="grey")
         else:
             self.show_track=True
             self.show_track_B.config(background="grey")
@@ -168,7 +168,7 @@ class Lecteur(Frame):
         #Should the trajectories be displayed.
         if self.show_smooth and self.Vid.Smoothed[0]>0:
             self.show_smooth=False
-            self.show_smooth_B.config(background="SystemButtonFace")
+            self.show_smooth_B.config(background="grey")
         else:
             self.show_smooth=True
             self.show_smooth_B.config(background="grey")
@@ -178,7 +178,7 @@ class Lecteur(Frame):
         #Should the trajectories be displayed.
         if self.show_deform:
             self.show_deform=False
-            self.show_deform_B.config(background="SystemButtonFace")
+            self.show_deform_B.config(background="grey")
         else:
             self.show_deform=True
             self.show_deform_B.config(background="grey")
@@ -188,7 +188,7 @@ class Lecteur(Frame):
         #Whether the identities should appear or not
         if self.show_ID:
             self.show_ID=False
-            self.Show_ID_B.config(background="SystemButtonFace")
+            self.Show_ID_B.config(background="grey")
         else:
             self.show_ID=True
             self.Show_ID_B.config(background="grey")
@@ -311,11 +311,11 @@ class Lecteur(Frame):
 
         #Background
         if self.CheckVar.get()>4:
-            if self.Vid.Back[0]:
+            if self.Vid.Back[0]==1:
                 new_img = cv2.subtract(self.Vid.Back[1], new_img) + cv2.subtract(new_img, self.Vid.Back[1])
 
         if self.CheckVar.get()>5 and self.CheckVar.get()!=9:
-            if self.Vid.Back[0]:
+            if self.Vid.Back[0]==1:
                 _, new_img = cv2.threshold(new_img, self.Vid.Track[1][0], 255, cv2.THRESH_BINARY)
             else:
                 odd_val = int(self.Vid.Track[1][0]) + (1 - (int(self.Vid.Track[1][0]) % 2))

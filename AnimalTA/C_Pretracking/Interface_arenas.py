@@ -57,7 +57,7 @@ class Mask(Frame):
         #[ArenaID, PtID] with IDs being integers from 0
 
         #If a background was defined, the user will draw over it.
-        if self.Vid.Back[0]:
+        if self.Vid.Back[0]==1:
             self.background=self.Vid.Back[1]
         else:#If not, we take the first frame as image (after cropping).
             Which_part = 0
@@ -266,10 +266,10 @@ class Mask(Frame):
                 self.Vid.Track[1][6]=self.Vid.Track[1][6][0:(len(Arenas))]
             elif len(Arenas) > len(self.Vid.Track[1][6]):
                 self.Vid.Track[1][6] = self.Vid.Track[1][6]+ [self.Vid.Track[1][6][-1]]*(len(Arenas) - len(self.Vid.Track[1][6]))
+            self.Vid.draw_entrance()#This is for next update
 
         if self.portion:
             self.boss.PortionWin.grab_set()
-
 
         if follow and self.Vid != self.main_frame.liste_of_videos[-1]:
             for i in range(len(self.main_frame.liste_of_videos)):
@@ -323,9 +323,9 @@ class Mask(Frame):
             self.Pt_select=[]
             self.dessiner_Formes()#Show the result
             self.afficher()
-        elif event.keysym == "r":
+        elif event.keysym == "r" or event.keysym == "R":
             self.Rpressed=True
-        elif event.keysym == "f":
+        elif event.keysym == "f" or event.keysym == "F":
             self.Fpressed=True
         elif event.keysym == "Control_L" or event.keysym == "Control_R":
             self.Ctrlpressed=True

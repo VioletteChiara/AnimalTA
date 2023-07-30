@@ -1,15 +1,13 @@
 from tkinter import *
 from AnimalTA.A_General_tools import UserMessages
 import math
-#import pandas as pd
+import pandas as pd
 #from pandastable import Table, TableModel
 from functools import partial
 
 
 class Int_import(Frame):
-    """This frame will appear if the user wants to draw a line between two points of the arenas' borders. It allows the user to choose exactly where on the border (in the middle, at 5 cm etc.) the line will be placed"""
     def __init__(self, parent, files, Vid, **kwargs):
-        #Pt1 and Pt2: the two extremities of the considered border
         Frame.__init__(self, parent, bd=5, **kwargs)
         self.grid(sticky="nsew")
         self.parent=parent

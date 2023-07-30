@@ -4,6 +4,7 @@ import cv2
 import PIL.Image, PIL.ImageTk
 from AnimalTA.A_General_tools import Video_loader as VL, UserMessages, User_help
 import numpy as np
+import pickle
 
 class Background(Frame):
     """This frame will appear when the user is not satisfied with the automatic background and wants to change it.
@@ -16,6 +17,8 @@ class Background(Frame):
         self.boss=boss
         self.grid(row=0,column=0,rowspan=2,sticky="nsew")
         self.portion=portion
+        self.Tool_circle=BooleanVar()
+        self.Tool_circle.set(True)
 
         if self.portion:#If you do a temporary background for a correction of a part of the video
             Grid.columnconfigure(self.parent, 0, weight=1)
@@ -32,6 +35,7 @@ class Background(Frame):
 
         self.Vid = Video_file
         self.background=self.Vid.Back[1] #We import the existing background
+        self.saved_drawn=self.background.copy()
         self.zoom_sq=[0,0,self.Vid.shape[1],self.Vid.shape[0]]
 
         #Creation of the canvas image
@@ -55,13 +59,20 @@ class Background(Frame):
         self.Label_color.grid(row=0,column=0,sticky="e")
         self.canvas_color=Canvas(self.canvas_user, width=10, height=10, bd=0, highlightthickness=1, highlightbackground="black", relief='ridge')
         self.canvas_color.grid(row=0,column=1, sticky="nswe")
+
+
+        RB_tool_shape_square = Radiobutton(self.canvas_user, text="\u25EF", variable=self.Tool_circle, value=True).grid(row=1,column=0)
+        RB_tool_shape_circle=Radiobutton(self.canvas_user, text="\u2B1C", variable=self.Tool_circle, value=False).grid(row=1,column=1)
+
         self.validate_button=Button(self.canvas_user,text=self.Messages["Validate"], background="#6AED35", command=self.validate)
-        self.validate_button.grid(row=1,column=0,columnspan=2,sticky="nsew")
+        self.validate_button.grid(row=2,column=0,columnspan=2,sticky="nsew")
 
         self.B_1Auto=Button(self.canvas_user,text=self.Messages["Back4"], background="orange", command=self.auto_back)
-        self.B_1Auto.grid(row=2,column=0,columnspan=2,sticky="nsew")
+        self.B_1Auto.grid(row=3,column=0,columnspan=2,sticky="nsew")
+
+
         self.B_1frame=Button(self.canvas_user,text=self.Messages["Back5"], background="red", command=self.change_for_1)
-        self.B_1frame.grid(row=3,column=0,columnspan=2,sticky="nsew")
+        self.B_1frame.grid(row=4,column=0,columnspan=2,sticky="nsew")
 
         if self.portion:
             self.HW.grid_columnconfigure(0,minsize=250)
@@ -83,7 +94,11 @@ class Background(Frame):
         self.painting=False
         self.tool_view=self.canvas_img.create_oval((0,0,0,0))
         self.vide=[]
-        self.tool_size=20
+
+        self.Param_file = UserMessages.resource_path(os.path.join("AnimalTA", "Files", "Settings"))
+        with open(self.Param_file, 'rb') as fp:
+            Params = pickle.load(fp)
+        self.tool_size=Params["Back_tool"]
         self.Color=0
 
         self.canvas_img.update()
@@ -193,11 +208,16 @@ class Background(Frame):
         #Draw a circle around the mouse cursor of the size and shape of the painting tool
         if not len(zoom)>0:
             self.canvas_img.delete(self.tool_view)
-            self.tool_view=self.canvas_img.create_oval((event.x - self.tool_size/self.ratio,
-                                        event.y - self.tool_size/self.ratio,
-                                        event.x + self.tool_size/self.ratio,
-                                        event.y  + self.tool_size/self.ratio))
-
+            if self.Tool_circle.get():
+                self.tool_view=self.canvas_img.create_oval((event.x - self.tool_size/self.ratio,
+                                            event.y - self.tool_size/self.ratio,
+                                            event.x + self.tool_size/self.ratio,
+                                            event.y  + self.tool_size/self.ratio))
+            else:
+                self.tool_view=self.canvas_img.create_rectangle((event.x - self.tool_size/self.ratio,
+                                            event.y - self.tool_size/self.ratio,
+                                            event.x + self.tool_size/self.ratio,
+                                            event.y  + self.tool_size/self.ratio))
 
     def point(self, event):
         #When the image is clicked, we begin to paint over it
@@ -206,7 +226,13 @@ class Background(Frame):
 
         if not self.zooming:
             #When painting, we save the positions where the mouse went.
-            cv2.circle(self.vide,(int(event.x * self.ratio + self.zoom_sq[0]), int(event.y * self.ratio + self.zoom_sq[1])),self.tool_size, (255, 255, 255), -1)
+            if self.Tool_circle.get():
+                cv2.circle(self.vide,(int(event.x * self.ratio + self.zoom_sq[0]), int(event.y * self.ratio + self.zoom_sq[1])),self.tool_size, (255, 255, 255), -1)
+            else:
+                cv2.rectangle(self.vide,
+                           (int(event.x * self.ratio + self.zoom_sq[0]-self.tool_size), int(event.y * self.ratio + self.zoom_sq[1]-self.tool_size)),
+                           (int(event.x * self.ratio + self.zoom_sq[0]+self.tool_size), int(event.y * self.ratio + self.zoom_sq[1]+self.tool_size)), (255, 255, 255), -1)
+
             cnts, _ = cv2.findContours(self.vide, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
 
             if self.painting:
@@ -228,7 +254,59 @@ class Background(Frame):
 
         if not self.zooming:
             #When the cursor is moving, we draw line instead of circles to avoid gaps in the drawing if the user is moving the mouse fast
-            cv2.line(self.vide, (int(event.x * self.ratio + self.zoom_sq[0]), int(event.y * self.ratio + self.zoom_sq[1])),self.last_paint, (255, 255, 255), self.tool_size*2)
+            if self.Tool_circle.get():
+                cv2.line(self.vide,
+                         (int(event.x * self.ratio + self.zoom_sq[0]), int(event.y * self.ratio + self.zoom_sq[1])),
+                         self.last_paint, (255, 255, 255), self.tool_size * 2)
+            else:
+                pts=np.array([(int(event.x * self.ratio + self.zoom_sq[0] - self.tool_size),
+                                           int(event.y * self.ratio + self.zoom_sq[1] - self.tool_size)), (
+                                          int(event.x * self.ratio + self.zoom_sq[0] - self.tool_size),
+                                          int(event.y * self.ratio + self.zoom_sq[1] + self.tool_size)), (
+                                          int(self.last_paint[0] - self.tool_size),
+                                          int(self.last_paint[1] + self.tool_size)), (
+                                          int(self.last_paint[0] - self.tool_size),
+                                          int(self.last_paint[1] - self.tool_size))],np.int32)
+                pts = pts.reshape((-1, 1, 2))
+                cv2.fillPoly(self.vide, [pts], (255, 255, 255))
+
+
+                pts=np.array([(int(event.x * self.ratio + self.zoom_sq[0] + self.tool_size),
+                                           int(event.y * self.ratio + self.zoom_sq[1] - self.tool_size)), (
+                                          int(event.x * self.ratio + self.zoom_sq[0] + self.tool_size),
+                                          int(event.y * self.ratio + self.zoom_sq[1] + self.tool_size)), (
+                                          int(self.last_paint[0] + self.tool_size),
+                                          int(self.last_paint[1] + self.tool_size)), (
+                                          int(self.last_paint[0] + self.tool_size),
+                                          int(self.last_paint[1] - self.tool_size))],np.int32)
+                pts = pts.reshape((-1, 1, 2))
+                cv2.fillPoly(self.vide, [pts], (255, 255, 255))
+
+
+                pts=np.array([(int(event.x * self.ratio + self.zoom_sq[0] - self.tool_size),
+                                           int(event.y * self.ratio + self.zoom_sq[1] + self.tool_size)), (
+                                          int(event.x * self.ratio + self.zoom_sq[0] + self.tool_size),
+                                          int(event.y * self.ratio + self.zoom_sq[1] + self.tool_size)), (
+                                          int(self.last_paint[0] + self.tool_size),
+                                          int(self.last_paint[1] + self.tool_size)), (
+                                          int(self.last_paint[0] - self.tool_size),
+                                          int(self.last_paint[1] + self.tool_size))],np.int32)
+                pts = pts.reshape((-1, 1, 2))
+                cv2.fillPoly(self.vide, [pts], (255, 255, 255))
+
+                pts=np.array([(int(event.x * self.ratio + self.zoom_sq[0] - self.tool_size),
+                                           int(event.y * self.ratio + self.zoom_sq[1] - self.tool_size)), (
+                                          int(event.x * self.ratio + self.zoom_sq[0] + self.tool_size),
+                                          int(event.y * self.ratio + self.zoom_sq[1] - self.tool_size)), (
+                                          int(self.last_paint[0] + self.tool_size),
+                                          int(self.last_paint[1] - self.tool_size)), (
+                                          int(self.last_paint[0] - self.tool_size),
+                                          int(self.last_paint[1] - self.tool_size))],np.int32)
+                pts = pts.reshape((-1, 1, 2))
+                cv2.fillPoly(self.vide, [pts], (255, 255, 255))
+
+
+
             cnts, _ = cv2.findContours(self.vide, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
 
             if self.painting:
@@ -242,7 +320,7 @@ class Background(Frame):
 
     def change_color(self, event):
         #Get the color of the pixel under the mouse and use it for painting
-        self.Color=int(self.background[int(event.y*self.ratio+self.zoom_sq[1]), int(event.x*self.ratio+self.zoom_sq[0])])
+        self.Color=int(self.saved_drawn[int(event.y*self.ratio+self.zoom_sq[1]), int(event.x*self.ratio+self.zoom_sq[0])])
         self.afficher()
         mycolor = '#%02x%02x%02x' % (self.Color,self.Color,self.Color)
         self.canvas_color.config(background=mycolor)
@@ -269,6 +347,8 @@ class Background(Frame):
             for paint in self.liste_paints:
                 cv2.drawContours(empty_back,paint[0],-1,paint[1],-1)
         self.image_to_show=empty_back[self.zoom_sq[1]:self.zoom_sq[3],self.zoom_sq[0]:self.zoom_sq[2]]
+        self.saved_drawn=self.image_to_show.copy()
+
         self.image_to_show=cv2.resize(self.image_to_show,(self.final_width,int(self.final_width*(self.Size[0]/self.Size[1]))))
         self.image_to_show = PIL.ImageTk.PhotoImage(image=PIL.Image.fromarray(self.image_to_show))
         self.canvas_img.create_image(0, 0, image=self.image_to_show, anchor=NW)
