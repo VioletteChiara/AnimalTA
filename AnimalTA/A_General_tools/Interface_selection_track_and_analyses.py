@@ -14,9 +14,9 @@ import math
 from operator import itemgetter
 import shutil
 import time
-import playsound
 import pickle
 import pymsgbox
+import beepy
 
 
 class Extend(Frame):
@@ -223,11 +223,19 @@ class Extend(Frame):
                     break
 
             #Once the tracking is finished, we display a pop-up
-            if not self.manual_track.get():
-                if self.Params["Sound_alert_track"]:
-                    playsound.playsound(UserMessages.resource_path(os.path.join("AnimalTA", "Files", "Alert.mp3")))
-                if self.Params["Pop_alert_track"]:
-                    pymsgbox.alert(self.Messages["Do_track3"].format(round(float(time.time()-deb),2)), "AnimalTA: Finished")
+            if not self.manual_track.get() and not self.urgent_close:
+                try:
+                    if self.Params["Sound_alert_track"]:
+                        beepy.beep(sound=6)
+                except:
+                    pass
+
+                try:
+                    if self.Params["Pop_alert_track"]:
+                        pymsgbox.alert(self.Messages["Do_track3"].format(round(float(time.time()-deb),2)), self.Messages["Do_track4"])
+                except:
+                    pass
+
 
         if self.type=="Analyses":
             Shapes_infos=dict()

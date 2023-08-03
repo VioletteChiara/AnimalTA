@@ -79,7 +79,7 @@ class Param_definer(Frame):
             self.max_area=float(self.Vid.shape[0]*self.Vid.shape[1])/10
             self.units.set("px")
         else:
-            self.distance_maximum = (max([self.Vid.shape[0],self.Vid.shape[1]]) / 2)/float(self.Vid.Scale[0])
+            self.distance_maximum = math.sqrt(self.Vid.shape[0]**2 + self.Vid.shape[1]**2)/float(self.Vid.Scale[0])
             self.max_area=((self.Vid.shape[0]/float(self.Vid.Scale[0])) * (self.Vid.shape[1]/float(self.Vid.Scale[0])))/10
 
 
