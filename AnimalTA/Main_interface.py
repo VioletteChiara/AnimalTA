@@ -13,7 +13,7 @@ class Mainframe(Tk):
         Tk.__init__(self)
 
         #Change here the last version
-        current_version="v2.3.3"
+        current_version="v2.3.4"
 
         try:
             # We look for new updates:
