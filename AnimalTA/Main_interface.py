@@ -1,19 +1,23 @@
 from tkinter import *
 import os
-from AnimalTA.A_General_tools import UserMessages
+from AnimalTA.A_General_tools import UserMessages, Diverse_functions, Color_settings
 from AnimalTA.B_Project_organisation import Interface_pretracking
+
+
 from tkinter import ttk
 import urllib.request
 import pickle
+from ctypes import windll
 
-#How to run pyinstaller to have the exe file: pyinstaller cli.spec --noconsole --path="< Import path >"
+
+# pyinstaller cli.py --noconsole
 class Mainframe(Tk):
     #Launch the rest of animalTA
     def __init__(self):
         Tk.__init__(self)
 
         #Change here the last version
-        current_version="v2.3.4"
+        current_version="v3.1.1"
 
         try:
             # We look for new updates:
@@ -25,13 +29,6 @@ class Mainframe(Tk):
         except:
             new_update = None
 
-
-        style = ttk.Style(self)
-        aktualTheme = style.theme_use()
-        style.theme_create("dummy", parent=aktualTheme)
-        style.theme_use("dummy")
-        style.map('Treeview', background=[('selected', '#7ec9f7')], foreground=[("selected","black")])
-
         self.open_AnimalTA(current_version, new_update)
 
     def open_AnimalTA(self, current_version, new_update) -> object:
@@ -40,7 +37,7 @@ class Mainframe(Tk):
         Param_file = UserMessages.resource_path(os.path.join("AnimalTA", "Files", "Settings"))
         if not os.path.isfile(Param_file):
             with open(Param_file, 'wb') as fp:
-                Params = dict(Sound_alert_track=True, Pop_alert_track=True, Size_img_display=600, Back_tool=20)
+                Params = dict(Sound_alert_track=True, Pop_alert_track=True, Size_img_display=600, Back_tool=20, Low_priority=False)
                 pickle.dump(Params, fp)
         else:
             with open(Param_file, 'rb') as fp:
@@ -55,21 +52,125 @@ class Mainframe(Tk):
                 Params["Back_tool"] = 20
                 modifications = True
 
+            if "Low_priority" not in Params.keys():
+                Params["Low_priority"] = False
+                modifications = True
+
+            if "Use_Kalman" not in Params.keys():
+                Params["Use_Kalman"] = False
+                modifications = True
+
+            if "Check_hide_missing" not in Params.keys():
+                    Params["Check_hide_missing"] = False
+                    modifications = True
+
+            if "Relative_background" not in Params.keys():
+                    Params["Relative_background"] = False
+                    modifications = True
+
+            if "Keep_entrance" not in Params.keys():
+                Params["Keep_entrance"] = False
+                modifications = True
+
+            if "Color_GUI" not in Params.keys():
+                Params["Color_GUI"] = "Light"
+                modifications = True
+
             if modifications:
                 with open(Param_file, 'wb') as fp:
                     pickle.dump(Params, fp)
 
+        Diverse_functions.low_priority(Params["Low_priority"])
 
         self.frame = Interface_pretracking.Interface(self, current_version, new_update)
         self.frame.grid(sticky="nsew")
 
+
+GWL_EXSTYLE=-20
+WS_EX_APPWINDOW=0x00040000
+WS_EX_TOOLWINDOW=0x00000080
+
+def set_appwindow(root):
+    hwnd = windll.user32.GetParent(root.winfo_id())
+    style = windll.user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
+    style = style & ~WS_EX_TOOLWINDOW
+    style = style | WS_EX_APPWINDOW
+    res = windll.user32.SetWindowLongW(hwnd, GWL_EXSTYLE, style)
+    root.wm_withdraw()
+    root.after(10, lambda: root.wm_deiconify())
+
 root=Mainframe()
+style = ttk.Style()
+style.theme_use('clam')
+
+#We create the styles:
+style.map(
+    "Horizontal.TScrollbar",
+    background=[('active', Color_settings.My_colors.list_colors["Base"]), ('!active', Color_settings.My_colors.list_colors["Base"])],
+    troughcolor=[('active', Color_settings.My_colors.list_colors["Glider_Base"]), ('!active', Color_settings.My_colors.list_colors["Glider_Base"])],
+)
+
+
+style.configure(
+    "Horizontal.TScrollbar",
+    arrowsize=15,
+    arrowcolor=Color_settings.My_colors.list_colors["Arrow_N_Relief_scroll"],
+    bordercolor=Color_settings.My_colors.list_colors["Arrow_N_Relief_scroll"],
+    gripcount=0,
+    relief="flat",
+    padding=0
+)
+
+style.map(
+    "Vertical.TScrollbar",
+    background=[('active', Color_settings.My_colors.list_colors["Base"]), ('!active', Color_settings.My_colors.list_colors["Base"])],
+    troughcolor=[('active', Color_settings.My_colors.list_colors["Glider_Base"]), ('!active', Color_settings.My_colors.list_colors["Glider_Base"])],
+)
+
+style.configure(
+    "Vertical.TScrollbar",
+    arrowsize=15,
+    arrowcolor=Color_settings.My_colors.list_colors["Arrow_N_Relief_scroll"],
+    bordercolor=Color_settings.My_colors.list_colors["Arrow_N_Relief_scroll"],
+    gripcount=0,
+    relief="flat",
+    padding=0
+)
+
+def fixed_map(option):
+    # Fix for setting text colour for Tkinter 8.6.9
+    # From: https://core.tcl.tk/tk/info/509cafafae
+    #
+    # Returns the style map for 'option' with any styles starting with
+    # ('!disabled', '!selected', ...) filtered out.
+
+    # style.map() returns an empty list for missing options, so this
+    # should be future-safe.
+    return [elm for elm in style.map('Treeview', query_opt=option) if
+            elm[:2] != ('!disabled', '!selected')]
+
+
+style.map('Treeview', foreground=fixed_map('foreground'), background=fixed_map('background'))
+style.configure("Treeview", background=Color_settings.My_colors.list_colors["Table1"],
+                fieldbackground=Color_settings.My_colors.list_colors["Table1"],
+                foreground=Color_settings.My_colors.list_colors["Fg_T1"])
+style.configure("Treeview.Heading", background=Color_settings.My_colors.list_colors["Header_check"],
+                foreground=Color_settings.My_colors.list_colors["Fg_Header_check"])
+
+style.map("Treeview.Heading",
+          background=[("active", Color_settings.My_colors.list_colors["Header_check"])],
+          foreground=[("active", Color_settings.My_colors.list_colors["Fg_Header_check"])])
+
+style.map("Treeview",
+          background=[("selected", Color_settings.My_colors.list_colors["Selected_row_check"])],
+          foreground=[("selected", Color_settings.My_colors.list_colors["Fg_Selected_row_check"])])
+
+
 root.overrideredirect(1)
 root.geometry("1250x720")
 root.geometry("+100+100")
-img = PhotoImage(file=UserMessages.resource_path(os.path.join("AnimalTA","Files","Logo.png")))
-root.wm_iconphoto(True, img)
-
+root.after(10, lambda: set_appwindow(root))
+root.iconbitmap(UserMessages.resource_path(os.path.join("AnimalTA","Files","Logo.ico")))
 
 Grid.rowconfigure(root,0,weight=1)
 Grid.columnconfigure(root,0,weight=1)

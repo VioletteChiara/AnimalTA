@@ -1,7 +1,7 @@
 from tkinter import *
 import numpy as np
 import cv2
-from AnimalTA.A_General_tools import Function_draw_mask, UserMessages
+from AnimalTA.A_General_tools import Function_draw_mask, UserMessages, Color_settings
 
 
 #This file contains classes herited from Frame. They are Frames widgets which will show the characteristics of an element of interest (in the Analyses part) and allow to modify or delete it.
@@ -19,6 +19,7 @@ class Row_Point(Frame):
     '''
     def __init__(self, parent, main, boss, MArea, Shape, label, Ind, **kw):
         Frame.__init__(self, parent, **kw)
+        self.config(**Color_settings.My_colors.Frame_Base)
         self.MArea=MArea
         self.boss=boss
         self.main=main
@@ -40,55 +41,56 @@ class Row_Point(Frame):
 
         #Display the name of the element of interest as an Entry (so it can be modified) along with a button to supress it.
         regLab = (self.register(self.change_area_name), '%P', '%V')
-        Lab=Entry(self, validate="all", validatecommand=regLab)
+        Lab=Entry(self, validate="all", validatecommand=regLab, **Color_settings.My_colors.Entry_Base)
         Lab.insert(0, label)
         Lab.config()
         Lab.grid(row=0, column=0, sticky="w")
-        supr_button=Button(self, text=self.Messages["Analyses_details_sp8"], command=self.supress)
+        supr_button=Button(self, text=self.Messages["Analyses_details_sp8"], command=self.supress, **Color_settings.My_colors.Button_Base)
+        supr_button.config(background=Color_settings.My_colors.list_colors["Danger"],fg=Color_settings.My_colors.list_colors["Fg_Danger"])
         supr_button.grid(row=0, column=1, sticky="w")
 
         #Display the averaged distance to the point
-        Title_mean_dist=Label(self, text=self.Messages["Analyses_details_sp_Lab1"])
+        Title_mean_dist=Label(self, text=self.Messages["Analyses_details_sp_Lab1"], **Color_settings.My_colors.Label_Base)
         Title_mean_dist.grid(row=1, column=1, sticky="w")
-        Frame_show=Frame(self)
+        Frame_show=Frame(self, **Color_settings.My_colors.Frame_Base)
         Frame_show.grid(row=2, column=1)
-        Lab_arr=Label(Frame_show, text=">")
+        Lab_arr=Label(Frame_show, text=">", **Color_settings.My_colors.Label_Base)
         Lab_arr.grid(row=0, column=0, sticky="w")
-        self.Lab_mean_dist=Label(Frame_show, textvariable=self.Mean_dist)
+        self.Lab_mean_dist=Label(Frame_show, textvariable=self.Mean_dist, **Color_settings.My_colors.Label_Base)
         self.Lab_mean_dist.grid(row=0, column=1, sticky="w")
-        Label_unit1=Label(Frame_show, text=self.main.Vid.Scale[1])
+        Label_unit1=Label(Frame_show, text=self.main.Vid.Scale[1], **Color_settings.My_colors.Label_Base)
         Label_unit1.grid(row=0, column=2, sticky="w")
 
         #Display the latency before the target approach at less than Shape[2] units from the point of interest
-        Title_Latency=Label(self, text=self.Messages["Analyses_details_sp_Lab2"])
+        Title_Latency=Label(self, text=self.Messages["Analyses_details_sp_Lab2"], **Color_settings.My_colors.Label_Base)
         Title_Latency.grid(row=4, column=1, sticky="w")
         Inter_Check_entry = (self.register(self.Check_entry), '%P', '%V')
-        self.Scale_Radius=Entry(self, textvariable=self.Shape[2], validate="all", validatecommand=Inter_Check_entry)#The user can change here the value of Shape[2]
+        self.Scale_Radius=Entry(self, textvariable=self.Shape[2], validate="all", validatecommand=Inter_Check_entry, **Color_settings.My_colors.Entry_Base)#The user can change here the value of Shape[2]
         self.Scale_Radius.grid(row=4, column=2, sticky="w")
         self.Shape[2].trace('w', self.inter_draw)
-        Label_unit2=Label(self, text=self.main.Vid.Scale[1])
+        Label_unit2=Label(self, text=self.main.Vid.Scale[1], **Color_settings.My_colors.Label_Base)
         Label_unit2.grid(row=4, column=3, sticky="w")
-        Frame_show2=Frame(self)
+        Frame_show2=Frame(self, **Color_settings.My_colors.Frame_Base)
         Frame_show2.grid(row=5, column=1)
-        Lab_arr2=Label(Frame_show2, text=">")
+        Lab_arr2=Label(Frame_show2, text=">", **Color_settings.My_colors.Label_Base)
         Lab_arr2.grid(row=0, column=0, sticky="w")
-        self.Lab_Latency=Label(Frame_show2, textvariable=self.Latency)
+        self.Lab_Latency=Label(Frame_show2, textvariable=self.Latency, **Color_settings.My_colors.Label_Base)
         self.Lab_Latency.grid(row=0, column=1, sticky="w")
-        Label_unit3=Label(Frame_show2, text="sec")
+        Label_unit3=Label(Frame_show2, text="sec", **Color_settings.My_colors.Label_Base)
         Label_unit3.grid(row=0, column=2, sticky="w")
 
         #Display the proportion of time the target spent at less than Shape[2] units from the point of interest
-        Title_Prop_Time=Label(self, text=self.Messages["Analyses_details_sp_Lab3"])
+        Title_Prop_Time=Label(self, text=self.Messages["Analyses_details_sp_Lab3"], **Color_settings.My_colors.Label_Base)
         Title_Prop_Time.grid(row=6, column=1, sticky="w")
-        Title_Prop_Time_Val = Label(self, textvariable=self.Shape[2])
+        Title_Prop_Time_Val = Label(self, textvariable=self.Shape[2], **Color_settings.My_colors.Label_Base)
         Title_Prop_Time_Val.grid(row=6, column=2, sticky="w")
-        Label_unit4=Label(self, text=self.main.Vid.Scale[1])
+        Label_unit4=Label(self, text=self.main.Vid.Scale[1], **Color_settings.My_colors.Label_Base)
         Label_unit4.grid(row=6, column=3, sticky="w")
-        Frame_show3=Frame(self)
+        Frame_show3=Frame(self, **Color_settings.My_colors.Frame_Base)
         Frame_show3.grid(row=7, column=1)
-        Lab_arr3=Label(Frame_show3, text=">")
+        Lab_arr3=Label(Frame_show3, text=">", **Color_settings.My_colors.Label_Base)
         Lab_arr3.grid(row=0, column=0, sticky="w")
-        self.Lab_Prop_Time=Label(Frame_show3, textvariable=self.Prop_Time)
+        self.Lab_Prop_Time=Label(Frame_show3, textvariable=self.Prop_Time, **Color_settings.My_colors.Label_Base)
         self.Lab_Prop_Time.grid(row=0, column=1, sticky="w")
 
 
@@ -143,7 +145,7 @@ class Row_Point(Frame):
                 self.boss.show_img()
                 self.update_infos()
                 self.boss.add_pt = [None]
-                self.boss.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="active")
+                self.boss.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="normal")
                 break
         self.destroy()
 
@@ -194,6 +196,7 @@ class Row_Line(Frame):
     '''
     def __init__(self, parent, main, boss, MArea, Shape, label, Ind, **kw):
         Frame.__init__(self, parent, **kw)
+        self.config(**Color_settings.My_colors.Frame_Base)
         self.MArea=MArea
         self.boss=boss
         self.main=main
@@ -215,45 +218,46 @@ class Row_Line(Frame):
 
         # Display the name of the element of interest as an Entry (so it can be modified) along with a button to supress it.
         regLab = (self.register(self.change_area_name), '%P', '%V')
-        Lab=Entry(self, validate="all", validatecommand=regLab)
+        Lab=Entry(self, validate="all", validatecommand=regLab, **Color_settings.My_colors.Entry_Base)
         Lab.insert(0, label)
         Lab.config()
         Lab.grid(row=0, column=0, sticky="w")
-        supr_button=Button(self, text=self.Messages["Analyses_details_sp8"], command=self.supress)
+        supr_button=Button(self, text=self.Messages["Analyses_details_sp8"], command=self.supress, **Color_settings.My_colors.Button_Base)
+        supr_button.config(background=Color_settings.My_colors.list_colors["Danger"],fg=Color_settings.My_colors.list_colors["Fg_Danger"])
         supr_button.grid(row=0, column=1, sticky="w")
 
         #Display the mean distance between the target and the segment
-        Title_mean_dist=Label(self, text=self.Messages["Analyses_details_sp_Lab4"])
+        Title_mean_dist=Label(self, text=self.Messages["Analyses_details_sp_Lab4"], **Color_settings.My_colors.Label_Base)
         Title_mean_dist.grid(row=1, column=1, sticky="w")
-        Frame_show=Frame(self)
+        Frame_show=Frame(self, **Color_settings.My_colors.Frame_Base)
         Frame_show.grid(row=2, column=1)
-        Lab_arr=Label(Frame_show, text=">")
+        Lab_arr=Label(Frame_show, text=">", **Color_settings.My_colors.Label_Base)
         Lab_arr.grid(row=0, column=0, sticky="w")
-        self.Lab_mean_dist=Label(Frame_show, textvariable=self.Mean_dist)
+        self.Lab_mean_dist=Label(Frame_show, textvariable=self.Mean_dist, **Color_settings.My_colors.Label_Base)
         self.Lab_mean_dist.grid(row=0, column=1, sticky="w")
-        Label_unit1=Label(Frame_show, text=self.main.Vid.Scale[1])
+        Label_unit1=Label(Frame_show, text=self.main.Vid.Scale[1], **Color_settings.My_colors.Label_Base)
         Label_unit1.grid(row=0, column=2, sticky="w")
 
         # Display the number of time the target crossed the segment
-        Title_nb_cross=Label(self, text=self.Messages["Analyses_details_sp_Lab5"])
+        Title_nb_cross=Label(self, text=self.Messages["Analyses_details_sp_Lab5"], **Color_settings.My_colors.Label_Base)
         Title_nb_cross.grid(row=3, column=1, sticky="w")
-        Frame_show2=Frame(self)
+        Frame_show2=Frame(self, **Color_settings.My_colors.Frame_Base)
         Frame_show2.grid(row=4, column=1)
-        Lab_arr2=Label(Frame_show2, text=">")
+        Lab_arr2=Label(Frame_show2, text=">", **Color_settings.My_colors.Label_Base)
         Lab_arr2.grid(row=0, column=0, sticky="w")
-        self.Lab_nb_cross=Label(Frame_show2, textvariable=self.Nb_cross)
+        self.Lab_nb_cross=Label(Frame_show2, textvariable=self.Nb_cross, **Color_settings.My_colors.Label_Base)
         self.Lab_nb_cross.grid(row=0, column=1, sticky="w")
 
         # Display the latency before the target crossed the segment for the first time
-        Title_lat_cross=Label(self, text=self.Messages["Analyses_details_sp_Lab6"])
+        Title_lat_cross=Label(self, text=self.Messages["Analyses_details_sp_Lab6"], **Color_settings.My_colors.Label_Base)
         Title_lat_cross.grid(row=5, column=1, sticky="w")
-        Frame_show3=Frame(self)
+        Frame_show3=Frame(self, **Color_settings.My_colors.Frame_Base)
         Frame_show3.grid(row=6, column=1)
-        Lab_arr3=Label(Frame_show3, text=">")
+        Lab_arr3=Label(Frame_show3, text=">", **Color_settings.My_colors.Label_Base)
         Lab_arr3.grid(row=0, column=0, sticky="w")
-        self.Lab_lat_cross=Label(Frame_show3, textvariable=self.Lat_cross)
+        self.Lab_lat_cross=Label(Frame_show3, textvariable=self.Lat_cross, **Color_settings.My_colors.Label_Base)
         self.Lab_lat_cross.grid(row=0, column=1, sticky="w")
-        Label_unit3=Label(Frame_show3, text="sec")
+        Label_unit3=Label(Frame_show3, text="sec", **Color_settings.My_colors.Label_Base)
         Label_unit3.grid(row=0, column=2, sticky="w")
 
 
@@ -267,7 +271,7 @@ class Row_Line(Frame):
         '''
 
         new_vals=self.main.Calc_speed.calculate_dist_line(parent=self.main, Points=self.Shape[1], ind=self.Ind)
-        Crosses=self.main.Calc_speed.calculate_intersect(parent=self.main, Points=self.Shape[1], ind=self.Ind)
+        Crosses=self.main.Calc_speed.calculate_intersect(Vid=self.main.Vid, Coos=self.main.Coos[self.Ind], Points=self.Shape[1])
 
         if new_vals=="NA":
             self.Mean_dist.set("NA")
@@ -292,7 +296,7 @@ class Row_Line(Frame):
                 self.boss.show_img()
                 self.update_infos()
                 self.boss.add_pt = [None]
-                self.boss.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="active")
+                self.boss.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="normal")
                 break
         self.destroy()
 
@@ -322,6 +326,7 @@ class Row_All_Border(Frame):
     '''
     def __init__(self, parent, main, boss,MArea, Shape, Area, label, Ind, **kw):
         Frame.__init__(self, parent, **kw)
+        self.config(**Color_settings.My_colors.Frame_Base)
         self.MArea=MArea
         self.boss=boss
         self.main=main
@@ -343,39 +348,40 @@ class Row_All_Border(Frame):
 
         #Display the name of the element of interest as an Entry (so it can be modified) along with a button to supress it.
         regLab = (self.register(self.change_area_name), '%P', '%V')
-        Lab=Entry(self, validate="all", validatecommand=regLab)
+        Lab=Entry(self, validate="all", validatecommand=regLab, **Color_settings.My_colors.Entry_Base)
         Lab.insert(0, label)
         Lab.config()
         Lab.grid(row=0, column=0, sticky="w")
-        supr_button=Button(self, text=self.Messages["Analyses_details_sp8"], command=self.supress)
+        supr_button=Button(self, text=self.Messages["Analyses_details_sp8"], command=self.supress, **Color_settings.My_colors.Button_Base)
+        supr_button.config(background=Color_settings.My_colors.list_colors["Danger"],fg=Color_settings.My_colors.list_colors["Fg_Danger"])
         supr_button.grid(row=0, column=1, sticky="w")
 
         #Display the average distance to the closest border
-        Title_mean_dist=Label(self, text=self.Messages["Analyses_details_sp_Lab7"])
+        Title_mean_dist=Label(self, text=self.Messages["Analyses_details_sp_Lab7"], **Color_settings.My_colors.Label_Base)
         Title_mean_dist.grid(row=1, column=1, sticky="w")
-        Frame_show=Frame(self)
+        Frame_show=Frame(self, **Color_settings.My_colors.Frame_Base)
         Frame_show.grid(row=2, column=1)
-        Lab_arr=Label(Frame_show, text=">")
+        Lab_arr=Label(Frame_show, text=">", **Color_settings.My_colors.Label_Base)
         Lab_arr.grid(row=0, column=0, sticky="w")
-        self.Lab_mean_dist=Label(Frame_show, textvariable=self.Mean_dist)
+        self.Lab_mean_dist=Label(Frame_show, textvariable=self.Mean_dist, **Color_settings.My_colors.Label_Base)
         self.Lab_mean_dist.grid(row=0, column=1, sticky="w")
-        Label_unit1=Label(Frame_show, text=self.main.Vid.Scale[1])
+        Label_unit1=Label(Frame_show, text=self.main.Vid.Scale[1], **Color_settings.My_colors.Label_Base)
         Label_unit1.grid(row=0, column=2, sticky="w")
 
         #Display the proportion of time the target spent at less than Shape[2] units from the border
-        Title_prop_inside=Label(self, text=self.Messages["Analyses_details_sp_Lab8"])
+        Title_prop_inside=Label(self, text=self.Messages["Analyses_details_sp_Lab8"], **Color_settings.My_colors.Label_Base)
         Title_prop_inside.grid(row=3, column=1, sticky="w")
         Inter_Check_entry = (self.register(self.Check_entry), '%P', '%V')
-        self.Scale_Dist = Entry(self, textvariable=self.Shape[2], validate="all", validatecommand=Inter_Check_entry)
+        self.Scale_Dist = Entry(self, textvariable=self.Shape[2], validate="all", validatecommand=Inter_Check_entry, **Color_settings.My_colors.Entry_Base)
         self.Scale_Dist.grid(row=3, column=2, sticky="w")
         self.Shape[2].trace('w', self.inter_draw)
-        Label_unit2=Label(self, text=self.main.Vid.Scale[1])
+        Label_unit2=Label(self, text=self.main.Vid.Scale[1], **Color_settings.My_colors.Label_Base)
         Label_unit2.grid(row=3, column=3, sticky="w")
-        Frame_show2=Frame(self)
+        Frame_show2=Frame(self, **Color_settings.My_colors.Frame_Base)
         Frame_show2.grid(row=4, column=1)
-        Lab_arr2=Label(Frame_show2, text=">")
+        Lab_arr2=Label(Frame_show2, text=">", **Color_settings.My_colors.Label_Base)
         Lab_arr2.grid(row=0, column=0, sticky="w")
-        self.Lab_prop_inside=Label(Frame_show2, textvariable=self.Prop_inside)
+        self.Lab_prop_inside=Label(Frame_show2, textvariable=self.Prop_inside, **Color_settings.My_colors.Label_Base)
         self.Lab_prop_inside.grid(row=0, column=1, sticky="w")
 
     def inter_draw(self, *args):
@@ -442,7 +448,7 @@ class Row_All_Border(Frame):
                 self.boss.show_img()
                 self.update_infos()
                 self.boss.add_pt = [None]
-                self.boss.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="active")
+                self.boss.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="normal")
                 break
         self.destroy()
 
@@ -473,6 +479,7 @@ class Row_Border(Frame):
     '''
     def __init__(self, parent, main, boss, MArea, Shape, label, Ind, **kw):
         Frame.__init__(self, parent, **kw)
+        self.config(**Color_settings.My_colors.Frame_Base)
         self.MArea=MArea
         self.boss=boss
         self.main=main
@@ -494,55 +501,56 @@ class Row_Border(Frame):
 
         #Display the name of the element of interest as an Entry (so it can be modified) along with a button to supress it.
         regLab = (self.register(self.change_area_name), '%P', '%V')
-        Lab=Entry(self, validate="all", validatecommand=regLab)
+        Lab=Entry(self, validate="all", validatecommand=regLab, **Color_settings.My_colors.Entry_Base)
         Lab.insert(0, label)
         Lab.config()
         Lab.grid(row=0, column=0, sticky="w")
-        supr_button=Button(self, text=self.Messages["Analyses_details_sp8"], command=self.supress)
+        supr_button=Button(self, text=self.Messages["Analyses_details_sp8"], command=self.supress, **Color_settings.My_colors.Button_Base)
+        supr_button.config(background=Color_settings.My_colors.list_colors["Danger"],fg=Color_settings.My_colors.list_colors["Fg_Danger"])
         supr_button.grid(row=0, column=1, sticky="w")
 
         #Display the average distance to the closest selected border
-        Title_mean_dist=Label(self, text=self.Messages["Analyses_details_sp_Lab9"])
+        Title_mean_dist=Label(self, text=self.Messages["Analyses_details_sp_Lab9"], **Color_settings.My_colors.Label_Base)
         Title_mean_dist.grid(row=1, column=1, sticky="w", columnspan=3)
-        Frame_show=Frame(self)
+        Frame_show=Frame(self, **Color_settings.My_colors.Frame_Base)
         Frame_show.grid(row=2, column=1)
-        Lab_arr=Label(Frame_show, text=">")
+        Lab_arr=Label(Frame_show, text=">", **Color_settings.My_colors.Label_Base)
         Lab_arr.grid(row=0, column=0, sticky="w")
-        self.Lab_mean_dist=Label(Frame_show, textvariable=self.Mean_dist)
+        self.Lab_mean_dist=Label(Frame_show, textvariable=self.Mean_dist, **Color_settings.My_colors.Label_Base)
         self.Lab_mean_dist.grid(row=0, column=1, sticky="w")
-        Label_unit1=Label(Frame_show, text=self.main.Vid.Scale[1])
+        Label_unit1=Label(Frame_show, text=self.main.Vid.Scale[1], **Color_settings.My_colors.Label_Base)
         Label_unit1.grid(row=0, column=2, sticky="w")
 
         #Display the proportion of time the target spent at less than Shape[2] units from one of the selected borders
-        Title_prop_inside=Label(self, text=self.Messages["Analyses_details_sp_Lab8"])
+        Title_prop_inside=Label(self, text=self.Messages["Analyses_details_sp_Lab8"], **Color_settings.My_colors.Label_Base)
         Title_prop_inside.grid(row=3, column=1, sticky="w")
         Inter_Check_entry = (self.register(self.Check_entry), '%P', '%V')
-        self.Scale_Dist = Entry(self, textvariable=self.Shape[2], validate="all", validatecommand=Inter_Check_entry)
+        self.Scale_Dist = Entry(self, textvariable=self.Shape[2], validate="all", validatecommand=Inter_Check_entry, **Color_settings.My_colors.Entry_Base)
         self.Scale_Dist.grid(row=3, column=2, sticky="w")
         self.Shape[2].trace('w', self.inter_draw)
-        Label_unit2=Label(self, text=self.main.Vid.Scale[1])
+        Label_unit2=Label(self, text=self.main.Vid.Scale[1], **Color_settings.My_colors.Label_Base)
         Label_unit2.grid(row=3, column=3, sticky="w")
-        Frame_show2=Frame(self)
+        Frame_show2=Frame(self, **Color_settings.My_colors.Frame_Base)
         Frame_show2.grid(row=4, column=1)
-        Lab_arr2=Label(Frame_show2, text=">")
+        Lab_arr2=Label(Frame_show2, text=">", **Color_settings.My_colors.Label_Base)
         Lab_arr2.grid(row=0, column=0, sticky="w")
-        self.Lab_prop_inside=Label(Frame_show2, textvariable=self.Prop_inside)
+        self.Lab_prop_inside=Label(Frame_show2, textvariable=self.Prop_inside, **Color_settings.My_colors.Label_Base)
         self.Lab_prop_inside.grid(row=0, column=1, sticky="w")
 
         #Display the latency before the target entered at less than Shape[2] units from one of the selected borders
-        Title_lat_inside=Label(self, text=self.Messages["Analyses_details_sp_Lab10"])
+        Title_lat_inside=Label(self, text=self.Messages["Analyses_details_sp_Lab10"], **Color_settings.My_colors.Label_Base)
         Title_lat_inside.grid(row=5, column=1, sticky="w")
-        self.Scale_Dist2 = Label(self, textvariable=self.Shape[2])
+        self.Scale_Dist2 = Label(self, textvariable=self.Shape[2], **Color_settings.My_colors.Label_Base)
         self.Scale_Dist2.grid(row=5, column=2, sticky="w")
-        Label_unit3=Label(self, text=self.main.Vid.Scale[1])
+        Label_unit3=Label(self, text=self.main.Vid.Scale[1], **Color_settings.My_colors.Label_Base)
         Label_unit3.grid(row=5, column=3, sticky="w")
-        Frame_show3=Frame(self)
+        Frame_show3=Frame(self, **Color_settings.My_colors.Frame_Base)
         Frame_show3.grid(row=6, column=1)
-        Lab_arr3=Label(Frame_show3, text=">")
+        Lab_arr3=Label(Frame_show3, text=">", **Color_settings.My_colors.Label_Base)
         Lab_arr3.grid(row=0, column=0, sticky="w")
-        self.Lab_lat_inside=Label(Frame_show3, textvariable=self.Lat_inside)
+        self.Lab_lat_inside=Label(Frame_show3, textvariable=self.Lat_inside, **Color_settings.My_colors.Label_Base)
         self.Lab_lat_inside.grid(row=0, column=1, sticky="w")
-        Label_unit4=Label(Frame_show3, text="sec")
+        Label_unit4=Label(Frame_show3, text="sec", **Color_settings.My_colors.Label_Base)
         Label_unit4.grid(row=0, column=2, sticky="w")
 
     def inter_draw(self, *args):
@@ -617,7 +625,7 @@ class Row_Border(Frame):
                 self.boss.show_img()
                 self.update_infos()
                 self.boss.add_pt = [None]
-                self.boss.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="active")
+                self.boss.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="normal")
                 break
         self.destroy()
 
@@ -647,6 +655,7 @@ class Row_Shape(Frame):
     '''
     def __init__(self, parent, main, boss, MArea, Shape, label, Ind, **kw):
         Frame.__init__(self, parent, **kw)
+        self.config(**Color_settings.My_colors.Frame_Base)
         self.MArea=MArea
         self.boss=boss
         self.main=main
@@ -671,29 +680,30 @@ class Row_Shape(Frame):
         Lab.insert(0, label)
         Lab.config()
         Lab.grid(row=0, column=0, sticky="w")
-        supr_button = Button(self, text=self.Messages["Analyses_details_sp8"], command=self.supress)
+        supr_button = Button(self, text=self.Messages["Analyses_details_sp8"], command=self.supress, **Color_settings.My_colors.Button_Base)
+        supr_button.config(background=Color_settings.My_colors.list_colors["Danger"],fg=Color_settings.My_colors.list_colors["Fg_Danger"])
         supr_button.grid(row=0, column=1, sticky="w")
 
         # Display the proportion of time the target spent inside the element's shape.
-        Title_prop_inside=Label(self, text=self.Messages["Analyses_details_sp_Lab11"])
+        Title_prop_inside=Label(self, text=self.Messages["Analyses_details_sp_Lab11"], **Color_settings.My_colors.Label_Base)
         Title_prop_inside.grid(row=1, column=1, sticky="w")
-        Frame_show=Frame(self)
+        Frame_show=Frame(self, **Color_settings.My_colors.Frame_Base)
         Frame_show.grid(row=2, column=1)
-        Lab_arr=Label(Frame_show, text=">")
+        Lab_arr=Label(Frame_show, text=">", **Color_settings.My_colors.Label_Base)
         Lab_arr.grid(row=0, column=0, sticky="w")
-        self.Lab_prop_inside=Label(Frame_show, textvariable=self.Prop_inside)
+        self.Lab_prop_inside=Label(Frame_show, textvariable=self.Prop_inside, **Color_settings.My_colors.Label_Base)
         self.Lab_prop_inside.grid(row=0, column=1, sticky="w")
 
         # Display the latency before the target enter inside the shape.
-        Title_lat_inside=Label(self, text=self.Messages["Analyses_details_sp_Lab12"])
+        Title_lat_inside=Label(self, text=self.Messages["Analyses_details_sp_Lab12"], **Color_settings.My_colors.Label_Base)
         Title_lat_inside.grid(row=3, column=1, sticky="w")
-        Frame_show2=Frame(self)
+        Frame_show2=Frame(self, **Color_settings.My_colors.Frame_Base)
         Frame_show2.grid(row=4, column=1)
-        Lab_arr3=Label(Frame_show2, text=">")
+        Lab_arr3=Label(Frame_show2, text=">", **Color_settings.My_colors.Label_Base)
         Lab_arr3.grid(row=0, column=0, sticky="w")
-        self.Lab_lat_inside=Label(Frame_show2, textvariable=self.Lat_inside)
+        self.Lab_lat_inside=Label(Frame_show2, textvariable=self.Lat_inside, **Color_settings.My_colors.Label_Base)
         self.Lab_lat_inside.grid(row=0, column=1, sticky="w")
-        Label_unit4=Label(Frame_show2, text="sec")
+        Label_unit4=Label(Frame_show2, text="sec", **Color_settings.My_colors.Label_Base)
         Label_unit4.grid(row=0, column=2, sticky="w")
 
     def update_infos(self):
@@ -742,7 +752,7 @@ class Row_Shape(Frame):
                 self.boss.show_img()
                 self.update_infos()
                 self.boss.add_pt = [None]
-                self.boss.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="active")
+                self.boss.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="normal")
                 break
         self.destroy()
 

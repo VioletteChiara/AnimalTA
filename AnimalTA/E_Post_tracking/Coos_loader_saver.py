@@ -28,13 +28,14 @@ def load_coos(Vid, TMP=False, location=None):
     else:
         path = file_tracked_not_corr
 
-    try:#Old versions of AnimalTA did not had the possibility to have a variable number of targets, this is to avoid compatibility problems
-        if Vid.Track[1][8]:
-            return load_fixed(Vid, path, location)
-        else:
-            return load_variable(Vid, path)
-    except:
-        Vid.Track[1].append(False)
+
+
+    if Vid.Track[1][8]:
+        return load_fixed(Vid, path, location)
+    else:
+        return load_variable(Vid, path)
+
+
 
 
 
@@ -69,9 +70,10 @@ def save(Vid, Coos, TMP=False, location=None):
 
 
 def load_variable(Vid, path):
-    one_every=int(round(round(Vid.Frame_rate[0], 2) / Vid.Frame_rate[1]))
+    one_every=Vid.Frame_rate[0] / Vid.Frame_rate[1]
     newWindow = Toplevel()
     load_frame = Class_loading_Frame.Loading(newWindow)  # Progression bar
+    load_frame.grid()
 
     with open(path, encoding="utf-8") as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=";")
@@ -89,16 +91,21 @@ def load_variable(Vid, path):
         count = 0
         for Ind in Vid.Identities:
             load_frame.show_load(count / len(Vid.Identities))
-            subset = or_table[np.where((np.array(or_table[:, 2]) == str(Ind[0])) & (np.array(or_table[:, 3]) == str(Ind[1][3:])))]
+            subset = or_table[np.where((np.array(or_table[:, 2]) == str(Ind[0])) & (np.array(or_table[:, 3]) == str(Ind[1])))]
+            if len(subset)<=0:
+                subset = or_table[np.where((np.array(or_table[:, 2]) == str(Ind[0])) & (np.array(or_table[:, 3]) == str(Ind[1][3:])))]
+
             if len(subset)>0:
                 time = subset[:, 0].astype('float')
                 time = time.astype('int32')
-                time=time-int(Vid.Cropped[1][0]/one_every)
+                time=time-round(Vid.Cropped[1][0]/one_every)
                 T_Coos = subset[:, 4:6]
                 Coos[count, time, :] = T_Coos
                 for im in time:
                     who_is_here[im] = who_is_here[im] + [count]
-                count += 1
+            count += 1
+
+
 
     load_frame.destroy()
     newWindow.destroy()
@@ -111,6 +118,7 @@ def load_fixed(Vid, path, location=None):
     else:
         frame=location
     load_frame = Class_loading_Frame.Loading(frame)  # Progression bar
+    load_frame.grid()
     load_frame.show_load(0)
     load_frame.grab_set()
 
@@ -134,6 +142,7 @@ def load_fixed(Vid, path, location=None):
         Coos[Ind] = or_table[1:,2*Ind+2:2*Ind+4]
         count+=1
 
+
     load_frame.destroy()
     if location==None:
         frame.destroy()
@@ -148,17 +157,19 @@ def save_fixed(Vid, Coos, path, location=None):
     else:
         frame = location
     load_frame = Class_loading_Frame.Loading(frame)  # Progression bar
+    load_frame.grid()
     load_frame.show_load(0)
 
 
-    one_every=int(round(round(Vid.Frame_rate[0], 2) / Vid.Frame_rate[1]))
+    one_every=Vid.Frame_rate[0] / Vid.Frame_rate[1]
     General_Coos=np.zeros([Coos.shape[1]+1,Coos.shape[2]*Coos.shape[0]+2], dtype="object")
 
-    liste_times=list(range(Vid.Cropped[1][0],(Coos.shape[1]+1)*one_every +Vid.Cropped[1][0] + one_every,one_every))
+    liste_times=range(0, Coos.shape[1])
     General_Coos[1:,0]=liste_times[0:len(General_Coos[1:,0])]
 
-    tmp=np.array(General_Coos[1:, 0]/one_every/Vid.Frame_rate[1], dtype="float")
+    tmp=np.array(General_Coos[1:, 0]/Vid.Frame_rate[1], dtype="float")
     General_Coos[1:, 1]=np.around(tmp,2)
+
     General_Coos[0,:]=["Frame","Time"]+[Col+"_Arena"+str(ind[0])+"_"+str(ind[1]) for ind in Vid.Identities for Col in ["X","Y"]]
     Coos = Coos.astype(dtype=object)
     Coos[Coos==-1000]="NA"
@@ -180,12 +191,12 @@ def save_fixed(Vid, Coos, path, location=None):
 
 
 def save_variable(Vid, Coos, path):
-    one_every = int(round(round(Vid.Frame_rate[0], 2) / Vid.Frame_rate[1]))
+    one_every = Vid.Frame_rate[0] / Vid.Frame_rate[1]
     Pos=np.where(Coos[:,:,0]!=-1000)
     new_Coos=Coos[Pos[0],Pos[1],:]
     Ars=[Vid.Identities[P][0] for P in Pos[0]]
-    Inds = [Vid.Identities[P][1][3:] for P in Pos[0]]
-    new_Coos=np.vstack((Pos[1]+int(Vid.Cropped[1][0]/one_every),(Pos[1]+int(Vid.Cropped[1][0])/one_every)/Vid.Frame_rate[1], Ars, Inds, new_Coos[:,0], new_Coos[:,1])).T
+    Inds = [Vid.Identities[P][1] for P in Pos[0]]
+    new_Coos=np.vstack((Pos[1]+round(Vid.Cropped[1][0]/one_every),(Pos[1]+round(Vid.Cropped[1][0])/one_every)/Vid.Frame_rate[1], Ars, Inds, new_Coos[:,0], new_Coos[:,1])).T
     new_Coos=new_Coos[new_Coos[:,0].astype(float).argsort(),:]
     first_row = ["Frame", "Time", "Arena", "Ind", "X", "Y"]
     new_Coos=np.vstack([first_row, new_Coos])

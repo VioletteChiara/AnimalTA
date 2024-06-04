@@ -137,11 +137,11 @@ def match_shapes(cnt1,cnt2, pts):
 
 
     #We then make an approximation of the two arena's shapes
-    approx1 = cv2.approxPolyDP(cnt1, 0.025 * cv2.arcLength(cnt1, True), True)
+    approx1 = cv2.approxPolyDP(cnt1, 0.015 * cv2.arcLength(cnt1, True), True)
     for pt in approx1:
         list_of_pts1.append((int(round(pt[0][0])), int(round(pt[0][1]))))
 
-    approx2 = cv2.approxPolyDP(cnt2, 0.025 * cv2.arcLength(cnt2, True), True)
+    approx2 = cv2.approxPolyDP(cnt2, 0.015 * cv2.arcLength(cnt2, True), True)
     for pt in approx2:
         list_of_pts2.append((int(round(pt[0][0])), int(round(pt[0][1]))))
 
@@ -205,6 +205,7 @@ def match_shapes(cnt1,cnt2, pts):
 
 
         # We put the shape horizontaly to change its size
+        approx1, _ = rotate_contour(approx1, -min_rect1[2], pts=pts)
         approx2, pts=rotate_contour(approx2, -min_rect2[2], pts=pts)
 
         #We calculate the size difference between the two arenas:
@@ -230,6 +231,9 @@ def match_shapes(cnt1,cnt2, pts):
             approx2, pts = rotate_contour(approx2, min_rect1[2] , pts=pts)
         else:
             approx2, pts = rotate_contour(approx2, min_rect2[2], pts=pts)
+
+
+
 
         # We update the points position:
         list_of_pts2=[]

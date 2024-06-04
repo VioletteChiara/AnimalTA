@@ -1,7 +1,8 @@
-import cv2
 import os
+import cv2
 
-def convert_to_avi(parent, file, folder):
+
+def convert_to_avi(parent, file, folder, frame_rate=None):
     """Function to convert videos toward .avi. The new .avi file will be stored in the project folder with the same name as the previous one."""
     file_name=os.path.basename(file)
     point_pos=file_name.rfind(".")
@@ -13,13 +14,18 @@ def convert_to_avi(parent, file, folder):
         cap = cv2.VideoCapture(file)
         frame_width = int(cap.get(3))
         frame_height = int(cap.get(4))
-        frame_rate=cap.get(cv2.CAP_PROP_FPS)
+        if frame_rate==None:
+            frame_rate=cap.get(cv2.CAP_PROP_FPS)
+
+
         size = (frame_width, frame_height)
 
         result = cv2.VideoWriter(new_file,cv2.VideoWriter_fourcc(*'XVID'), frame_rate, size)
         nb_fr=0
         start=0
         end=cap.get(cv2.CAP_PROP_FRAME_COUNT)
+
+        success=False
         while(cap.isOpened()):
             if nb_fr%25==0:
                 parent.timer = (nb_fr - start) / (end - start - 1)
@@ -29,13 +35,18 @@ def convert_to_avi(parent, file, folder):
                 result.write(frame)
                 nb_fr+=1
             else:
+                success=True
                 break
 
         cap.release()
         result.release()
         cv2.destroyAllWindows()
-        return(new_file)
+        if success:
+            return(new_file)
+        else:
+            return ("Error")
 
     except:
         if os.path.isfile(new_file):
             os.remove(new_file)
+        return("Error")

@@ -1,6 +1,6 @@
 from tkinter import *
 import cv2
-from AnimalTA.A_General_tools import Class_change_vid_menu, Class_Lecteur, UserMessages, User_help, Class_stabilise
+from AnimalTA.A_General_tools import Color_settings, Class_Lecteur, UserMessages, User_help, Class_stabilise
 from AnimalTA.E_Post_tracking.b_Analyses import Functions_deformation
 import math
 import numpy as np
@@ -12,6 +12,7 @@ class Deformation(Frame):
 
     def __init__(self, parent, Video_file, main_frame, speed=0, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
+        self.config(**Color_settings.My_colors.Frame_Base)
         self.main_frame = main_frame
         self.parent = parent
         self.grid(rowspan=2, sticky="nsew")
@@ -48,16 +49,19 @@ class Deformation(Frame):
         self.HW.grid(row=0, column=1, sticky="nsew")
 
         # Canvas with options
-        self.canvas_validate = Canvas(self.parent, bd=2, highlightthickness=1, relief='ridge', background="black")
+        self.canvas_validate = Canvas(self.parent, bd=2, highlightthickness=1, **Color_settings.My_colors.Frame_Base)
         self.canvas_validate.grid(row=1, column=1, sticky="sew")
         Grid.columnconfigure(self.canvas_validate, 0, weight=1)
 
-        self.Delete_all = Button(self.canvas_validate, text=self.Messages["Mask8"], bg="red",
+        self.Delete_all = Button(self.canvas_validate, text=self.Messages["Mask8"], **Color_settings.My_colors.Button_Base,
                                  command=self.del_all)
+        self.Delete_all.config(background=Color_settings.My_colors.list_colors["Danger"],fg=Color_settings.My_colors.list_colors["Fg_Danger"])
         self.Delete_all.grid(row=5, column=0, sticky="new")
 
-        self.B_Validate = Button(self.canvas_validate, text=self.Messages["Validate"], bg="#6AED35",
+        self.B_Validate = Button(self.canvas_validate, text=self.Messages["Validate"], **Color_settings.My_colors.Button_Base,
                                  command=self.End_of_window)
+        self.B_Validate.config(background=Color_settings.My_colors.list_colors["Validate"],
+                               fg=Color_settings.My_colors.list_colors["Fg_Validate"])
         self.B_Validate.grid(row=6, column=0, sticky="new")
 
 
@@ -151,7 +155,7 @@ class Deformation(Frame):
         self.parent.destroy()
 
 
-    def pressed_can(self, Pt, Shift):
+    def pressed_can(self, Pt, *args):
         # If the user click on the image, we add a corresponding point of interest, this point is added in both reference and correction frames.
 
         #If we press on the reference image

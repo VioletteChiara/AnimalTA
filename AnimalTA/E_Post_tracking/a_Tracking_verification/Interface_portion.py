@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 from AnimalTA.D_Tracking_process import Do_the_track
 from AnimalTA.E_Post_tracking import Coos_loader_saver as CoosLS
-from AnimalTA.A_General_tools import Class_Lecteur, UserMessages, Class_stabilise
+from AnimalTA.A_General_tools import Class_Lecteur, UserMessages, Class_stabilise, Color_settings
 from AnimalTA.C_Pretracking import Interface_back, Interface_arenas
 from AnimalTA.C_Pretracking.a_Parameters_track import Interface_parameters_track
 
@@ -11,8 +11,9 @@ from AnimalTA.C_Pretracking.a_Parameters_track import Interface_parameters_track
 class Show(Frame):
     """This Frame is used to rerun the tracking over a portion of the video, to correct potential tracking mistakes.
     To this aim, the user can define temporary tracking parameters that will be used for this portion only."""
-    def __init__(self, parent, boss, Vid, Video_liste, prev_row=None, **kwargs):
+    def __init__(self, parent, boss, Vid, Video_liste, prev_row=None, Arena=None, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
+        self.config(**Color_settings.My_colors.Frame_Base)
         self.parent = parent
         self.boss = boss
         self.grid(sticky="nsew")
@@ -21,6 +22,7 @@ class Show(Frame):
         self.Vid=Vid
         self.boss.PortionWin.grab_set()
         self.prev_row=prev_row
+        self.Arena=Arena
 
         #Import language
         self.Language = StringVar()
@@ -38,21 +40,21 @@ class Show(Frame):
         self.Folder=self.Vid.Folder
 
         self.CheckVar = IntVar()
-        self.ecart=10#Esthetical point, we add some frames outof the portion before and after so the user can have a context
+        self.ecart=10#Esthetical point, we add some frames out of the portion before and after so the user can have a context
 
         self.Messages = UserMessages.Mess[self.Language.get()]
         self.winfo_toplevel().title(self.Messages["Portion0"])
 
         #Where the options are displayed
-        Right_part=Frame(self)
+        Right_part=Frame(self, **Color_settings.My_colors.Frame_Base)
         Right_part.grid(row=0, column=1)
 
-        self.User_help = Frame(Right_part)
+        self.User_help = Frame(Right_part, **Color_settings.My_colors.Frame_Base)
         self.User_help.grid(row=0, column=0, sticky="new")
-        self.Lab_help=Label(self.User_help, text=self.Messages["Portion11"], wraplength=300)
+        self.Lab_help=Label(self.User_help, text=self.Messages["Portion11"], wraplength=300, **Color_settings.My_colors.Label_Base)
         self.Lab_help.grid()
 
-        self.User_buttons = Frame(Right_part)
+        self.User_buttons = Frame(Right_part, **Color_settings.My_colors.Frame_Base)
         self.User_buttons.grid(row=1, rowspan=3, column=0, sticky="sew")
 
         self.text_stab=StringVar()
@@ -61,36 +63,43 @@ class Show(Frame):
         else:
             self.text_stab.set(self.Messages["Portion3"])
         #Stabilisation
-        self.B_change_stab=Button(self.User_buttons, textvariable=self.text_stab, command=self.change_stab)
+        self.B_change_stab=Button(self.User_buttons, textvariable=self.text_stab, command=self.change_stab, **Color_settings.My_colors.Button_Base)
         self.B_change_stab.grid(row=1,column=0, columnspan=2, sticky="ew")
 
         #Arenas definition
-        self.B_change_mask=Button(self.User_buttons, text=self.Messages["Portion4"], command=self.change_mask)
+        self.B_change_mask=Button(self.User_buttons, text=self.Messages["Portion4"], command=self.change_mask, **Color_settings.My_colors.Button_Base)
         self.B_change_mask.grid(row=2,column=0, columnspan=2, sticky="ew")
 
         #Background
-        self.B_change_back=Button(self.User_buttons, text=self.Messages["Portion5"], command=self.change_back)
+        self.B_change_back=Button(self.User_buttons, text=self.Messages["Portion5"], command=self.change_back, **Color_settings.My_colors.Button_Base)
         if self.Vid.Back[0]==1:
             self.B_change_back.grid(row=3,column=0, columnspan=2, sticky="ew")
 
         #Tracking parameters
-        self.B_change_params = Button(self.User_buttons, text=self.Messages["Portion6"], command=self.change_params)
+        self.B_change_params = Button(self.User_buttons, text=self.Messages["Portion6"], command=self.change_params, **Color_settings.My_colors.Button_Base)
         self.B_change_params.grid(row=4,column=0, columnspan=2, sticky="ew")
 
         #Ruen the track
-        self.B_redo_track = Button(self.User_buttons, text=self.Messages["Portion0"], command=self.redo_track)
+        self.B_redo_track = Button(self.User_buttons, text=self.Messages["Portion0"], command=self.redo_track, **Color_settings.My_colors.Button_Base)
+        self.B_redo_track.config(background=Color_settings.My_colors.list_colors["Button_ready"], fg=Color_settings.My_colors.list_colors["Fg_Button_ready"])
         self.B_redo_track.grid(row=5,column=0, columnspan=2, sticky="ew")
 
         #Show the progression of the tracking
-        self.loading_lab = Label(self.User_buttons, text="", height=10)
+        self.loading_lab = Label(self.User_buttons, text="", height=10, **Color_settings.My_colors.Label_Base)
         self.loading_lab.grid(row=6,column=0)
-        self.loading_bar = Canvas(self.User_buttons, height=10)
+        self.loading_bar = Canvas(self.User_buttons, height=10, **Color_settings.My_colors.Frame_Base)
         self.loading_bar.grid(row=6,column=0, columnspan=3, sticky="ew")
 
-        self.B_validate_track = Button(self.User_buttons, text=self.Messages["Portion8"], command=self.validate_correction)
-        self.B_validate_track.grid(row=7, column=0, columnspan=2)
+        self.B_validate_track = Button(self.User_buttons, text=self.Messages["Portion8"], command=self.validate_correction, **Color_settings.My_colors.Button_Base)
+        self.B_validate_track.config(state="disable")
+        self.B_validate_track.grid(row=7, column=0, sticky="nsew")
 
-        self.Coos, self.who_is_here = CoosLS.load_coos(self.Vid, TMP=True, location=self)
+        self.B_cancel = Button(self.User_buttons, text=self.Messages["Cancel"], command=self.End_of_window, **Color_settings.My_colors.Button_Base)
+        self.B_cancel.config(background=Color_settings.My_colors.list_colors["Cancel"],fg=Color_settings.My_colors.list_colors["Fg_Cancel"])
+        self.B_cancel.grid(row=7, column=1, sticky="nsew")
+
+
+        self.Coos, _ = CoosLS.load_coos(self.Vid, TMP=True, location=self)
         self.NB_ind = len(self.Vid.Identities)
 
         self.Vid_Lecteur = Class_Lecteur.Lecteur(self, self.Vid, ecart=5)
@@ -130,21 +139,27 @@ class Show(Frame):
         self.B_change_params.config(state="disable")
         self.B_redo_track.config(state="disable")
         self.B_validate_track.config(state="disable")
+        self.B_cancel.config(state="disable")
         self.Vid_Lecteur.proper_close()#We ensure the last decord is well closed
 
         if self.Vid.Track[1][8]:
-            Do_the_track.Do_tracking(self, self.Vid, self.Folder, type="fixed", portion=True, prev_row=self.prev_row)
+            Do_the_track.Do_tracking(self, self.Vid, self.Folder, type="fixed", portion=True, prev_row=self.prev_row, arena_interest=self.Arena)
         else:
-            Do_the_track.Do_tracking(self, self.Vid, self.Folder, type="fixed", portion=True, prev_row=self.prev_row)
+            Do_the_track.Do_tracking(self, self.Vid, self.Folder, type="variable", portion=True, prev_row=self.prev_row, arena_interest=self.Arena)
 
-        self.Coos, self.who_is_here = CoosLS.load_coos(self.Vid, TMP=True, location=self)
+        self.Coos, _ = CoosLS.load_coos(self.Vid, TMP=True, location=self)
 
-        self.B_change_stab.config(state="active")
-        self.B_change_back.config(state="active")
-        self.B_change_mask.config(state="active")
-        self.B_change_params.config(state="active")
-        self.B_redo_track.config(state="active")
-        self.B_validate_track.config(state="active")
+        self.B_change_stab.config(state="normal")
+        self.B_change_back.config(state="normal")
+        self.B_change_mask.config(state="normal")
+        self.B_change_params.config(state="normal")
+        self.B_cancel.config(state="normal")
+
+        self.B_redo_track.config(state="normal")
+        self.B_validate_track.config(background=Color_settings.My_colors.list_colors["Button_done"], fg=Color_settings.My_colors.list_colors["Fg_Button_done"])
+
+        self.B_validate_track.config(state="normal")
+        self.B_validate_track.config(background=Color_settings.My_colors.list_colors["Validate"], fg=Color_settings.My_colors.list_colors["Fg_Validate"])
 
         self.Vid_Lecteur = Class_Lecteur.Lecteur(self, self.Vid, ecart=5)
         self.Vid_Lecteur.grid(row=0, column=0, sticky="nsew")
@@ -159,8 +174,8 @@ class Show(Frame):
         self.loading_lab.config(text=self.Messages["Loading"])
         self.loading_lab.update()
         self.loading_bar.delete('all')
-        self.loading_bar.create_rectangle(0, 0, 200, self.loading_bar.cget("height"), fill="red")
-        self.loading_bar.create_rectangle(0, 0, self.timer * 200, self.loading_bar.cget("height"), fill="blue")
+        self.loading_bar.create_rectangle(0, 0, 300, self.loading_bar.cget("height"), fill=Color_settings.My_colors.list_colors["Loading_before"])
+        self.loading_bar.create_rectangle(0, 0, self.timer * 300, self.loading_bar.cget("height"), fill=Color_settings.My_colors.list_colors["Loading_after"])
         self.loading_bar.update()
 
     def modif_image(self, img=[], aff=False, move=True, actual_pos=None, *args):
@@ -174,7 +189,7 @@ class Show(Frame):
         self.Vid_Lecteur.update_ratio()
 
         if self.Vid.Cropped[0]:
-            to_remove = int(round((self.Vid.Cropped[1][0])/self.Vid_Lecteur.one_every))
+            to_remove = round(round((self.Vid.Cropped[1][0])/self.Vid_Lecteur.one_every))
         else:
             to_remove=0
 
@@ -184,7 +199,7 @@ class Show(Frame):
         for ind in range(self.NB_ind):
             color=self.Vid.Identities[ind][2]
             for prev in range(min(int(self.tail_size*self.Vid.Frame_rate[1]), int(self.Scrollbar.active_pos - to_remove))):
-                if int(self.Scrollbar.active_pos - prev) > round(((self.Vid.Cropped[1][0])/self.Vid_Lecteur.one_every)) and int(self.Scrollbar.active_pos) <= round(((self.Vid.Cropped[1][1])/self.Vid_Lecteur.one_every)):
+                if int(self.Scrollbar.active_pos - prev) > round(((self.Vid.Cropped[1][0])/self.Vid_Lecteur.one_every)) and int(self.Scrollbar.active_pos) <= round(self.Vid.Cropped[1][1]/self.Vid_Lecteur.one_every):
                     if self.Coos[ind,int(self.Scrollbar.active_pos - 1 - prev - to_remove),0] != -1000 and self.Coos[ind,int(self.Scrollbar.active_pos - prev - to_remove),0] != -1000 :
                         TMP_tail_1 = (int(self.Coos[ind,int(self.Scrollbar.active_pos - 1 - prev - to_remove),0]),
                                       int(self.Coos[ind,int(self.Scrollbar.active_pos - 1 - prev - to_remove),1]))
@@ -194,7 +209,7 @@ class Show(Frame):
 
                         new_img = cv2.line(new_img, TMP_tail_1, TMP_tail_2, color, max(int(3*self.Vid_Lecteur.ratio),1))
 
-            if self.Scrollbar.active_pos > round(((self.Vid.Cropped[1][0]-1)/self.Vid_Lecteur.one_every)) and self.Scrollbar.active_pos <= int(((self.Vid.Cropped[1][1]-1)/self.Vid_Lecteur.one_every)+1):
+            if self.Scrollbar.active_pos > round(((self.Vid.Cropped[1][0]-1)/self.Vid_Lecteur.one_every)) and self.Scrollbar.active_pos <= round(((self.Vid.Cropped[1][1]-1)/self.Vid_Lecteur.one_every)+1):
                 center=self.Coos[ind,self.Scrollbar.active_pos - to_remove]
                 if center[0]!=-1000:
                     if self.CheckVar.get()==int(ind):
@@ -204,7 +219,7 @@ class Show(Frame):
 
         self.Vid_Lecteur.afficher_img(new_img)
 
-    def pressed_can(self, Pt, Shift):
+    def pressed_can(self, Pt, *args):
         pass
 
     def moved_can(self, Pt, Shift):

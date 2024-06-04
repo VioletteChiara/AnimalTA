@@ -1,7 +1,7 @@
-import cv2
 import threading
 import decord
 import math
+import cv2
 
 class Video_Loader():
     def __init__(self, Vid, File, is_crop=True, **kwargs):
@@ -19,8 +19,18 @@ class Video_Loader():
     def __getitem__(self, i):
         if self.which_reader=="decord":
             im=self.capture[i].asnumpy()
+
+            if self.Vid.Rotation == 1:
+                im = cv2.rotate(im, cv2.ROTATE_90_CLOCKWISE)
+            elif self.Vid.Rotation == 2:
+                im = cv2.rotate(im, cv2.ROTATE_180)
+            if self.Vid.Rotation == 3:
+                im = cv2.rotate(im, cv2.ROTATE_90_COUNTERCLOCKWISE)
+
             if self.is_crop and self.Vid.Cropped_sp[0]:
-                im=im[self.Vid.Cropped_sp[1][0]:self.Vid.Cropped_sp[1][2], self.Vid.Cropped_sp[1][1]:self.Vid.Cropped_sp[1][3]]
+                im = im[self.Vid.Cropped_sp[1][0]:self.Vid.Cropped_sp[1][2],
+                        self.Vid.Cropped_sp[1][1]:self.Vid.Cropped_sp[1][3]]
+
             self.capture.seek(0)
 
             return im
@@ -29,8 +39,17 @@ class Video_Loader():
                 self.capture.set(cv2.CAP_PROP_POS_FRAMES, i)
                 res, frame = self.capture.read()
                 frame=cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
+
+                if self.Vid.Rotation == 1:
+                    frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+                elif self.Vid.Rotation == 2:
+                    frame = cv2.rotate(frame, cv2.ROTATE_180)
+                if self.Vid.Rotation == 3:
+                    frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
+
                 if self.is_crop and self.Vid.Cropped_sp[0]:
                     frame = frame[self.Vid.Cropped_sp[1][0]:self.Vid.Cropped_sp[1][2],self.Vid.Cropped_sp[1][1]:self.Vid.Cropped_sp[1][3]]
+
                 return (frame)
             except: #If the reader changed in the middle
                 return self[i]
@@ -62,7 +81,8 @@ class Video_Loader():
         if len(self.Vid.Fusion) < 2 :
             self.Vid.Frame_nb[0] = len(self.capture)
             self.capture.seek(0)
-            self.Vid.Frame_nb[1] = self.Vid.Frame_nb[0] /  int(round(round(self.Vid.Frame_rate[0], 2) / self.Vid.Frame_rate[1]))
+            self.Vid.Frame_nb[1] = self.Vid.Frame_nb[0] /  (self.Vid.Frame_rate[0] / self.Vid.Frame_rate[1])
+
             if not self.Vid.Cropped[0]:
-                one_every = int(round(round(self.Vid.Frame_rate[0]) / self.Vid.Frame_rate[1]))
-                self.Vid.Cropped[1][1] = int(math.floor(self.Vid.Cropped[1][1] / one_every) * one_every)
+                one_every = self.Vid.Frame_rate[0] / self.Vid.Frame_rate[1]
+                self.Vid.Cropped[1][1] = round(round(self.Vid.Cropped[1][1] / one_every) * one_every)

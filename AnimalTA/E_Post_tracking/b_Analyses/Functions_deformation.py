@@ -86,3 +86,14 @@ def transform(img,or_pts,corr_pts):
         return(img_t)
     else:
         return(img)
+
+def deform_coos(data, M):
+    tmp_coos=data.copy()
+    for ind in range(len(tmp_coos)):
+        ind_coo = [[np.nan if val == -1000 else val for val in row] for row in tmp_coos[ind]]
+        vals = np.array(ind_coo, dtype=np.float32)
+        new_vals = cv2.perspectiveTransform(vals[None, :, :], M)
+        new_vals[np.where(new_vals == 0)] = -1000
+        new_vals = new_vals.astype(dtype=float)
+        tmp_coos[ind] = new_vals.copy()
+    return(tmp_coos)

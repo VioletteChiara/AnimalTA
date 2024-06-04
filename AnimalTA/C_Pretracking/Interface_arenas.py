@@ -7,13 +7,14 @@ import math
 import random
 from AnimalTA.E_Post_tracking.b_Analyses import Function_extend_elements
 from AnimalTA.A_General_tools import Class_change_vid_menu, Function_draw_mask as Dr, Video_loader as VL, UserMessages, \
-    User_help
+    User_help, Color_settings
 from copy import deepcopy
 
 class Mask(Frame):
     """In this Frame, the user will have the possibility to indicate the arenas in which the targets can be found. It will later work as a mask and facilitate target's identification."""
     def __init__(self, parent, boss, main_frame, proj_pos, Video_file,portion=False, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
+        self.config(**Color_settings.My_colors.Frame_Base)
         self.parent=parent
         self.proj_pos=proj_pos
         self.main_frame=main_frame
@@ -23,6 +24,7 @@ class Mask(Frame):
         self.Rpressed=False
         self.Fpressed = False
         self.Ctrlpressed = False
+        self.Shiftpressed = False
         self.Which_ar = None
 
 
@@ -59,6 +61,7 @@ class Mask(Frame):
         #If a background was defined, the user will draw over it.
         if self.Vid.Back[0]==1:
             self.background=self.Vid.Back[1]
+
         else:#If not, we take the first frame as image (after cropping).
             Which_part = 0
             if self.Vid.Cropped[0]:
@@ -67,11 +70,10 @@ class Mask(Frame):
 
             self.capture = VL.Video_Loader(self.Vid, self.Vid.Fusion[Which_part][1])
             self.background = self.capture[self.Vid.Cropped[1][0] - self.Vid.Fusion[Which_part][0]]
-
             del self.capture
-            self.background=cv2.cvtColor(self.background,cv2.COLOR_RGB2GRAY)
 
         self.image_to_show=np.copy(self.background)
+
         self.Shape_ar = IntVar(self)# When opening the window, which kind of shape should be first selected?
         try:
             self.Shape_ar.set(self.main_frame.mask_shape)#If there was info about that, we take the saved kind of shape
@@ -88,17 +90,16 @@ class Mask(Frame):
 
 
         #Canvas to show img
-        self.canvas_img = Canvas(self, bd=0, highlightthickness=0, relief='ridge')
+        self.canvas_img = Canvas(self, bd=0, highlightthickness=0, **Color_settings.My_colors.Frame_Base)
         self.canvas_img.grid(row=1, column=0, rowspan=2, sticky="nsew")
         self.canvas_img.bind("<Control-1>", self.Zoom_in)
         self.canvas_img.bind("<Control-3>", self.Zoom_out)
         self.canvas_img.bind('<Return>', self.New_ar_mask)
         self.canvas_img.bind("<Button-1>", self.callback_mask)
-        self.canvas_img.bind("<Shift-Button-1>", self.Copy_Ar)
-        self.canvas_img.bind("<Button-3>", self.Select_rot)
-        self.canvas_img.bind("<B3-Motion>", self.Rotate_Ar)
+        self.canvas_img.bind("<Button-3>", self.Right_click)
+        self.canvas_img.bind("<B3-Motion>", self.move_pt_mask)
         self.canvas_img.bind("<B1-Motion>", self.move_pt_mask)
-        self.canvas_img.bind("<Key>", self.suppress_mask)
+        self.canvas_img.bind("<Key>", self.keypress)
         self.canvas_img.bind("<KeyRelease>", self.keyrelease)
         Grid.columnconfigure(self, 0, weight=1)  ########NEW
         Grid.rowconfigure(self, 1, weight=1)  ########NEW
@@ -108,39 +109,49 @@ class Mask(Frame):
 
 
         #Help user and parameters
-        self.HW= User_help.Help_win(self.parent, default_message=self.Messages["Mask10"])
+        self.HW= User_help.Help_win(self.parent, default_message=self.Messages["Mask10"],
+                                    shortcuts={self.Messages["Short_left_click"]:self.Messages["Short_left_click_Ar"],
+                                               self.Messages["Short_Return"]:self.Messages["Short_Return_Ar"],
+                                               self.Messages["Short_right_click"]:self.Messages["Short_right_click_Ar"],
+                                               self.Messages["Short_del"]:self.Messages["Short_del_Ar"],
+                                               self.Messages["Short_left_drag"]:self.Messages["Short_left_drag_Ar"],
+                                               self.Messages["Short_Shift_left_drag"]:self.Messages["Short_Shift_left_drag_Ar"],
+                                               self.Messages["Short_Shift_right_drag"]:self.Messages["Short_Shift_right_drag_Ar"],
+                                               self.Messages["Short_Shift_right_drag"]: self.Messages["Short_Shift_right_drag_Ar"],
+                                               self.Messages["Short_R_right_drag"]: self.Messages["Short_R_right_drag_Ar"],
+                                               self.Messages["Short_Ctrl_click"]: self.Messages["Short_Ctrl_click_G"],
+                                               self.Messages["Short_Ctrl_Rclick"]: self.Messages["Short_Ctrl_Rclick_G"],})
         self.HW.grid(row=0, column=1,sticky="nsew")
 
         ##Parameters
-        self.canvas_User_params = Canvas(self.parent, width=200, height=0, bd=0, highlightthickness=0, relief='ridge')
+        self.canvas_User_params = Canvas(self.parent, width=200, height=0, bd=0, highlightthickness=0, **Color_settings.My_colors.Frame_Base)
         self.canvas_User_params.grid(row=1,column=1, sticky="nsew")
 
         #Widgets
-        self.bouton_efface = Button(self.canvas_User_params, text=self.Messages["Mask2"], fg="black", command=self.remove_ind)
+        self.bouton_efface = Button(self.canvas_User_params, text=self.Messages["Mask2"], command=self.remove_ind, **Color_settings.My_colors.Button_Base)
 
-        self.bouton_add_mask_ar = Button(self.canvas_User_params, text=self.Messages["Mask7"], fg="black", command=self.New_ar_mask)
-        self.bouton_remove_mask_ar = Button(self.canvas_User_params, text=self.Messages["Mask8"], fg="black",
-                                            command=self.Remove_ar_mask)
-        self.bouton_remove_mask_one_ar = Button(self.canvas_User_params, text=self.Messages["Mask9"], fg="black",
-                                            command=self.suppress_one_ar_mask)
+        self.bouton_add_mask_ar = Button(self.canvas_User_params, text=self.Messages["Mask7"], command=self.New_ar_mask, **Color_settings.My_colors.Button_Base)
+        self.bouton_remove_mask_ar = Button(self.canvas_User_params, text=self.Messages["Mask8"],  command=self.Remove_ar_mask, **Color_settings.My_colors.Button_Base)
+        self.bouton_remove_mask_one_ar = Button(self.canvas_User_params, text=self.Messages["Mask9"], command=self.suppress_one_ar_mask, **Color_settings.My_colors.Button_Base)
 
-        self.bouton_validate = Button(self.canvas_User_params, text=self.Messages["Validate"], background="#6AED35", fg="black", command=self.validate)
-        self.B_Validate_NContinue=Button(self.canvas_User_params, text=self.Messages["Validate_NC"],bg="#6AED35", command=lambda: self.validate(follow=True))
-
+        self.bouton_validate = Button(self.canvas_User_params, text=self.Messages["Validate"], command=self.validate, **Color_settings.My_colors.Button_Base)
+        self.bouton_validate.config(background=Color_settings.My_colors.list_colors["Validate"],fg=Color_settings.My_colors.list_colors["Fg_Validate"])
+        self.B_Validate_NContinue=Button(self.canvas_User_params, text=self.Messages["Validate_NC"], **Color_settings.My_colors.Button_Base, command=lambda: self.validate(follow=True))
+        self.B_Validate_NContinue.config(background=Color_settings.My_colors.list_colors["Validate"], fg=Color_settings.My_colors.list_colors["Fg_Validate"])
         self.NB_Arenas=StringVar(value="0")
-        Label_nb_Arenas=Label(self.canvas_User_params, text=self.Messages["Mask11"])
-        nb_Arenas = Label(self.canvas_User_params, textvariable=self.NB_Arenas)
+        Label_nb_Arenas=Label(self.canvas_User_params, text=self.Messages["Mask11"], **Color_settings.My_colors.Label_Base)
+        nb_Arenas = Label(self.canvas_User_params, textvariable=self.NB_Arenas, **Color_settings.My_colors.Label_Base)
 
-        self.Label_shapes = Label(self.canvas_User_params, text=self.Messages["Mask3"])
+        self.Label_shapes = Label(self.canvas_User_params, text=self.Messages["Mask3"], **Color_settings.My_colors.Label_Base)
 
         self.shape1 = Radiobutton(self.canvas_User_params, text=self.Messages["Mask4"],indicatoron=0, width=25, variable=self.Shape_ar, value=1,
-                                  command=lambda : self.Change_SM_val(self.Shape_ar,1))
+                                  command=lambda : self.Change_SM_val(self.Shape_ar,1), **Color_settings.My_colors.Radiobutton_Base)
 
         self.shape2 = Radiobutton(self.canvas_User_params, text=self.Messages["Mask5"],indicatoron=0, width=25,
-                                  variable=self.Shape_ar, value=2, command=lambda : self.Change_SM_val(self.Shape_ar,2))
+                                  variable=self.Shape_ar, value=2, command=lambda : self.Change_SM_val(self.Shape_ar,2), **Color_settings.My_colors.Radiobutton_Base)
 
         self.shape3 = Radiobutton(self.canvas_User_params, text=self.Messages["Mask6"],indicatoron=0, width=25,
-                                  variable=self.Shape_ar, value=3, command=lambda : self.Change_SM_val(self.Shape_ar,3))
+                                  variable=self.Shape_ar, value=3, command=lambda : self.Change_SM_val(self.Shape_ar,3), **Color_settings.My_colors.Radiobutton_Base)
 
 
 
@@ -169,14 +180,14 @@ class Mask(Frame):
         self.canvas_img.focus_force()
 
         if not self.Vid.Mask[0]:#If there were no arenas defined yet
-            self.liste_points = [[[], [], (0, 0, 0), 0]]
+            self.liste_points = [[[], [], (0, 0, 0), 0, True]]
         else:
             self.liste_points = self.Vid.Mask[1] # else, we draw the existing shapes
             self.dessiner_Formes()
             if len(self.liste_points)>0:#If there were no shapes (i.e. user went in this option but did not change anything)
                 self.Which_ar=len(self.liste_points)-1
             else:
-                self.liste_points = [[[], [], (0, 0, 0), 0]]
+                self.liste_points = [[[], [], (0, 0, 0), 0, True]]
 
         self.canvas_img.bind("<Configure>", self.afficher)
         self.afficher()
@@ -298,10 +309,10 @@ class Mask(Frame):
         #Supress the current arena
         if len(self.Pt_select) > 0 : #If there are no point selected yet, nothing happen
             if len(self.liste_points)<2:#If there was only one arena, the list of points is emptied
-                self.liste_points = [[[], [], (0,0,0) ,0]]
+                self.liste_points = [[[], [], (0,0,0) ,0, True]]
                 self.Which_ar=None
             else:#Else, only the current arena is removed
-                self.liste_points[self.Pt_select[0]]=[[],[],(0,0,0),0]
+                self.liste_points[self.Pt_select[0]]=[[],[],(0,0,0),0, True]
 
             self.Pt_select=[]
             self.dessiner_Formes()#We show the arenas
@@ -309,13 +320,13 @@ class Mask(Frame):
 
     def Remove_ar_mask(self):
         #Remove all the arenas
-        self.liste_points = [[[], [], (0,0,0),0]]
+        self.liste_points = [[[], [], (0,0,0),0, True]]
         self.image_to_show = self.background
         self.Pt_select=[]
         self.afficher()
         self.Which_ar = None
 
-    def suppress_mask(self, event):
+    def keypress(self, event):
         #Remove the selected point
         if event.keysym == "Delete" and len(self.Pt_select) > 0:
             del self.liste_points[self.Pt_select[0]][0][self.Pt_select[1]]
@@ -329,33 +340,36 @@ class Mask(Frame):
             self.Fpressed=True
         elif event.keysym == "Control_L" or event.keysym == "Control_R":
             self.Ctrlpressed=True
+        elif event.keysym == "Shift_L" or event.keysym == "Shift_R":
+            self.Shiftpressed=True
+
 
     def keyrelease(self, event):
         self.Rpressed = False
         self.Fpressed = False
         self.Ctrlpressed = False
+        self.Shiftpressed = False
 
 
     def Rotate_Ar(self, event):
-        if not self.Ctrlpressed:
-            event.x=int(event.x * self.ratio + self.zoom_sq[0])
-            event.y = int(event.y * self.ratio + self.zoom_sq[1])
+        event.x = int(event.x * self.ratio + self.zoom_sq[0])
+        event.y = int(event.y * self.ratio + self.zoom_sq[1])
 
-            if self.Rpressed:
-                angle = math.atan2(event.y - self.selected_shapes_rot[0][1], event.x - self.selected_shapes_rot[0][0])
-                angle=angle*180/math.pi
-            else:
-                angle=0
+        angle = math.atan2(event.y - self.selected_shapes[0][1], event.x - self.selected_shapes[0][0])
+        angle=angle*180/math.pi
 
-            dist=(event.x - self.selected_shapes_rot[0][0])
 
-            points_list=[]
-            for sh in range(len(self.selected_shapes_rot[1])):
-                for pt in range(len(self.selected_shapes_rot[2][sh][0])):
-                    points_list.append([self.selected_shapes_rot[2][sh][0][pt],self.selected_shapes_rot[2][sh][1][pt]])
+        dist=(event.x - self.selected_shapes[0][0])
 
-            points_list=np.array(points_list)
-            pts_norm = points_list - self.selected_shapes_rot[3]
+        points_list=[]
+        for sh in range(len(self.selected_shapes[1])):
+            for pt in range(len(self.selected_shapes[2][sh][0])):
+                points_list.append([self.selected_shapes[2][sh][0][pt],self.selected_shapes[2][sh][1][pt]])
+
+        points_list=np.array(points_list)
+        pts_norm = points_list - self.selected_shapes[3]
+
+        if self.Rpressed:
             coordinates = pts_norm
             Ptxs, Ptys = coordinates[:, 0], coordinates[:, 1]
             thetas, rhos = Function_extend_elements.cart2pol(Ptxs, Ptys)
@@ -367,22 +381,23 @@ class Mask(Frame):
             pts_norm[:, 0] = Ptxs
             pts_norm[:, 1] = Ptys
 
-            if not self.Rpressed and not self.Fpressed:
-                pts_norm=pts_norm*((dist+50)/30)
+        if self.Shiftpressed:
+            pts_norm=pts_norm*((dist+50)/30)
 
-            if self.Fpressed:
-                pts_norm[:, 0] =  pts_norm[:, 0] * -1
+        if self.Fpressed:
+            pts_norm[:, 0] =  pts_norm[:, 0] * -1
 
-            pts_rotated = pts_norm + self.selected_shapes_rot[3]
+        pts_rotated = pts_norm + self.selected_shapes[3]
 
-            count=0
-            for sh in range(len(self.selected_shapes_rot[1])):
-                for pt in range(len(self.selected_shapes_rot[2][sh][0])):
-                    self.liste_points[self.selected_shapes_rot[1][sh]][0][pt]=pts_rotated[count][0]
-                    self.liste_points[self.selected_shapes_rot[1][sh]][1][pt]=pts_rotated[count][1]
-                    count+=1
-            self.dessiner_Formes()  # Show the result
-            self.afficher()
+        count=0
+        for sh in range(len(self.selected_shapes[1])):
+            for pt in range(len(self.selected_shapes[2][sh][0])):
+                self.liste_points[self.selected_shapes[1][sh]][0][pt]=pts_rotated[count][0]
+                self.liste_points[self.selected_shapes[1][sh]][1][pt]=pts_rotated[count][1]
+                count+=1
+        self.dessiner_Formes()  # Show the result
+        self.afficher()
+
 
     def move_pt_mask(self, event):
         if not self.Ctrlpressed:
@@ -393,117 +408,116 @@ class Mask(Frame):
                 self.dessiner_Formes()#Show the result
                 self.afficher()
 
-            #Move a shape
-            elif len(self.selected_shapes[1])>0:
-                transla=[int((event.x * self.ratio + self.zoom_sq[0]) - self.selected_shapes[0][0]),int((event.y * self.ratio + self.zoom_sq[1]) - self.selected_shapes[0][1])]
+            elif len(self.selected_shapes[1]) > 0 and not self.Rpressed and (event.state==264 or event.state==265):
+                # Move a shape
+                transla = [int((event.x * self.ratio + self.zoom_sq[0]) - self.selected_shapes[0][0]),
+                           int((event.y * self.ratio + self.zoom_sq[1]) - self.selected_shapes[0][1])]
                 for sh in range(len(self.selected_shapes[1])):
                     for pt in range(len(self.selected_shapes[2][sh][0])):
-                        self.liste_points[self.selected_shapes[1][sh]][0][pt]=self.selected_shapes[2][sh][0][pt]+transla[0]
-                        self.liste_points[self.selected_shapes[1][sh]][1][pt]= self.selected_shapes[2][sh][1][pt] + transla[1]
+                        self.liste_points[self.selected_shapes[1][sh]][0][pt] = self.selected_shapes[2][sh][0][pt] + \
+                                                                                transla[0]
+                        self.liste_points[self.selected_shapes[1][sh]][1][pt] = self.selected_shapes[2][sh][1][pt] + \
+                                                                                transla[1]
 
                 self.dessiner_Formes()  # Show the result
                 self.afficher()
 
 
-    def New_ar_mask(self, b="_"):
-        if not self.Ctrlpressed:
-            #Create a new arena (i.e. indicates that the last one is finished)
-            if self.Which_ar != None:
-                if len(self.liste_points[self.Which_ar][0])<2:#If the current arena was not defined (i.e. user add les than two points)
-                    self.liste_points[self.Which_ar]=[[],[], self.random_color(),0] #We continue on the same, just remove the point if there was one and change the color
-                else: #If not, we create a new arena
-                    self.Which_ar = len(self.liste_points)
-                    self.liste_points.append([[], [],self.random_color(),self.Shape_ar.get()])
+            elif len(self.selected_shapes[1]) > 0 and (self.Rpressed or self.Shiftpressed or self.Fpressed):
+                self.Rotate_Ar(event)
 
-            self.Pt_select=[]
-            self.dessiner_Formes()
-            self.afficher()
+
+    def New_ar_mask(self, b="_"):
+        #Create a new arena (i.e. indicates that the last one is finished)
+        if self.Which_ar != None:
+            if len(self.liste_points[self.Which_ar][0])<2:#If the current arena was not defined (i.e. user add les than two points)
+                self.liste_points[self.Which_ar]=[[],[], self.random_color(),0,True] #We continue on the same, just remove the point if there was one and change the color
+            else: #If not, we create a new arena
+                self.Which_ar = len(self.liste_points)
+                self.liste_points.append([[], [],self.random_color(),self.Shape_ar.get(), True])
+
+        self.Pt_select=[]
+        self.dessiner_Formes()
+        self.afficher()
 
     def dessiner_Formes(self):
         #Prepare empty image
-        self.image_to_show = cv2.cvtColor(self.background, cv2.COLOR_GRAY2RGB)
+        if self.Vid.Back[0] and len(self.Vid.Back[1].shape)==2:
+            self.image_to_show = cv2.cvtColor(self.background, cv2.COLOR_GRAY2RGB)
+        else:
+            self.image_to_show=self.background.copy()
 
         #Draw the shapes
         for j in range(len(self.liste_points)):
             if self.liste_points[j][3]==1:
                 if len(self.liste_points[j][0]) > 1:
                     self.image_to_show, _ = Dr.Draw_elli(self.image_to_show, self.liste_points[j][0], self.liste_points[j][1],self.liste_points[j][2],thick=round(2*self.ratio))
-                for i in range(len(self.liste_points[j][0])):
-                    self.image_to_show = cv2.circle(self.image_to_show,(int(self.liste_points[j][0][i]), int(self.liste_points[j][1][i])), round(4*self.ratio),self.liste_points[j][2], -1)
 
             elif self.liste_points[j][3]==2:
                 if len(self.liste_points[j][0])>1:
                     self.image_to_show, _= Dr.Draw_rect(self.image_to_show, self.liste_points[j][0], self.liste_points[j][1],self.liste_points[j][2],thick=round(2*self.ratio))
-                for i in range(len(self.liste_points[j][0])):
-                    self.image_to_show = cv2.circle(self.image_to_show,(int(self.liste_points[j][0][i]), int(self.liste_points[j][1][i])), round(4*self.ratio),self.liste_points[j][2], -1)
 
             elif self.liste_points[j][3]==3:
                 if len(self.liste_points[j][0])>1:
                     self.image_to_show, _ = Dr.Draw_Poly(self.image_to_show, self.liste_points[j][0], self.liste_points[j][1],self.liste_points[j][2],thick=round(2*self.ratio))
-                for i in range(len(self.liste_points[j][0])):
-                    self.image_to_show = cv2.circle(self.image_to_show,(int(self.liste_points[j][0][i]), int(self.liste_points[j][1][i])), round(4*self.ratio),self.liste_points[j][2], -1)
+
+            for i in range(len(self.liste_points[j][0])):
+                if self.liste_points[j][4]:  # If this is filled shape
+                    self.image_to_show = cv2.circle(self.image_to_show, (
+                    int(self.liste_points[j][0][i]), int(self.liste_points[j][1][i])), round(4 * self.ratio),
+                                                    self.liste_points[j][2], -1)
+                else:  # If this is empty shape
+                    self.image_to_show = cv2.line(self.image_to_show,
+                        (int(self.liste_points[j][0][i]-round(3 * self.ratio)), int(self.liste_points[j][1][i]-round(3 * self.ratio))),
+                        (int(self.liste_points[j][0][i] + round(3 * self.ratio)), int(self.liste_points[j][1][i] + round(3 * self.ratio))),
+                        self.liste_points[j][2], round(3 * self.ratio))
+                    self.image_to_show = cv2.line(self.image_to_show,
+                        (int(self.liste_points[j][0][i]+round(3 * self.ratio)), int(self.liste_points[j][1][i]-round(3 * self.ratio))),
+                        (int(self.liste_points[j][0][i] - round(3 * self.ratio)), int(self.liste_points[j][1][i] + round(3 * self.ratio))),
+                        self.liste_points[j][2], round(3 * self.ratio))
 
         if len(self.Pt_select) > 0:#Selected point is highlighted
-            self.image_to_show = cv2.circle(self.image_to_show, (
-            int(self.liste_points[self.Pt_select[0]][0][self.Pt_select[1]]),
-            int(self.liste_points[self.Pt_select[0]][1][self.Pt_select[1]])), round(4*self.ratio), self.liste_points[self.Pt_select[0]][2], -1)
+            if self.liste_points[self.Pt_select[0]][4]:  # If this is filled shape
+                self.image_to_show = cv2.circle(self.image_to_show,(int(self.liste_points[self.Pt_select[0]][0][self.Pt_select[1]]), int(self.liste_points[self.Pt_select[0]][1][self.Pt_select[1]])), round(4*self.ratio),(0,0,0), round(2*self.ratio))
 
-            self.image_to_show = cv2.circle(self.image_to_show,(int(self.liste_points[self.Pt_select[0]][0][self.Pt_select[1]]), int(self.liste_points[self.Pt_select[0]][1][self.Pt_select[1]])), round(4*self.ratio),(0,0,0), round(2*self.ratio))
 
-    def Select_rot(self, event):
+            else:
+                self.image_to_show = cv2.circle(self.image_to_show, (
+                int(self.liste_points[self.Pt_select[0]][0][self.Pt_select[1]]),
+                int(self.liste_points[self.Pt_select[0]][1][self.Pt_select[1]])), round(7 * self.ratio), (255,255,255), -1)
+
+                self.image_to_show = cv2.circle(self.image_to_show, (
+                int(self.liste_points[self.Pt_select[0]][0][self.Pt_select[1]]),
+                int(self.liste_points[self.Pt_select[0]][1][self.Pt_select[1]])), round(7 * self.ratio), (0, 0, 0),
+                                                round(2 * self.ratio))
+
+                self.image_to_show = cv2.line(self.image_to_show,
+                                              (int(self.liste_points[self.Pt_select[0]][0][self.Pt_select[1]] - round(3 * self.ratio)),
+                                               int(self.liste_points[self.Pt_select[0]][1][self.Pt_select[1]] - round(3 * self.ratio))),
+                                              (int(self.liste_points[self.Pt_select[0]][0][self.Pt_select[1]] + round(3 * self.ratio)),
+                                               int(self.liste_points[self.Pt_select[0]][1][self.Pt_select[1]] + round(3 * self.ratio))),
+                                              self.liste_points[self.Pt_select[0]][2], round(3 * self.ratio))
+
+                self.image_to_show = cv2.line(self.image_to_show,
+                                              (int(self.liste_points[self.Pt_select[0]][0][self.Pt_select[1]] + round(3 * self.ratio)),
+                                               int(self.liste_points[self.Pt_select[0]][1][self.Pt_select[1]] - round(3 * self.ratio))),
+                                              (int(self.liste_points[self.Pt_select[0]][0][self.Pt_select[1]] - round(3 * self.ratio)),
+                                               int(self.liste_points[self.Pt_select[0]][1][self.Pt_select[1]] + round(3 * self.ratio))),
+                                              self.liste_points[self.Pt_select[0]][2], round(3 * self.ratio))
+
+    def Right_click(self, event):
+        self.callback_mask(event=event, add=False)
+
+    def callback_mask(self, event, add=True):
         event.x = event.x * self.ratio + self.zoom_sq[0]
         event.y = event.y * self.ratio + self.zoom_sq[1]
-        self.selected_shapes_rot = [[event.x, event.y], [], [], []]
-
-        if len(self.Pt_select) < 1:
-            empty=np.zeros([self.image_to_show.shape[0],self.image_to_show.shape[1],1],np.uint8)
-            empty2=self.draw_binaries(empty, thick=int(self.ratio*7))
-            if empty2[int(event.y),int(event.x)]==255:
-                empty = self.draw_binaries(empty)
-                self.cnts,_=cv2.findContours(empty, cv2.RETR_EXTERNAL , cv2.CHAIN_APPROX_NONE)
-                for cnt in self.cnts:
-                    res=cv2.pointPolygonTest(cnt,[int(event.x),int(event.y)], False)#We check if we clicked in an existing shape
-                    if res>=0:#If it is the case, we look for associated shapes
-                        M = cv2.moments(cnt)
-                        self.selected_shapes_rot[3]=[int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"])]
-                        for j in range(len(self.liste_points)):
-                            if len(self.liste_points[j][0])>0:
-                                if cv2.pointPolygonTest(cnt,[self.liste_points[j][0][0],self.liste_points[j][1][0]],True) >= -(self.ratio * 3.5):
-                                    self.selected_shapes_rot[1].append(j)
-                                    self.selected_shapes_rot[2].append(deepcopy(self.liste_points[j]))
-                        break
-
-    def Copy_Ar(self, event):
-        event.x=event.x * self.ratio + self.zoom_sq[0]
-        event.y = event.y * self.ratio + self.zoom_sq[1]
-        self.selected_shapes = [[event.x,event.y],[],[]]
-
-        empty = np.zeros([self.image_to_show.shape[0], self.image_to_show.shape[1], 1], np.uint8)
-        empty2 = self.draw_binaries(empty, thick=int(self.ratio * 7))
-
-        if empty2[int(event.y), int(event.x)] == 255:
-            empty = self.draw_binaries(empty)
-            self.cnts, _ = cv2.findContours(empty, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            for cnt in self.cnts:
-                res = cv2.pointPolygonTest(cnt, [int(event.x), int(event.y)], False)
-                if res >= 0:
-                    for j in range(len(self.liste_points)):
-                        if len(self.liste_points[j][0]) > 0:
-                            if cv2.pointPolygonTest(cnt, [self.liste_points[j][0][0], self.liste_points[j][1][0]],True) >= -(self.ratio * 3.5):
-                                self.selected_shapes[2].append(deepcopy(self.liste_points[j]))
-                                self.liste_points.append(deepcopy(self.liste_points[j]))
-                                self.selected_shapes[1].append(len(self.liste_points)-1)
-                    break
-
-    def callback_mask(self, event):
-        event.x=event.x * self.ratio + self.zoom_sq[0]
-        event.y = event.y * self.ratio + self.zoom_sq[1]
-        self.selected_shapes = [[event.x,event.y],[],[]]
+        self.selected_shapes = [[event.x,event.y],[],[],[]]
 
         if self.Which_ar == None:#If it is the first point created
             self.Which_ar = 0
             self.liste_points[self.Which_ar][2]=self.random_color()
             self.liste_points[self.Which_ar][3] = self.Shape_ar.get()
+            self.liste_points[self.Which_ar][4] = add
 
         else:# We check if the user clicked on an existing point
             self.Pt_select=[]
@@ -517,29 +531,57 @@ class Mask(Frame):
                         self.Shape_ar.set(self.liste_points[j][3])
                         break
 
-        if len(self.Pt_select) < 1: #If the user did not press on a point
-            empty=np.zeros([self.image_to_show.shape[0],self.image_to_show.shape[1],1],np.uint8)
-            empty2=self.draw_binaries(empty, thick=int(self.ratio*7))
-            if empty2[int(event.y),int(event.x)]==255:#If we click on an existing arena
-                empty = self.draw_binaries(empty)
-                self.cnts,_=cv2.findContours(empty, cv2.RETR_EXTERNAL , cv2.CHAIN_APPROX_SIMPLE)
-                for cnt in self.cnts:
-                    res=cv2.pointPolygonTest(cnt,[int(event.x),int(event.y)], True)
-                    if abs(res)<=int(self.ratio*7):
-                        for j in range(len(self.liste_points)):
-                            if len(self.liste_points[j][0])>0:
-                                if abs(cv2.pointPolygonTest(cnt,[self.liste_points[j][0][0],self.liste_points[j][1][0]],True))<=int(self.ratio*7):
-                                    self.selected_shapes[1].append(j)
-                                    self.selected_shapes[2].append(deepcopy(self.liste_points[j]))
-                        break
+            if len(self.Pt_select) < 1: #And we are not clicking on an existing arena
+                empty = np.zeros([self.image_to_show.shape[0], self.image_to_show.shape[1], 1], np.uint8)
+                empty2=self.draw_binaries(empty, thick=int(self.ratio * 7))
 
-        #If we did not press on an existing point, we add a new one
-        if len(self.Pt_select)<1 and len(self.selected_shapes[1])<1:
+                if empty2[int(event.y),int(event.x)]==255:
+                    empty = np.zeros([self.image_to_show.shape[0], self.image_to_show.shape[1], 1], np.uint8)
+                    empty = self.draw_binaries(empty, thick=-1)
+                    empty = self.draw_binaries(empty, thick=int(self.ratio * 7))
+                    cnts,_ = cv2.findContours(empty, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+
+                    main_cnt_found=False
+                    cnt_cnt=0
+
+                    for cnt in cnts:
+                        cnt_cnt+=1
+                        res=cv2.pointPolygonTest(cnt, (int(event.x),int(event.y)), False)
+                        if res>=0:
+                            main_cnt_found=True
+                            M = cv2.moments(cnt)
+                            Cnt_center=[int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"])]
+
+                            for shape in range(len(self.liste_points)):
+                                if len(self.liste_points[shape][0])>0:
+                                    Shape_center = (int(np.mean(self.liste_points[shape][0])),int(np.mean(self.liste_points[shape][1])))
+                                    res2 = cv2.pointPolygonTest(cnt, Shape_center, False)
+                                    if res2>=0:
+                                        self.selected_shapes[1].append(shape)
+                                        self.selected_shapes[2].append(deepcopy(self.liste_points[shape]))
+
+
+                        if main_cnt_found:
+                            self.selected_shapes[3] = Cnt_center
+                            break
+
+                if self.Shiftpressed and len(self.selected_shapes[1])>0 and event.num==1:
+                    new_selection=[]
+                    for sh in self.selected_shapes[1]:
+                        self.liste_points.append(deepcopy(self.liste_points[sh]))
+                        self.liste_points[-1][2]=self.random_color()
+                        new_selection.append(len(self.liste_points)-1)
+                    self.selected_shapes[1]=new_selection
+
+        #If we did not press on an existing point or shape, we add a new one
+        if len(self.Pt_select)<1 and len(self.selected_shapes[1])<1 and not self.Shiftpressed and not self.Rpressed and not self.Ctrlpressed:
             self.liste_points[self.Which_ar][0].append(event.x)
             self.liste_points[self.Which_ar][1].append(event.y)
             self.Pt_select=(self.Which_ar,len(self.liste_points[self.Which_ar][0])-1)
             if len(self.liste_points[self.Which_ar][0])<2:
                 self.liste_points[self.Which_ar][3]=self.Shape_ar.get()
+            if len(self.liste_points[self.Which_ar][0])==1:
+                self.liste_points[self.Which_ar][4] = add
 
         self.dessiner_Formes()#Show the result
         self.afficher()
@@ -573,23 +615,34 @@ class Mask(Frame):
         empty=np.zeros([self.image_to_show.shape[0],self.image_to_show.shape[1],1],np.uint8)
         self.draw_binaries(empty)
 
-    def draw_binaries(self, img_or, thick=-1):
+    def draw_binaries(self, img_or, thick=-1, shapes=-1):
         #Draw a binary image (the mask)
         img=np.copy(img_or)
-        for i in range(len(self.liste_points)):
-            New_col = (255)
-            if len(self.liste_points[i][0]) > 0:
-                if self.liste_points[i][3] == 1:
-                    img, _ = Dr.Draw_elli(img, self.liste_points[i][0],
-                                                         self.liste_points[i][1], New_col, thick)
 
-                elif self.liste_points[i][3] == 2 and len(self.liste_points[i][0]) > 1:
-                    img, _ = Dr.Draw_rect(img, self.liste_points[i][0],
-                                                         self.liste_points[i][1], New_col, thick)
+        if img.shape[2]>1:
+            img=cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
 
-                elif self.liste_points[i][3] == 3 and len(self.liste_points[i][0]) > 1:
-                    img, _ = Dr.Draw_Poly(img, self.liste_points[i][0],
-                                                         self.liste_points[i][1], New_col, thick)
+        if shapes==-1:
+            list_to_draw=range(len(self.liste_points))
+        else:
+            list_to_draw=shapes
+
+
+        for col in [255, 0]:
+            for i in list_to_draw:
+                if (col==255 and self.liste_points[i][4]) or (col==0 and not self.liste_points[i][4]):
+                    if len(self.liste_points[i][0]) > 0:
+                        if self.liste_points[i][3] == 1:
+                            img, _ = Dr.Draw_elli(img, self.liste_points[i][0],
+                                                                 self.liste_points[i][1], col, thick)
+
+                        elif self.liste_points[i][3] == 2 and len(self.liste_points[i][0]) > 1:
+                            img, _ = Dr.Draw_rect(img, self.liste_points[i][0],
+                                                                 self.liste_points[i][1], col, thick)
+
+                        elif self.liste_points[i][3] == 3 and len(self.liste_points[i][0]) > 1:
+                            img, _ = Dr.Draw_Poly(img, self.liste_points[i][0],
+                                                                 self.liste_points[i][1], col, thick)
 
         if np.any(img[:,:]>0):
             Arenas, _ = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -608,7 +661,8 @@ class Mask(Frame):
             self.view_mask=True
             self.afficher()
         else:
-            self.image_to_show = cv2.cvtColor(self.background, cv2.COLOR_GRAY2RGB)
+            if self.background.shape[2]==1:
+                self.image_to_show = cv2.cvtColor(self.background, cv2.COLOR_GRAY2RGB)
             self.view_mask = False
             self.dessiner_Formes()
             self.afficher()

@@ -1,8 +1,8 @@
-import cv2
 import numpy as np
 import math
 from statistics import mean
 from AnimalTA.A_General_tools import Diverse_functions
+import cv2
 
 def draw_mask(Vid, thick=-1, color=255):
     """
@@ -19,21 +19,30 @@ def draw_mask(Vid, thick=-1, color=255):
     #Shape_type can be: 1=Ellipse, 2=Rectangle, 3=Polygon
     #Color of the shape: (R,G,B)
     #
-    image_to_save = np.zeros([Vid.shape[0], Vid.shape[1], 1], np.uint8)
+    image_to_save = np.zeros([Vid.shape[0], Vid.shape[1]], np.uint8)
+
+    if color==255:
+        new_cols=[255,0]
+    else:
+        new_cols=color
+
+
     if len(liste_points)>0:
-        for i in range(len(liste_points)):
-            if len(liste_points[i][0]) > 0:
-                if liste_points[i][3] == 1:
-                    image_to_save, _ = Draw_elli(image_to_save, liste_points[i][0],
-                                                           liste_points[i][1], color, thick)
 
-                elif liste_points[i][3] == 2 and len(liste_points[i][0]) > 1:
-                    image_to_save, _ = Draw_rect(image_to_save, liste_points[i][0],
-                                                           liste_points[i][1], color, thick)
+        for new_color in new_cols:
+            for i in range(len(liste_points)):
+                if len(liste_points[i][0]) > 0 and ((liste_points[i][4] and new_color==255) or (not liste_points[i][4] and new_color==0)):
+                    if liste_points[i][3] == 1:
+                        image_to_save, _ = Draw_elli(image_to_save, liste_points[i][0],
+                                                               liste_points[i][1], new_color, thick)
 
-                elif liste_points[i][3] == 3 and len(liste_points[i][0]) > 1:
-                    image_to_save, _ = Draw_Poly(image_to_save, liste_points[i][0],
-                                                           liste_points[i][1], color, thick)
+                    elif liste_points[i][3] == 2 and len(liste_points[i][0]) > 1:
+                        image_to_save, _ = Draw_rect(image_to_save, liste_points[i][0],
+                                                               liste_points[i][1], new_color, thick)
+
+                    elif liste_points[i][3] == 3 and len(liste_points[i][0]) > 1:
+                        image_to_save, _ = Draw_Poly(image_to_save, liste_points[i][0],
+                                                               liste_points[i][1], new_color, thick)
     else:
         #If the user did not define any arena, the whole image will be used.
         image_to_save.fill(color)
@@ -43,6 +52,8 @@ def draw_mask(Vid, thick=-1, color=255):
     #image_to_save=cv2.erode(image_to_save,kernel, iterations=2)
     #image_to_save = image_to_save.reshape((image_to_save.shape[0], image_to_save.shape[1], 1))
 
+    if len(Vid.Analyses[4][0]) > 0:
+        image_to_save = cv2.warpPerspective(image_to_save, Vid.Analyses[4][0], (image_to_save.shape[1], image_to_save.shape[0]))
 
     return(image_to_save)
 
@@ -102,7 +113,6 @@ def Draw_rect(image, xs, ys, color=(255, 0, 0), thick=int(2)):
         image, coos=Draw_Poly(image,xs,ys,color,thick)
     return (image, coos)
 
-
 def Draw_Poly(image, xs, ys, color=(255, 0, 0), thick=int(2)):
     """Function used to draw a polygon
     image:The image on the top of which the polygon will be drawn.
@@ -128,7 +138,6 @@ def Draw_Poly(image, xs, ys, color=(255, 0, 0), thick=int(2)):
         image= cv2.fillPoly(image, [pts], color)
 
     return (image, pts)
-
 
 def Draw_elli(image, xs, ys, color=(255, 0, 0), thick=2):
     """Function used to draw an ellipse
@@ -241,6 +250,31 @@ def Organise_Ars(Arenas):
     return [Arenas[place] for place in rows]
 
 
+def enclosing_rectangle(Arena, Vid, ret=False):
+    mask = draw_mask(Vid)
+    Arenas_with_holes, Arenas = exclude_inside(mask)
+    Arenas = Organise_Ars(Arenas)
+    Arena_pts = Arenas[Arena]
+
+    mask_glob = draw_mask(Vid)
+    mask = np.zeros([mask_glob.shape[0], mask_glob.shape[1], 1], np.uint8)
+    mask = cv2.drawContours(mask, [Arena_pts], -1, (255), -1)
+    mask = cv2.bitwise_and(mask, mask_glob)
+    cnts, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    if not ret:
+        return(cv2.boundingRect(cnts[0]))
+    else:
+        return ([cv2.boundingRect(cnts[0]),mask])
+
+def exclude_inside(mask):
+    Arenas_with_holes, hierarhy = cv2.findContours(mask, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
+
+    Arenas = []
+    for A in range(len(Arenas_with_holes)):
+        if hierarhy[0][A][3] < 0:
+            Arenas.append(Arenas_with_holes[A])
+
+    return(Arenas_with_holes, Arenas)
 
 
 def Touched_seg(Pt, Seg):

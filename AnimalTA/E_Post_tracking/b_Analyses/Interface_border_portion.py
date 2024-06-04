@@ -1,5 +1,5 @@
 from tkinter import *
-from AnimalTA.A_General_tools import UserMessages
+from AnimalTA.A_General_tools import UserMessages, Color_settings
 import math
 
 class Ask(Frame):
@@ -7,6 +7,8 @@ class Ask(Frame):
     def __init__(self, parent, boss, Pt1, Pt2, scale, ratio, **kwargs):
         #Pt1 and Pt2: the two extremities of the considered border
         Frame.__init__(self, parent, bd=5, **kwargs)
+        self.config(**Color_settings.My_colors.Frame_Base)
+
         self.grid(sticky="nsew")
         self.parent=parent
         self.boss=boss
@@ -41,39 +43,40 @@ class Ask(Frame):
 
         #Frame organization
         #Title
-        Expl=Label(self, text=self.Messages["Border_portion0"])
+        Expl=Label(self, text=self.Messages["Border_portion0"], **Color_settings.My_colors.Label_Base)
         Expl.grid(row=0, column=0, columnspan=2)
 
         #Slider
-        Scale_Prop=Scale(self, from_=0, to=self.length,resolution=0.001, variable=self.Units, orient=self.orient, command=self.update_ratio_scale)
+        Scale_Prop=Scale(self, from_=0, to=self.length,resolution=0.001, variable=self.Units, orient=self.orient, command=self.update_ratio_scale, **Color_settings.My_colors.Scale_Base)
         Scale_Prop.grid(row=1, column=0, columnspan=4, sticky="nsew")
 
         #Visual information + manual entry
-        Lab_Ratio=Label(self,text=self.Messages["Border_portion1"])
+        Lab_Ratio=Label(self,text=self.Messages["Border_portion1"], **Color_settings.My_colors.Label_Base)
         Lab_Ratio.grid(row=2, column=0, columnspan=2)
         regRatio = (self.register(self.update_ratio), '%P', '%V')
-        Entry_ratio=Entry(self, textvariable=self.Ratio, validate="all", validatecommand=regRatio)
+        Entry_ratio=Entry(self, textvariable=self.Ratio, validate="all", validatecommand=regRatio, **Color_settings.My_colors.Entry_Base)
         Entry_ratio.grid(row=3, column=0, rowspan=2)
-        LRat=Label(self, text="/1")
+        LRat=Label(self, text="/1", **Color_settings.My_colors.Label_Base)
         LRat.grid(row=3, column=1, rowspan=2, sticky="nsw")
 
         #Units informations
-        Lab_Units=Label(self,text=self.Messages["Border_portion2"])
+        Lab_Units=Label(self,text=self.Messages["Border_portion2"], **Color_settings.My_colors.Label_Base)
         Lab_Units.grid(row=2, column=2, columnspan=2)
         regUnits = (self.register(self.update_units), '%P', '%V')
-        Entry_units=Entry(self, textvariable=self.Units, validate="all", validatecommand=regUnits)
+        Entry_units=Entry(self, textvariable=self.Units, validate="all", validatecommand=regUnits, **Color_settings.My_colors.Entry_Base)
         Entry_units.grid(row=3, column=2)
-        Units=Label(self, text=scale[1])
+        Units=Label(self, text=scale[1], **Color_settings.My_colors.Label_Base)
         Units.grid(row=3, column=3, sticky="w")
 
         regUnitsB = (self.register(self.update_unitsB), '%P', '%V')
-        Entry_unitsB=Entry(self, textvariable=self.UnitsB, validate="all", validatecommand=regUnitsB)
+        Entry_unitsB=Entry(self, textvariable=self.UnitsB, validate="all", validatecommand=regUnitsB, **Color_settings.My_colors.Entry_Base)
         Entry_unitsB.grid(row=4, column=2)
-        UnitsB=Label(self, text=scale[1])
+        UnitsB=Label(self, text=scale[1], **Color_settings.My_colors.Label_Base)
         UnitsB.grid(row=4, column=3, sticky="w")
 
         #Button to validate once the position is chosen
-        BValidate=Button(self, text=self.Messages["Validate"], background="#6AED35", command=self.validate)
+        BValidate=Button(self, text=self.Messages["Validate"], command=self.validate, **Color_settings.My_colors.Button_Base)
+        BValidate.config(background=Color_settings.My_colors.list_colors["Validate"],fg=Color_settings.My_colors.list_colors["Fg_Validate"])
         BValidate.grid(row=5, column=0, columnspan=4)
 
         self.boss.ready=False

@@ -2,7 +2,7 @@ from tkinter import *
 
 import numpy as np
 
-from AnimalTA.A_General_tools import Function_draw_mask, UserMessages, User_help
+from AnimalTA.A_General_tools import Function_draw_mask, UserMessages, User_help, Color_settings
 import cv2
 import PIL
 
@@ -13,6 +13,7 @@ class Draw_ent(Frame):
     """In this Frame, the user will have the possibility to indicate the arenas in which the targets can be found. It will later work as a mask and facilitate target's identification."""
     def __init__(self, parent, Img, Entrances, Arenas, boss, scale, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
+        self.config(**Color_settings.My_colors.Frame_Base)
         self.img=Img
         self.scale=scale
         self.boss=boss#Who is the class calling this one
@@ -43,7 +44,7 @@ class Draw_ent(Frame):
         self.zoom_sq=[0,0,self.img.shape[1],self.img.shape[0]]
         self.zoom_strength = 0.3
 
-        self.canvas_img = Canvas(self, bd=0, highlightthickness=0, relief='ridge', width=1000, height=1000)
+        self.canvas_img = Canvas(self, bd=0, highlightthickness=0, relief='ridge', width=1000, height=1000, **Color_settings.My_colors.Frame_Base)
         self.canvas_img.grid(row=0, column=0, rowspan=2, sticky="nsew")
 
         #Zoom in/out
@@ -66,7 +67,7 @@ class Draw_ent(Frame):
         self.final_width = 750
         self.Size = [self.img.shape[0],self.img.shape[1]]
 
-        self.HW = User_help.Help_win(self, default_message=self.Messages["Mask10"], width=300)
+        self.HW = User_help.Help_win(self, default_message=self.Messages["Mask10"], width=300, shortcuts={self.Messages["Short_left_click"]:self.Messages["Short_left_click_En"],self.Messages["Short_Mousewheel"]:self.Messages["Short_Mousewheel_T"], self.Messages["Short_Ctrl_click"]:self.Messages["Short_Ctrl_click_G"],self.Messages["Short_Ctrl_Rclick"]:self.Messages["Short_Ctrl_Rclick_G"]})
         self.HW.grid(row=0, column=1, sticky="nsew")
 
         User_Fr=Frame(self)
@@ -74,16 +75,17 @@ class Draw_ent(Frame):
 
         Grid.columnconfigure(User_Fr, 0, weight=1)
 
-        delete_cnts=Button(User_Fr,text="Delete existing areas", command=self.delete)
+        delete_cnts=Button(User_Fr,text=self.Messages["RowB3"], command=self.delete,**Color_settings.My_colors.Button_Base)
         delete_cnts.grid(row=0, column=0, columnspan=2, sticky="nsew")
 
-        borders_scale=Scale(User_Fr,label="Width", from_=0.05,to=int((self.Size[0]/self.scale)/2), resolution=0.01, command=self.draw_borders, orient=HORIZONTAL)
+        borders_scale=Scale(User_Fr,label=self.Messages["Entrance1"], from_=0.05,to=int((self.Size[0]/self.scale)/2), resolution=0.01, command=self.draw_borders, orient=HORIZONTAL,**Color_settings.My_colors.Scale_Base)
         borders_scale.grid(row=1, column=0, sticky="nsew")
 
-        self.Choose_borders_B=Button(User_Fr,text="select borders", command=self.active_selection)
+        self.Choose_borders_B=Button(User_Fr,text=self.Messages["Analyses_details_sp_Menu3_1"], command=self.active_selection,**Color_settings.My_colors.Button_Base)
         self.Choose_borders_B.grid(row=1, column=1, sticky="nsew")
 
-        validate=Button(User_Fr,text="Validate", command=self.validate, background="#6AED35")
+        validate=Button(User_Fr,text=self.Messages["Validate"], command=self.validate,**Color_settings.My_colors.Frame_Base)
+        validate.config(background=Color_settings.My_colors.list_colors["Validate"],fg=Color_settings.My_colors.list_colors["Fg_Validate"])
         validate.grid(row=2, column=0, columnspan=2, sticky="nsew")
 
         self.canvas_img.update()
@@ -99,9 +101,9 @@ class Draw_ent(Frame):
     def active_selection(self):
         self.selection = not self.selection
         if self.selection:
-            self.Choose_borders_B.config(background="#f0f0f0")
+            self.Choose_borders_B.config(background=Color_settings.My_colors.list_colors["Base"])
         else:
-                self.Choose_borders_B.config(background="#f0f0f0")
+            self.Choose_borders_B.config(background=Color_settings.My_colors.list_colors["Base"])
 
     def draw_borders(self, event):
         self.delete()
@@ -224,7 +226,8 @@ class Draw_ent(Frame):
 
     def validate(self):
         self.boss.cnts_entrance=self.ents
-        self.boss.bind_all("<Button-1>", self.boss.give_focus)
+        self.boss.bind_children(self.boss)
+        self.bind_children(self.boss.canvas_options)
         self.boss.modif_image()
         self.parent.destroy()
 

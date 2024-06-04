@@ -2,13 +2,14 @@ from tkinter import *
 import os
 import cv2
 import numpy as np
-from AnimalTA.A_General_tools import Class_change_vid_menu, Class_Lecteur, UserMessages, User_help
-
+from AnimalTA.A_General_tools import Class_change_vid_menu, Class_Lecteur, UserMessages, User_help, Color_settings
+from functools import partial
 
 class Cropping(Frame):
     """This is a frame in which the user will be able to crop the video. User will indicate what frame will be the first and the last one."""
     def __init__(self, parent, boss,main_frame, proj_pos, Video_file, speed=0, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
+        self.config(**Color_settings.My_colors.Frame_Base)
         self.parent=parent
         self.proj_pos=proj_pos
         self.main_frame=main_frame
@@ -27,7 +28,7 @@ class Cropping(Frame):
         self.Messages = UserMessages.Mess[self.Language.get()]
 
         self.fr_rate=self.Vid.Frame_rate[1]
-        self.one_every=int(round(round(self.Vid.Frame_rate[0],2)/self.Vid.Frame_rate[1]))
+        self.one_every=self.Vid.Frame_rate[0]/self.Vid.Frame_rate[1]
 
         # Name of the video and optionlist to change the current video:
         self.choice_menu= Class_change_vid_menu.Change_Vid_Menu(self, self.main_frame, self.Vid, "crop")
@@ -37,7 +38,116 @@ class Cropping(Frame):
         Grid.rowconfigure(self, 1, weight=1)
 
         # Show video and time-bar
-        self.Vid_Lecteur = Class_Lecteur.Lecteur(self, self.Vid)
+        self.create_Lecteur(speed)
+
+        self.canvas_buttons = Frame(self, bd=0, highlightthickness=0,**Color_settings.My_colors.Frame_Base)
+        self.canvas_buttons.grid(row=2, column=0, sticky="nsew")
+
+        # Widgets entries and display
+        self.canvas_entrie=Frame(self.canvas_buttons, bd=0, highlightthickness=0,**Color_settings.My_colors.Frame_Base)
+        self.canvas_entrie.grid(row=0, column=0, sticky="ew")
+
+        #Titles:
+        self.Begin_Title=Label(self.canvas_entrie,text=self.Messages["Crop5"], **Color_settings.My_colors.Label_Base)
+        self.Begin_Title.grid(row=0,column=1,columnspan=2, sticky="ew")
+        self.Duration_Title=Label(self.canvas_entrie,text=self.Messages["Crop7"], **Color_settings.My_colors.Label_Base)
+        self.Duration_Title.grid(row=0,column=4,columnspan=2, sticky="ew")
+        self.End_Title=Label(self.canvas_entrie,text=self.Messages["Crop6"], **Color_settings.My_colors.Frame_Base)
+        self.End_Title.grid(row=0,column=7,columnspan=2, sticky="ew")
+
+        # Begin:
+        regBfr = (self.register(self.Begin_fr_update), '%P', '%V')
+        self.Bfrvar = StringVar()
+        self.Begin_fr = Entry(self.canvas_entrie, textvariable=self.Bfrvar, validate="all", validatecommand=regBfr, justify="right", **Color_settings.My_colors.Entry_Base)
+        self.Begin_fr.grid(row=1, column=1, sticky="e")
+        self.BegF_label = Label(self.canvas_entrie, text=self.Messages["Crop8"], **Color_settings.My_colors.Label_Base)
+        self.BegF_label.grid(row=1, column=2, sticky="w")
+
+        regBsec = (self.register(self.Begin_sec_update), '%P', '%V')
+        self.Bsecvar = StringVar()
+        self.Begin_sec = Entry(self.canvas_entrie, textvariable=self.Bsecvar, validate="key", validatecommand=regBsec, justify="right", **Color_settings.My_colors.Entry_Base)
+        self.Begin_sec.config()
+        self.Begin_sec.grid(row=2, column=1, sticky="e")
+        self.BegS_label = Label(self.canvas_entrie, text=self.Messages["Crop9"], **Color_settings.My_colors.Label_Base)
+        self.BegS_label.grid(row=2, column=2, sticky="w")
+
+        # Duration
+        self.reg_Lfr = (self.register(self.Len_fr_update), "%P",'%V')
+        self.Lfrvar = StringVar()
+        self.Len_fr = Entry(self.canvas_entrie, textvariable=self.Lfrvar, validate="key", validatecommand=(self.reg_Lfr), justify="right", **Color_settings.My_colors.Entry_Base)
+        self.Len_fr.grid(row=1, column=4, sticky="e")
+        self.SecL_label = Label(self.canvas_entrie, text=self.Messages["Crop8"], **Color_settings.My_colors.Label_Base)
+        self.SecL_label.grid(row=1, column=5, sticky="w")
+        self.Len_fr.bind("<Return>", self.remove_focus)
+
+        self.reg_Lsec = (self.register(self.Len_sec_update), "%P", '%V')
+        self.Lsecvar = StringVar()
+        self.Len_sec = Entry(self.canvas_entrie, textvariable=self.Lsecvar, validate="key", validatecommand=(self.reg_Lsec), justify="right", **Color_settings.My_colors.Entry_Base)
+        self.Len_sec.grid(row=2, column=4, sticky="e")
+        self.SecL_label = Label(self.canvas_entrie, text=self.Messages["Crop9"], **Color_settings.My_colors.Label_Base)
+        self.SecL_label.grid(row=2, column=5, sticky="w")
+
+        self.canvas_entrie.grid_columnconfigure((1,2,4,5,7,8), weight=3, uniform="column")
+        self.canvas_entrie.grid_columnconfigure((0,3,6,9), weight=1, uniform="column")
+
+
+        # End:
+        self.Efrvar = StringVar()
+        self.End_fr = Label(self.canvas_entrie, textvariable=self.Efrvar, **Color_settings.My_colors.Label_Base)
+
+        self.End_fr.grid(row=1, column=7, sticky="e")
+        self.SecF_label = Label(self.canvas_entrie, text=self.Messages["Crop8"], **Color_settings.My_colors.Label_Base)
+        self.SecF_label.grid(row=1, column=8, sticky="w")
+
+        self.Esecvar = StringVar()
+        self.End_sec = Label(self.canvas_entrie, textvariable=self.Esecvar, **Color_settings.My_colors.Label_Base)
+        self.End_sec.grid(row=2, column=7, sticky="e")
+        self.SecE_label = Label(self.canvas_entrie, text=self.Messages["Crop9"], **Color_settings.My_colors.Label_Base)
+        self.SecE_label.grid(row=2, column=8, sticky="w")
+
+
+
+        #Fix the beg/end
+        self.canvas_fix=Frame(self.canvas_buttons, bd=0, highlightthickness=0, **Color_settings.My_colors.Frame_Base)
+        self.canvas_fix.grid(row=1, column=0, sticky="ew")
+
+        self.B_Begin=Button(self.canvas_fix, text=self.Messages["Crop3"], command=self.fix_begin, **Color_settings.My_colors.Button_Base)
+        self.B_Begin.grid(row=0,column=1)
+        self.B_End=Button(self.canvas_fix, text=self.Messages["Crop4"], command=self.fix_end, **Color_settings.My_colors.Button_Base)
+        self.B_End.grid(row=0,column=3)
+
+        self.canvas_fix.grid_columnconfigure((1,3), weight=3, uniform="column")
+        self.canvas_fix.grid_columnconfigure((0,2,4), weight=1, uniform="column")
+
+        self.HW= User_help.Help_win(self.parent, default_message=self.Messages["Crop2"],
+                                    shortcuts={self.Messages["Short_Space"]: self.Messages["Short_Space_G"],
+                                               self.Messages["Short_Ctrl_click"]:self.Messages["Short_Ctrl_click_G"],
+                                               self.Messages["Short_Ctrl_Rclick"]: self.Messages["Short_Ctrl_Rclick_G"],
+                                               self.Messages["Short_Ctrl_click_drag"]: self.Messages["Short_Ctrl_click_drag_G"],
+                                               self.Messages["Short_RArrow"]: self.Messages["Short_RArrow_G"],
+                                               self.Messages["Short_LArrow"]: self.Messages[ "Short_LArrow_G"]}, width=250)
+
+        self.HW.grid(row=0, column=1,sticky="nsew")
+
+        #Validate crop
+        self.canvas_validate=Canvas(self.parent, bd=0, highlightthickness=0,  **Color_settings.My_colors.Frame_Base)
+        self.canvas_validate.grid(row=1, column=1, sticky="sew")
+        Grid.columnconfigure(self.canvas_validate, 0, weight=1)
+
+        self.B_Validate=Button(self.canvas_validate, text=self.Messages["Validate"], command=self.Validate_crop, **Color_settings.My_colors.Button_Base)
+        self.B_Validate.config(background=Color_settings.My_colors.list_colors["Validate"],fg=Color_settings.My_colors.list_colors["Fg_Validate"])
+        self.B_Validate.grid(row=0,column=0, sticky="ews")
+
+        self.B_Validate_NContinue=Button(self.canvas_validate, text=self.Messages["Validate_NC"], command=lambda: self.Validate_crop(follow=True), **Color_settings.My_colors.Button_Base)
+        self.B_Validate_NContinue.config(background=Color_settings.My_colors.list_colors["Validate"], fg=Color_settings.My_colors.list_colors["Fg_Validate"])
+        self.B_Validate_NContinue.grid(row=1,column=0, sticky="ews")
+
+        self.update_times()
+        self.bind_all("<Button-1>", self.give_focus)
+
+
+    def create_Lecteur(self, speed):
+        self.Vid_Lecteur = Class_Lecteur.Lecteur(self, self.Vid, show_whole_frame=True)
         self.Vid_Lecteur.grid(row=1, column=0, sticky="nsew")
         self.Vid_Lecteur.speed.set(speed)
         self.Vid_Lecteur.change_speed()
@@ -47,102 +157,6 @@ class Cropping(Frame):
         self.Vid_Lecteur.update_image(self.Vid_Lecteur.to_sub)
         self.Vid_Lecteur.bindings()
 
-        self.canvas_buttons = Frame(self, bd=2, highlightthickness=1)
-        self.canvas_buttons.grid(row=2, column=0, sticky="nsew")
-
-        # Widgets entries and display
-        self.canvas_entrie=Frame(self.canvas_buttons, bd=2, highlightthickness=1)
-        self.canvas_entrie.grid(row=0, column=0, sticky="ew")
-
-        #Titles:
-        self.Begin_Title=Label(self.canvas_entrie,text=self.Messages["Crop5"])
-        self.Begin_Title.grid(row=0,column=1,columnspan=2, sticky="ew")
-        self.Duration_Title=Label(self.canvas_entrie,text=self.Messages["Crop7"])
-        self.Duration_Title.grid(row=0,column=4,columnspan=2, sticky="ew")
-        self.End_Title=Label(self.canvas_entrie,text=self.Messages["Crop6"])
-        self.End_Title.grid(row=0,column=7,columnspan=2, sticky="ew")
-
-        # Begin:
-        regBfr = (self.register(self.Begin_fr_update), '%P', '%V')
-        self.Bfrvar = StringVar()
-        self.Begin_fr = Entry(self.canvas_entrie, textvariable=self.Bfrvar, validate="all", validatecommand=regBfr, justify="right")
-        self.Begin_fr.grid(row=1, column=1, sticky="e")
-        self.BegF_label = Label(self.canvas_entrie, text=self.Messages["Crop8"])
-        self.BegF_label.grid(row=1, column=2, sticky="w")
-
-        regBsec = (self.register(self.Begin_sec_update), '%P', '%V')
-        self.Bsecvar = StringVar()
-        self.Begin_sec = Entry(self.canvas_entrie, textvariable=self.Bsecvar, validate="key", validatecommand=regBsec, justify="right")
-        self.Begin_sec.config()
-        self.Begin_sec.grid(row=2, column=1, sticky="e")
-        self.BegS_label = Label(self.canvas_entrie, text=self.Messages["Crop9"])
-        self.BegS_label.grid(row=2, column=2, sticky="w")
-
-        # Duration
-        self.reg_Lfr = (self.register(self.Len_fr_update), "%P",'%V')
-        self.Lfrvar = StringVar()
-        self.Len_fr = Entry(self.canvas_entrie, textvariable=self.Lfrvar, validate="key", validatecommand=(self.reg_Lfr), justify="right")
-        self.Len_fr.grid(row=1, column=4, sticky="e")
-        self.SecL_label = Label(self.canvas_entrie, text=self.Messages["Crop8"])
-        self.SecL_label.grid(row=1, column=5, sticky="w")
-        self.Len_fr.bind("<Return>", self.remove_focus)
-
-        self.reg_Lsec = (self.register(self.Len_sec_update), "%P", '%V')
-        self.Lsecvar = StringVar()
-        self.Len_sec = Entry(self.canvas_entrie, textvariable=self.Lsecvar, validate="key", validatecommand=(self.reg_Lsec), justify="right")
-        self.Len_sec.grid(row=2, column=4, sticky="e")
-        self.SecL_label = Label(self.canvas_entrie, text=self.Messages["Crop9"])
-        self.SecL_label.grid(row=2, column=5, sticky="w")
-
-        self.canvas_entrie.grid_columnconfigure((1,2,4,5,7,8), weight=3, uniform="column")
-        self.canvas_entrie.grid_columnconfigure((0,3,6,9), weight=1, uniform="column")
-
-
-        # End:
-        self.Efrvar = StringVar()
-        self.End_fr = Label(self.canvas_entrie, textvariable=self.Efrvar,
-                            background="white")
-        self.End_fr.grid(row=1, column=7, sticky="e")
-        self.SecF_label = Label(self.canvas_entrie, text=self.Messages["Crop8"])
-        self.SecF_label.grid(row=1, column=8, sticky="w")
-
-        self.Esecvar = StringVar()
-        self.End_sec = Label(self.canvas_entrie, textvariable=self.Esecvar,
-                             background="white")
-        self.End_sec.grid(row=2, column=7, sticky="e")
-        self.SecE_label = Label(self.canvas_entrie, text=self.Messages["Crop9"])
-        self.SecE_label.grid(row=2, column=8, sticky="w")
-
-
-
-        #Fix the beg/end
-        self.canvas_fix=Frame(self.canvas_buttons, bd=2, highlightthickness=1)
-        self.canvas_fix.grid(row=1, column=0, sticky="ew")
-
-        self.B_Begin=Button(self.canvas_fix, text=self.Messages["Crop3"], command=self.fix_begin)
-        self.B_Begin.grid(row=0,column=1)
-        self.B_End=Button(self.canvas_fix, text=self.Messages["Crop4"], command=self.fix_end)
-        self.B_End.grid(row=0,column=3)
-
-        self.canvas_fix.grid_columnconfigure((1,3), weight=3, uniform="column")
-        self.canvas_fix.grid_columnconfigure((0,2,4), weight=1, uniform="column")
-
-        self.HW= User_help.Help_win(self.parent, default_message=self.Messages["Crop2"], width=250)
-        self.HW.grid(row=0, column=1,sticky="nsew")
-
-        #Validate crop
-        self.canvas_validate=Canvas(self.parent, bd=2, highlightthickness=1, relief='ridge')
-        self.canvas_validate.grid(row=1, column=1, sticky="sew")
-        Grid.columnconfigure(self.canvas_validate, 0, weight=1)
-
-        self.B_Validate=Button(self.canvas_validate, text=self.Messages["Validate"],bg="#6AED35", command=self.Validate_crop)
-        self.B_Validate.grid(row=0,column=0, sticky="ews")
-
-        self.B_Validate_NContinue=Button(self.canvas_validate, text=self.Messages["Validate_NC"],bg="#6AED35", command=lambda: self.Validate_crop(follow=True))
-        self.B_Validate_NContinue.grid(row=1,column=0, sticky="ews")
-
-        self.update_times()
-        self.bind_all("<Button-1>", self.give_focus)
 
     def give_focus(self,event):
         #Once the user stop to write in the text field, the focus come back  to the video reader
@@ -348,6 +362,7 @@ class Cropping(Frame):
             self.Vid.Cropped_sp[1]=self.CSp.copy()
             self.Vid.shape=(self.Vid.Cropped_sp[1][2]-self.Vid.Cropped_sp[1][0],self.Vid.Cropped_sp[1][3]-self.Vid.Cropped_sp[1][1])
 
+
         if follow and self.Vid != self.main_frame.liste_of_videos[-1]:
             for i in range(len(self.main_frame.liste_of_videos)):
                 if self.main_frame.liste_of_videos[i]==self.Vid:
@@ -369,7 +384,7 @@ class Cropping(Frame):
 
 
     #If the user try to interact with the frame:
-    def pressed_can(self, Pt, Shift):
+    def pressed_can(self, Pt, *args):
         #We check if the user was pressing on one of the cropping lines, the moving variable indicates which line is pressed
         if abs(Pt[0]-self.CSp[1])<self.Vid_Lecteur.ratio*7:#If we press on the cropping line:
             self.moving=1

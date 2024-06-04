@@ -1,5 +1,5 @@
 from tkinter import *
-from AnimalTA.A_General_tools import Function_draw_mask as Dr, UserMessages
+from AnimalTA.A_General_tools import Function_draw_mask as Dr, UserMessages, Color_settings
 import cv2
 import PIL
 import numpy as np
@@ -11,7 +11,7 @@ class Assign(Frame):
         self.parent=parent
         self.boss=boss
         self.grid(sticky="nsew")
-        self.config()
+        self.config(**Color_settings.My_colors.Frame_Base)
         self.grab_set()
 
         Grid.columnconfigure(self.parent,0,weight=1)
@@ -36,19 +36,20 @@ class Assign(Frame):
         Grid.columnconfigure(self,0,weight=1)
         Grid.rowconfigure(self, 0, weight=1)
 
-        self.canvas_video=Canvas(self)
+        self.canvas_video=Canvas(self, **Color_settings.My_colors.Frame_Base)
         self.canvas_video.grid(row=0, column=0, sticky="nsew")
 
         #We create one slider for each arena
-        self.Opn_Fr = Frame(self)
+        self.Opn_Fr = Frame(self, **Color_settings.My_colors.Frame_Base)
         self.Opn_Fr.grid(row=0, column=1, sticky="nsew")
         self.all_vals_var=[IntVar(self,x) for x in self.boss.liste_ind_per_ar]
         for row in range(len(self.Arenas)):
-            Label(self.Opn_Fr, text=self.Messages["Arena"] + " " + str(row)).grid(row=row, column=0)
-            Scale(self.Opn_Fr,from_=1, to=100, variable=self.all_vals_var[row], orient=HORIZONTAL).grid(row=row, column=1)
+            Label(self.Opn_Fr, text=self.Messages["Arena"] + " " + str(row), **Color_settings.My_colors.Label_Base).grid(row=row, column=0)
+            Scale(self.Opn_Fr,from_=1, to=100, variable=self.all_vals_var[row], orient=HORIZONTAL, **Color_settings.My_colors.Scale_Base).grid(row=row, column=1)
 
         #Validation button
-        self.B_validate = Button(self.Opn_Fr, text=self.Messages["Validate"], command=self.validate, background="#6AED35")
+        self.B_validate = Button(self.Opn_Fr, text=self.Messages["Validate"], command=self.validate, **Color_settings.My_colors.Button_Base)
+        self.B_validate.config(background=Color_settings.My_colors.list_colors["Validate"],fg=Color_settings.My_colors.list_colors["Fg_Validate"])
         self.B_validate.grid(columnspan=2)
 
         self.final_width = 700

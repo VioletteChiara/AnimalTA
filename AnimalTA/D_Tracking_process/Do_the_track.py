@@ -1,13 +1,15 @@
 import cv2
 import decord
-from AnimalTA.A_General_tools import Function_draw_mask as Dr, UserMessages
+from AnimalTA.A_General_tools import Function_draw_mask as Dr, UserMessages, Message_simple_question as MsgBox
 from AnimalTA.D_Tracking_process import Function_prepare_images, Function_assign_cnts, security_settings_track
 import numpy as np
 import os
-from tkinter import messagebox
 from tkinter import *
 import threading
 import queue
+import pickle
+import sys
+import re
 
 '''
 To improve the speed of the tracking, we will separate the work in 3 threads.
@@ -22,7 +24,7 @@ security_settings_track.stop_threads=False
 
 
 
-def Do_tracking(parent, Vid, folder, type, portion=False, prev_row=None):
+def Do_tracking(parent, Vid, folder, type, portion=False, prev_row=None, arena_interest=None):
     '''This is the main tracking function of the program.
     parent=container (main window)
     Vid=current video
@@ -36,6 +38,11 @@ def Do_tracking(parent, Vid, folder, type, portion=False, prev_row=None):
     Language.set(f.read())
     f.close()
     Messages = UserMessages.Mess[Language.get()]
+
+    Param_file = UserMessages.resource_path(os.path.join("AnimalTA", "Files", "Settings"))
+    with open(Param_file, 'rb') as fp:
+        Params = pickle.load(fp)
+        use_Kalman=Params["Use_Kalman"]
 
     # Where coordinates will be saved, if the folder did not exists, it is created.
     if Vid.User_Name == Vid.Name:
@@ -61,7 +68,7 @@ def Do_tracking(parent, Vid, folder, type, portion=False, prev_row=None):
         To_save = os.path.join(folder, "Coordinates", file_name + "_Coordinates.csv")
 
     # if the user choose to reduce the frame rate.
-    one_every = int(round(round(Vid.Frame_rate[0], 2) / Vid.Frame_rate[1]))
+    one_every = Vid.Frame_rate[0] / Vid.Frame_rate[1]
     Which_part = 0
 
     mask = Dr.draw_mask(Vid)  # A mask for the arenas
@@ -91,7 +98,7 @@ def Do_tracking(parent, Vid, folder, type, portion=False, prev_row=None):
                 grey = Vid.Back[1].copy()
 
             if Vid.Mask[0]:  # If there were arenas defined by the user, we do the correction only for what happen inside these arenas.
-                maskT = mask[:, :, 0].astype(bool)
+                maskT = mask[:, :].astype(bool)
                 or_bright = np.sum(grey[maskT]) / (255 * grey[maskT].size)  # Mean value
             else:
                 or_bright = np.sum(grey) / (255 * grey.size)  # Mean value
@@ -104,24 +111,31 @@ def Do_tracking(parent, Vid, folder, type, portion=False, prev_row=None):
     # We identify the different arenas:
     if type=="fixed":
         if Vid.Mask[0]:
-            Arenas, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            Arenas_with_holes, Arenas = Dr.exclude_inside(mask)
             Arenas = Dr.Organise_Ars(Arenas)
         else:
-            Arenas = [np.array([[[0, 0]], [[Vid.shape[1], 0]], [[Vid.shape[1], Vid.shape[0]]], [[0, Vid.shape[0]]]],
-                               dtype="int32")]
+            Arenas = [np.array([[[0, 0]], [[Vid.shape[1], 0]], [[Vid.shape[1], Vid.shape[0]]], [[0, Vid.shape[0]]]], dtype="int32")]
+
+        if portion and arena_interest!=None:
+            Arenas = [Arenas[arena_interest]]
+
+
     elif type=="variable":
         if Vid.Mask[0]:
-            Main_Arenas, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            Arenas_with_holes, Main_Arenas = Dr.exclude_inside(mask)
             Main_Arenas = Dr.Organise_Ars(Main_Arenas)
+
         else:
-            Main_Arenas = [np.array([[[0, 0]], [[Vid.shape[1], 0]], [[Vid.shape[1], Vid.shape[0]]], [[0, Vid.shape[0]]]],
-                         dtype="int32")]
+            Main_Arenas = [np.array([[[0, 0]], [[Vid.shape[1], 0]], [[Vid.shape[1], Vid.shape[0]]], [[0, Vid.shape[0]]]], dtype="int32")]
 
         Arenas = []
+        Main_Arenas_image = []
         Main_Arenas_Bimage = []
+
         for Ar in range(len(Main_Arenas)):
             empty = np.zeros([Vid.shape[0], Vid.shape[1], 1], np.uint8)
             empty = cv2.drawContours(empty, [Main_Arenas[Ar]], -1, 255, -1)
+            Main_Arenas_image.append(mask.copy())
             empty = cv2.drawContours(empty, Vid.Entrance[Ar], -1, 255, -1)
             mask = cv2.drawContours(mask, Vid.Entrance[Ar], -1, 255, -1)
             new_AR, _ = cv2.findContours(empty, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -137,9 +151,10 @@ def Do_tracking(parent, Vid, folder, type, portion=False, prev_row=None):
     Th_extract_cnts=threading.Thread(target=Function_prepare_images.Image_modif, args=(Vid, start, end, one_every, Which_part, Prem_image_to_show, mask, or_bright, Extracted_cnts, Too_much_frame, AD))
 
     if type=="fixed":
-        Th_associate_cnts=threading.Thread(target=Function_assign_cnts.Treat_cnts_fixed, args=(Vid, Arenas, start, prev_row, Extracted_cnts, Too_much_frame, Th_extract_cnts, To_save, portion, one_every, AD))
+        Th_associate_cnts=threading.Thread(target=Function_assign_cnts.Treat_cnts_fixed, args=(Vid, Arenas, start, end, prev_row, Extracted_cnts, Too_much_frame, Th_extract_cnts, To_save, portion, one_every, AD, use_Kalman))
     elif type=="variable":
-        Th_associate_cnts=threading.Thread(target=Function_assign_cnts.Treat_cnts_variable, args=(Vid, Arenas, Main_Arenas_Bimage, start, prev_row, Extracted_cnts, Too_much_frame, Th_extract_cnts, To_save, portion, one_every, AD))
+        keep_entrance=Params["Keep_entrance"]
+        Th_associate_cnts=threading.Thread(target=Function_assign_cnts.Treat_cnts_variable, args=(Vid, Arenas, Main_Arenas_image, Main_Arenas_Bimage, start, end, prev_row, Extracted_cnts, Too_much_frame, Th_extract_cnts, To_save, portion, one_every, AD, not keep_entrance, use_Kalman))
 
     Th_extract_cnts.start()
     Th_associate_cnts.start()
@@ -158,10 +173,17 @@ def Do_tracking(parent, Vid, folder, type, portion=False, prev_row=None):
         elif overload==-1:
             security_settings_track.activate_protection=False
 
+    parent.timer = 1
+    parent.show_load()
+
 
     if overload==1:  # To prevent the effects of memory leak.
         security_settings_track.stop_threads = True
-        messagebox.showinfo(Messages["TError_memory"], Messages["Error_memory"])
+        question = MsgBox.Messagebox(parent=parent, title=Messages["TError_memory"],
+                                     message=Messages["Error_memory"],
+                                     Possibilities=Messages["Continue"])
+        parent.wait_window(question)
+
         del security_settings_track.capture
         if type == "fixed":
             return (False)
@@ -170,6 +192,7 @@ def Do_tracking(parent, Vid, folder, type, portion=False, prev_row=None):
 
     Th_extract_cnts.join()
     Th_associate_cnts.join()
+
 
     if overload!=1:
         del security_settings_track.capture

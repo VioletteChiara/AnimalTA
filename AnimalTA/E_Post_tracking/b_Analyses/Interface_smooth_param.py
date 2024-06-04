@@ -1,11 +1,12 @@
 from tkinter import *
-from AnimalTA.A_General_tools import UserMessages
+from AnimalTA.A_General_tools import UserMessages, Color_settings
 
 
 class Modify(Frame):
     """This little frame allows the user to modify the parameters of the smoothing filter."""
     def __init__(self, parent, boss, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
+        self.config(**Color_settings.My_colors.Frame_Base)
         self.parent=parent
         self.boss=boss
         self.grid()
@@ -33,38 +34,38 @@ class Modify(Frame):
         self.winfo_toplevel().title(self.Messages["Smooth0"])
 
         #We create two scales to allow the user to change the parameters values
-        self.Label_wlen=Label(self, text=self.Messages["Smooth1"])
+        self.Label_wlen=Label(self, text=self.Messages["Smooth1"], **Color_settings.My_colors.Label_Base)
         self.Label_wlen.grid(row=0, column=1)
 
-        self.scale_wlen_all=Scale(self,from_=3, to=self.max_windows, command=self.move_scaleWL, orient=HORIZONTAL, length=300)
+        self.scale_wlen_all=Scale(self,from_=3, to=self.max_windows, command=self.move_scaleWL, orient=HORIZONTAL, length=300, **Color_settings.My_colors.Scale_Base)
         self.scale_wlen_all.grid(row=1, column=1)
         self.scale_wlen_all.set(or_val_wl)
 
-        self.minus_wlen_all=Button(self,text="<",command=self.move_scaleWL_min)
+        self.minus_wlen_all=Button(self,text="<",command=self.move_scaleWL_min, **Color_settings.My_colors.Button_Base)
         self.minus_wlen_all.grid(row=1, column=0)
 
-        self.plus_wlen_all=Button(self,text=">",command=self.move_scaleWL_plus)
+        self.plus_wlen_all=Button(self,text=">",command=self.move_scaleWL_plus, **Color_settings.My_colors.Button_Base)
         self.plus_wlen_all.grid(row=1, column=2)
 
-        self.Label_poly=Label(self, text=self.Messages["Smooth2"])
+        self.Label_poly=Label(self, text=self.Messages["Smooth2"], **Color_settings.My_colors.Label_Base)
         self.Label_poly.grid(row=3, column=1)
 
-        self.scale_poly_all=Scale(self,from_=1, to=self.scale_wlen_all.get()-1, command=self.move_scale_poly, orient=HORIZONTAL, length=300)
+        self.scale_poly_all=Scale(self,from_=1, to=self.scale_wlen_all.get()-1, command=self.move_scale_poly, orient=HORIZONTAL, length=300, **Color_settings.My_colors.Scale_Base)
         self.scale_poly_all.grid(row=4, column=1)
         self.scale_poly_all.set(or_val_poly)
 
-        self.minus_poly_all=Button(self,text="<",command=self.move_scale_poly_min)
+        self.minus_poly_all=Button(self,text="<",command=self.move_scale_poly_min, **Color_settings.My_colors.Button_Base)
         self.minus_poly_all.grid(row=4, column=0)
 
-        self.plus_poly_all=Button(self,text=">",command=self.move_scale_poly_plus)
+        self.plus_poly_all=Button(self,text=">",command=self.move_scale_poly_plus, **Color_settings.My_colors.Button_Base)
         self.plus_poly_all.grid(row=4, column=2)
 
         #Show the result of the smoothing filter with set parameters
-        self.Show_param=Button(self,text=self.Messages["Smooth3"],command=self.change_param)
+        self.Show_param=Button(self,text=self.Messages["Smooth3"],command=self.change_param, **Color_settings.My_colors.Button_Base)
         self.Show_param.grid(row=6, column=0)
 
         #Save the parameters and close this Frame
-        self.Validate_param=Button(self,text=self.Messages["Validate"],command=self.validate)
+        self.Validate_param=Button(self,text=self.Messages["Validate"],command=self.validate, **Color_settings.My_colors.Button_Base)
         self.Validate_param.grid(row=6, column=1)
 
         self.rowconfigure(2, minsize=30)
@@ -72,14 +73,14 @@ class Modify(Frame):
 
     def move_scaleWL_min(self):
         #Decrease the windows length parameter by 2 (only odd numbers are accepted)
-        self.plus_wlen_all.config(state="active")
+        self.plus_wlen_all.config(state="normal")
         n=self.scale_wlen_all.get()-2
         self.scale_wlen_all.set(n)
         self.fix(n)
 
     def move_scaleWL_plus(self):
         # Increase the windows length parameter by 2 (only odd numbers are accepted)
-        self.minus_wlen_all.config(state="active")
+        self.minus_wlen_all.config(state="normal")
         n=self.scale_wlen_all.get()+2
         self.scale_wlen_all.set(n)
         self.fix(n)
@@ -87,8 +88,8 @@ class Modify(Frame):
     def move_scaleWL(self,n):
         #Update teh buttons and values when the windows scale is chnaged by user
         self.fix(n)
-        self.minus_wlen_all.config(state="active")
-        self.plus_wlen_all.config(state="active")
+        self.minus_wlen_all.config(state="normal")
+        self.plus_wlen_all.config(state="normal")
         if int(n)<=3:
             self.minus_wlen_all.config(state="disable")
         if int(n)>=self.max_windows:
@@ -104,7 +105,7 @@ class Modify(Frame):
 
     def move_scale_poly_min(self):
         #Decrease the polyorder parameter by 1
-        self.plus_poly_all.config(state="active")
+        self.plus_poly_all.config(state="normal")
         n=self.scale_poly_all.get()-1
         if n>=1:
             self.scale_poly_all.set(n)
@@ -113,7 +114,7 @@ class Modify(Frame):
 
     def move_scale_poly_plus(self):
         #Increase the polyorder parameter by 1
-        self.minus_poly_all.config(state="active")
+        self.minus_poly_all.config(state="normal")
         n=self.scale_poly_all.get()+1
         if n<=self.scale_wlen_all.get()-1:
             self.scale_poly_all.set(n)
@@ -122,8 +123,8 @@ class Modify(Frame):
 
     def move_scale_poly(self,n):
         #Change the button state when the value of polyorder is modified directly on the scale by user
-        self.minus_poly_all.config(state="active")
-        self.plus_poly_all.config(state="active")
+        self.minus_poly_all.config(state="normal")
+        self.plus_poly_all.config(state="normal")
         if int(n)<2:
             self.minus_poly_all.config(state="disable")
         if int(n)>=self.scale_wlen_all.get()-1:

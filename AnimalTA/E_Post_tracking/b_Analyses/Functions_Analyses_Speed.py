@@ -1,12 +1,314 @@
 import math
-
 import cv2
 import numpy as np
 import itertools
 from scipy.spatial.distance import cdist
 from AnimalTA.A_General_tools import Function_draw_mask
+from operator import itemgetter
 
 """This file contains a set of functions used to extract the analyses results from the target's trajectories"""
+
+
+def draw_shape(Vid, Arena, Shape):
+    Xss = [pt[0] for pt in Shape[1]]
+    Yss = [pt[1] for pt in Shape[1]]
+
+    empty = np.zeros([Vid.shape[0], Vid.shape[1], 1], np.uint8)
+    if Shape[0] == "Rectangle":
+        empty, _ = Function_draw_mask.Draw_rect(empty, Xss, Yss, color=(255, 0, 0), thick=-1)
+    elif Shape[0] == "Polygon":
+        empty, _ = Function_draw_mask.Draw_Poly(empty, Xss, Yss, color=(255, 0, 0), thick=-1)
+    elif Shape[0] == "Ellipse":
+        empty, _ = Function_draw_mask.Draw_elli(empty, Xss, Yss, color=(255, 0, 0), thick=-1)
+    elif Shape[0]== "Point":
+        empty = cv2.circle(empty, (Shape[1][0][0], Shape[1][0][1]), int(Shape[2]*Vid.Scale[0]), (255, 0, 0), -1)
+    elif Shape[0]== "All_borders" or Shape[0]== "Border":
+        if Shape[0] == "All_borders":
+            empty = np.zeros([Vid.shape[0], Vid.shape[1], 1], np.uint8)
+            border = cv2.drawContours(np.copy(empty), [Arena], -1, (255, 255, 255),
+                                      int(round(Shape[2] * float(Vid.Scale[0]) * 2)))
+            area = cv2.drawContours(np.copy(empty), [Arena], -1, (255, 255, 255), -1)
+            empty = cv2.bitwise_and(border, border, mask=area)
+
+        elif Shape[0] == "Borders":
+            empty = np.zeros([Vid.shape[0], Vid.shape[1], 1], np.uint8)
+            border = np.copy(empty)
+
+            for bord in Shape[1]:
+                border = cv2.line(border, bord[0], bord[1], color=(255, 0, 0), thickness=2)
+            cnts, _ = cv2.findContours(border, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+
+            border = cv2.drawContours(border, cnts, -1, (255, 255, 255), int(round(Shape[2] * float(Vid.Scale[0]) * 2)))
+            area = cv2.drawContours(np.copy(empty), [Arena], -1, (255, 255, 255), -1)
+            empty = cv2.bitwise_and(border, border, mask=area)
+
+    cnts, _ = cv2.findContours(empty, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+
+    mask_glob = Function_draw_mask.draw_mask(Vid)
+    mask = np.zeros([Vid.shape[0], Vid.shape[1], 1], np.uint8)
+    mask = cv2.drawContours(mask, [Arena], -1, (255), -1)
+
+    mask = cv2.bitwise_and(mask, mask_glob)
+    empty = cv2.bitwise_and(mask, empty)
+
+    cnts_cleaned, _ = cv2.findContours(empty, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+
+    if len(cnts)>0:
+        final=[True,cnts[0]]
+    else:
+        final=[False,[]]
+
+    if len(cnts_cleaned)>0:
+        final=final+[True,cnts_cleaned[0]]
+    else:
+        final=final+[False,[]]
+    return(final)
+
+def calculate_exploration(method, Vid, Coos, deb, end, Arena, show=False, image=None):
+    new_row=[]
+    # Exploration:
+    if method[0] == 0:  # Si c'est method moderne
+        radius = math.sqrt((float(method[1])) / math.pi)
+        empty = np.zeros((Vid.shape[0], Vid.shape[1], 1), np.uint8)
+        last_pt = [-1000, -1000]
+        if radius > 0:
+            for pt in Coos[deb:end + 1]:
+                if pt[0] != -1000 and last_pt[0] != -1000:
+                    cv2.line(empty, (int(float(last_pt[0])), int(float(last_pt[1]))),
+                             (int(float(pt[0])), int(float(pt[1]))), (255),
+                             max(1, int(radius * 2 * float(Vid.Scale[0]))))
+                elif pt[0] != -1000:
+                    cv2.circle(empty, (int(float(pt[0])), int(float(pt[1]))),
+                               int(radius * float(Vid.Scale[0])), (255), -1)
+                last_pt = pt
+
+        mask_glob = Function_draw_mask.draw_mask(Vid)
+        mask = np.zeros([Vid.shape[0], Vid.shape[1], 1], np.uint8)
+        mask = cv2.drawContours(mask, [Arena], -1, (255), -1)
+        mask = cv2.bitwise_and(mask, mask_glob)
+        empty = cv2.bitwise_and(mask, empty)
+
+        new_row.append(np.sum(empty > [0]) * (1 / float(Vid.Scale[0]) ** 2))  # We want to save the total surface explored (independantly of the size of the arena)
+        new_row.append(len(np.where(empty > [0])[0]) / len(np.where(mask == [255])[0]))  # Now relative to the arena area
+        new_row.append("Modern")  # Method
+        new_row.append(method[1])  # Area
+        new_row.append("NA")  # Param_aspect
+
+        if not show:
+            return(new_row)#Absolute, relative, method, area, param aspect
+        else:
+            return (new_row, empty)
+
+    elif method[0] == 1:  # Si c'est mesh carré
+        No_NA_Coos = np.array(Coos[deb:end + 1])
+        No_NA_Coos = No_NA_Coos[np.all(No_NA_Coos != -1000, axis=1)]
+        No_NA_Coos = No_NA_Coos.astype('float')
+
+        largeur = math.sqrt(float(method[1]) * float(Vid.Scale[0]) ** 2)
+        nb_squares_v = math.ceil((max(Arena[:, :, 0]) - min(Arena[:, :, 0])) / largeur)
+        nb_squares_h = math.ceil((max(Arena[:, :, 1]) - min(Arena[:, :, 1])) / largeur)
+
+        max_x = min(Arena[:, :, 0]) + nb_squares_v * (largeur)
+        max_y = min(Arena[:, :, 1]) + nb_squares_h * (largeur)
+
+        decal_x = (max_x - max(Arena[:, :, 0])) / 2
+        decal_y = (max_y - max(Arena[:, :, 1])) / 2
+
+        Xs = (np.floor((No_NA_Coos[:, 0] - (min(Arena[:, :, 0]) - decal_x)) / largeur))
+        Ys = (np.floor((No_NA_Coos[:, 1] - (min(Arena[:, :, 1]) - decal_y)) / largeur))
+
+        XYs = np.array(list(zip(Xs, Ys)))
+        if not show:
+            unique = np.unique(XYs, axis=0, return_counts=False)
+        else:
+            unique, count = np.unique(XYs, axis=0, return_counts=True)
+
+        new_row.append(len(unique))  # Value
+        new_row.append(len(unique) / (nb_squares_v * nb_squares_h))  # Value divided by all possible
+        new_row.append("Squares_mesh")  # Method
+        new_row.append("NA")  # Param_aspect
+        new_row.append(method[1])  # Area
+        new_row.append("NA")  # Param_aspect
+
+        if not show:
+            return(new_row)
+
+        else:
+            colors = np.array([[255] * 128 + [255] * 128 + list(reversed(range(256))),
+                               [255] * 128 + list(reversed(range(0, 256, 2))) + [0] * 256,
+                               list(reversed(range(0, 256, 2))) + [0] * 128 + [0] * 256], dtype=int).T
+
+            for square in range(len(count)):
+                color = colors[int(round((count[square] / sum(count)) * (len(colors) - 1)))]
+                image = cv2.rectangle(image, pt1=(
+                    int(min(Arena[:, :, 0]) - decal_x + unique[square][0] * (largeur)),
+                    int(min(Arena[:, :, 1]) - decal_y + unique[square][1] * (largeur))),
+                                           pt2=(int(min(Arena[:, :, 0]) - decal_x + (unique[square][0] + 1) * (
+                                               largeur)),
+                                                int(min(Arena[:, :, 1]) - decal_y + (unique[square][1] + 1) * (
+                                                    largeur))),
+                                           color=[int(c) for c in color], thickness=-1)
+
+                for vert in range(nb_squares_v + 1):
+                    image = cv2.line(image,
+                                          pt1=(int(min(Arena[:, :, 0]) - decal_x + vert * (largeur)),
+                                               int(min(Arena[:, :, 1]) - decal_y)), pt2=(
+                            int(min(Arena[:, :, 0]) - decal_x + vert * (largeur)),
+                            int(max(Arena[:, :, 1]) + decal_y)), color=(0, 0, 0), thickness=2)
+
+                for horz in range(nb_squares_h + 1):
+                    image = cv2.line(image, pt1=(int(min(Arena[:, :, 0]) - decal_x),
+                                                           int(min(Arena[:, :, 1]) - decal_y + horz * (
+                                                               largeur))),
+                                          pt2=(int(max(Arena[:, :, 0]) + decal_x),
+                                               int(min(Arena[:, :, 1]) - decal_y + horz * (largeur))),
+                                          color=(0, 0, 0),
+                                          thickness=2)
+
+                image[(50): (image.shape[0] - 50), (image.shape[1] - 75):(image.shape[1])] = (
+                150, 150, 150)
+
+                for raw in range(image.shape[0] - 150):
+                    color = colors[int((raw / (image.shape[0] - 150)) * (len(colors) - 1))]
+                    image[image.shape[0] - 75 - raw,
+                    (image.shape[1] - 65):(image.shape[1] - 45)] = color
+
+                image = cv2.putText(image, "100%", (image.shape[1] - 43, 75), cv2.FONT_HERSHEY_SIMPLEX,
+                                         fontScale=0.4, color=(0, 0, 0), thickness=1)
+                image = cv2.putText(image, "50%", (image.shape[1] - 43, int(image.shape[0] / 2)),
+                                         cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.4, color=(0, 0, 0), thickness=1)
+                image = cv2.putText(image, "0%", (image.shape[1] - 43, image.shape[0] - 75),
+                                         cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.4, color=(0, 0, 0), thickness=1)
+
+            return (new_row, image)
+
+    elif method[0] == 2:  # Si c'est mesh circulaire
+        No_NA_Coos = np.array(Coos[deb:end + 1])
+        No_NA_Coos = No_NA_Coos[np.all(No_NA_Coos != -1000, axis=1)]
+        No_NA_Coos = No_NA_Coos.astype('float')
+
+        M = cv2.moments(Arena)
+        cX = int(M["m10"] / M["m00"])
+        cY = int(M["m01"] / M["m00"])
+
+        max_size = max(list(
+            np.sqrt((Arena[:, :, 0] - cX) ** 2 + (Arena[:, :, 1] - cY) ** 2)))
+
+        last_rad = math.sqrt((float(method[1]) * float(Vid.Scale[0]) ** 2) / math.pi)
+        last_nb = 1
+
+        list_rads = [last_rad]
+        list_nb = [1]
+        list_angles = [[0]]
+
+        while last_rad < max_size:
+            new_rad = ((math.sqrt(last_nb) + math.sqrt(method[2] ** 2)) / math.sqrt(
+                last_nb)) * last_rad
+            new_nb = int(round((math.sqrt(last_nb) + math.sqrt(method[2] ** 2)) ** 2))
+            cur_nb = new_nb - last_nb
+
+            list_nb.append(cur_nb)
+
+            one_angle = (2 * math.pi) / cur_nb
+            cur_angle = 0
+            tmp_angles = [0]
+            for angle in range(cur_nb):
+                cur_angle += one_angle
+                tmp_angles.append(cur_angle)
+
+            list_angles.append(tmp_angles)
+            list_rads.append(new_rad)
+
+            last_rad = new_rad
+            last_nb = new_nb
+
+        # We summarise the position of the individual:
+        Dists = list(np.sqrt((No_NA_Coos[:, 0] - cX) ** 2 + (No_NA_Coos[:, 1] - cY) ** 2))
+        Circles = ([np.argmax(list_rads > dist) for dist in Dists])  # In which circle
+        Angles = np.arctan2((No_NA_Coos[:, 1] - cY), (No_NA_Coos[:, 0] - cX))
+        liste_angles_per_I = list(itemgetter(*Circles)(list_angles))
+        Portions = ([np.argmax(liste_angles_per_I[idx] >= (angle + math.pi)) for idx, angle in
+                     enumerate(Angles)])  # In which portion
+
+        Pos = np.array(list(zip(Circles, Portions)))
+
+        if not show:
+            unique = np.unique(Pos, axis=0, return_counts=False)
+        else:
+            unique, count = np.unique(Pos, axis=0, return_counts=True)
+
+        new_row.append(len(unique))  # Value
+        new_row.append(len(unique) / sum(list_nb))  # Value divided by all possible cells
+        new_row.append("Circular_mesh")  # Method
+        new_row.append(method[1])  # Area
+        new_row.append(method[2])  # Param_aspect
+
+        if not show:
+            return(new_row)
+        else:
+            colors=np.array([[255]*128 + [255]*128 + list(reversed(range(256))),[255]*128 + list(reversed(range(0,256,2)))+ [0]*256,list(reversed(range(0,256,2)))+[0]*128 +[0]*256], dtype=int).T
+            image = cv2.circle(image, (cX, cY), int(last_rad), [int(c) for c in colors[0]], -1)
+            for square in range(len(unique)):
+                color = colors[int(round((count[square] / sum(count)) * (len(colors) - 1)))]
+                if unique[square][0] == 0:
+                    image = cv2.circle(image, (cX, cY), (int(list_rads[unique[square][0]])),
+                                            color=[int(c) for c in color], thickness=-1)
+                else:
+                    diameters = [int(list_rads[unique[square][0]]), int(list_rads[unique[square][0] - 1])]
+                    first_angle = 180 + ((list_angles[unique[square][0]][unique[square][1]]) * 180 / math.pi)
+                    sec_angle = 180 + ((list_angles[unique[square][0]][unique[square][1] - 1]) * 180 / math.pi)
+
+                    empty_img = np.zeros([image.shape[0], image.shape[1], 1], np.uint8)
+                    empty_img = cv2.ellipse(empty_img, (cX, cY), (diameters[0], diameters[0]), 0,
+                                            startAngle=first_angle + 1, endAngle=sec_angle - 1, color=255, thickness=1)
+                    empty_img = cv2.ellipse(empty_img, (cX, cY), (diameters[1], diameters[1]), 0,
+                                            startAngle=first_angle + 1, endAngle=sec_angle - 1, color=255, thickness=1)
+
+                    pt1 = (int(cX + math.cos((first_angle) / 180 * math.pi) * (diameters[0] + 2)),
+                           int(cY + math.sin(first_angle / 180 * math.pi) * (diameters[0] + 2)))
+                    pt2 = (int(cX + math.cos((first_angle) / 180 * math.pi) * (diameters[1] - 2)),
+                           int(cY + math.sin(first_angle / 180 * math.pi) * (diameters[1] - 2)))
+                    empty_img = cv2.line(empty_img, pt1, pt2, 255, 1)  # We draw the limits
+
+                    pt1 = (int(cX + math.cos((sec_angle) / 180 * math.pi) * (diameters[0] + 2)),
+                           int(cY + math.sin(sec_angle / 180 * math.pi) * (diameters[0] + 2)))
+                    pt2 = (int(cX + math.cos(sec_angle / 180 * math.pi) * (diameters[1] - 2)),
+                           int(cY + math.sin(sec_angle / 180 * math.pi) * (diameters[1] - 2)))
+                    empty_img = cv2.line(empty_img, pt1, pt2, 255, 1)  # We draw the limits
+                    empty_img = cv2.rectangle(empty_img, (0, 0), (image.shape[1], image.shape[0]), color=255,
+                                              thickness=1)  # If the shape is bigger than image
+
+                    cnts, h = cv2.findContours(empty_img, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+                    cnts = [cnts[i] for i in range(len(cnts)) if h[0][i][3] >= 0]
+                    image = cv2.drawContours(image, cnts, -1, [int(c) for c in color], -1)
+
+            for circle in range(len(list_rads)):
+                image = cv2.circle(image, (cX, cY), int(list_rads[circle]), (0, 0, 0), 2)
+                if circle > 0:
+                    for cur_angle in list_angles[circle]:
+                        pt1 = (int(cX + math.cos(math.pi + cur_angle) * list_rads[circle - 1]),
+                               int(cY + math.sin(math.pi + cur_angle) * list_rads[circle - 1]))
+                        pt2 = (int(cX + math.cos(math.pi + cur_angle) * list_rads[circle]),
+                               int(cY + math.sin(math.pi + cur_angle) * list_rads[circle]))
+                        image = cv2.line(image, pt1, pt2, (0, 0, 0), 2)  # We draw the limits
+            image = cv2.circle(image, (cX, cY), int(last_rad), (0, 0, 0), 2)
+
+            image[(50): (image.shape[0] - 50), (image.shape[1] - 75):(image.shape[1])] = (150, 150, 150)
+
+            for raw in range(image.shape[0] - 150):
+                color = colors[int((raw / (image.shape[0] - 150)) * (len(colors) - 1))]
+                image[image.shape[0] - 75 - raw, (image.shape[1] - 65):(image.shape[1] - 45)] = color
+
+            image = cv2.putText(image, "100%", (image.shape[1] - 43, 75), cv2.FONT_HERSHEY_SIMPLEX,
+                                     fontScale=0.4, color=(0, 0, 0), thickness=1)
+            image = cv2.putText(image, "50%", (image.shape[1] - 43, int(image.shape[0] / 2)),
+                                     cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.4, color=(0, 0, 0), thickness=1)
+
+            image = cv2.putText(image, "0%", (image.shape[1] - 43, image.shape[0] - 75),
+                                     cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.4, color=(0, 0, 0), thickness=1)
+
+            return (new_row, image)
+
 
 def calculate_dist_one_pt_Line(Ligne, Pt, Scale="NA", between_Pt_dist="NA", get_proj=False):
     '''Calculate and return the distance between one point and it's projection on a segment.
@@ -16,7 +318,6 @@ def calculate_dist_one_pt_Line(Ligne, Pt, Scale="NA", between_Pt_dist="NA", get_
     between_Pt_dist: the length of the segment (avoid recalculation if already done).
     get_proj= Boolean, if true also return the coordinates of the point projection on the segment.
     '''
-
     if between_Pt_dist == "NA":
         between_Pt_dist = math.sqrt((Ligne[1][0] - Ligne[0][0]) ** 2 + (Ligne[1][1] - Ligne[0][1]) ** 2)
 
@@ -49,6 +350,7 @@ def calculate_dist_one_pt_Line(Ligne, Pt, Scale="NA", between_Pt_dist="NA", get_
     if Scale != "NA": dist = dist / Scale
     return (dist, t)
 
+
 def change_NA(val):
     """If the value is 'NA', return np.nan, else return the original value as a float."""
     if val==-1000:
@@ -77,8 +379,6 @@ class speed_calculations:
         to_save: if True, return all the values for all targets, if false, return only a subsample of the results
         related to the ind target.
         """
-
-
         Nb_ind=len(Pts_coos)
         dist = float(dist) * Scale
 
@@ -103,6 +403,7 @@ class speed_calculations:
             scale=lambda x: x/Scale
             table_dists2=np.copy(table_dists)
             table_dists2=scale(table_dists2)
+
             if to_save: Save_all_dists.append(table_dists2)
 
             for row in range(Nb_ind):
@@ -118,19 +419,19 @@ class speed_calculations:
                 if np.any(np.logical_and(table_dists < dist, table_is_contact == 0)):
                     table_nb_contacts[np.logical_and(table_dists < dist, table_is_contact == 0)]=table_nb_contacts[np.logical_and(table_dists < dist, table_is_contact == 0)]+1
 
-                if np.any(np.logical_and(table_dists >= dist, table_is_contact > 0)) or (np.any(table_is_contact > 0) and ligne==(len(Pts_coos[0])-1)):
+                if np.any(np.logical_and(np.logical_or(table_dists >= dist, np.isnan(table_dists)), table_is_contact > 0)) or ((np.any(table_is_contact > 0) and ligne==(len(Pts_coos[0])-1))):
                     for row in range(len(table_is_contact)):
                         table_is_contact[row][row:len(table_is_contact)]=np.nan
 
                     if ligne<(len(Pts_coos[0])-1):
-                        pos=np.where(np.logical_and(table_dists >= dist, table_is_contact > 0))
+                        pos=np.where(np.logical_and(np.logical_or(table_dists >= dist, np.isnan(table_dists)),table_is_contact > 0))
                     else:
                         pos=np.where(table_is_contact > 0)
 
                     list_events=list_events+[[pos[0][i], pos[1][i], table_is_contact[pos[0][i], pos[1][i]]/Fr_rate, (ligne-table_is_contact[pos[0][i], pos[1][i]])/Fr_rate] for i in range(len(pos[0]))]
 
                 table_is_contact[np.where(table_dists < dist)] = table_is_contact[np.where(table_dists < dist)] + 1
-                table_is_contact[np.where(table_dists >= dist)] = 0
+                table_is_contact[np.where(np.logical_or(table_dists >= dist,np.isnan(table_dists)))] = 0
 
             table_all_dists[np.where(~np.isnan(table_dists))]=np.add(table_all_dists[np.where(~np.isnan(table_dists))],table_dists[np.where(~np.isnan(table_dists))])
             # Close to at least one neighbor
@@ -145,13 +446,13 @@ class speed_calculations:
 
         liste_nb_nei=np.divide(liste_nb_nei,liste_nb_frames)#Average number of neighbours
         liste_is_close=np.divide(liste_is_close,liste_nb_frames)#Prop of time close to at least one neighbourg
-        liste_min_dist_nei=np.divide(liste_min_dist_nei,liste_nb_frames)
+        liste_min_dist_nei=scale(np.divide(liste_min_dist_nei,liste_nb_frames))
         liste_all_dists = np.nansum(table_all_dists, axis=0)
-        liste_all_dists=np.divide(liste_all_dists,liste_nb_frames)
+        liste_all_dists=scale(np.divide(liste_all_dists,liste_nb_frames))
 
         if to_save:
             table_is_close=np.divide(table_is_close,table_nb_frame)#Prop of time close to this neighbor
-            table_all_dists=np.divide(table_all_dists,table_nb_frame)#Mean distances between individuals
+            table_all_dists=scale(np.divide(table_all_dists,table_nb_frame))#Mean distances between individuals
 
         if not to_save:
             return(liste_nb_nei[ind],liste_is_close[ind],liste_min_dist_nei[ind],liste_all_dists[ind])
@@ -170,6 +471,7 @@ class speed_calculations:
             return(sum(speeds)/len(speeds))
         else:
             return("NA")
+
 
     def calculate_prop_move(self, parent,ind, return_vals=False):
         """Calculate the proportion of frame for which the target is moving.
@@ -265,8 +567,10 @@ class speed_calculations:
 
                     angle = math.atan2((parent.Coos[ind][ligne - 1][1] - parent.Coos[ind][ligne][1]), (parent.Coos[ind][ligne - 1][0] - parent.Coos[ind][ligne][0]))
                     angle = (angle*180)/math.pi
+
                     if (last_angle != -1000):
                         angle_diff = angle - last_angle
+
                         if angle_diff > 180: angle_diff -= 360
                         if angle_diff < -180: angle_diff += 360
                         angle_diff=abs(angle_diff)
@@ -413,11 +717,13 @@ class speed_calculations:
         """
         if return_vals: dists=[]
 
-        last=[-1000, -1000]#Last know position
+        last=[-1000, -1000, 0]#Last know position
 
         is_inside=0
         nb_inside=0
         Latency="NA"
+
+        is_inside_abs=0
 
         last_in="NA" #Whether the target was already inside the perimeter
         Nb_entries=0#Number of time the target entered the area
@@ -481,6 +787,7 @@ class speed_calculations:
                     last_in=True
 
                     is_inside+=1#We count the number of frame for which the target was seen inside
+                    is_inside_abs+=1
 
                     if Latency=="NA":
                         Latency=ligne/parent.Vid.Frame_rate[1]#If it is the first time the target is seen inside, we save this time it
@@ -549,6 +856,8 @@ class speed_calculations:
                         speed = (dist_move) / (1 / parent.Vid.Frame_rate[1])
                         Sloc += dist_move
 
+                        is_inside_abs+=ligne - last[2]
+
                         if (speed > self.seuil_movement) :
                             Sloc_move += dist_move
 
@@ -559,7 +868,7 @@ class speed_calculations:
                         last_angle=-1000
                         last_angle_moving = -1000
 
-                last=parent.Coos[ind,ligne]#We save the last known coordinates
+                last=list(parent.Coos[ind,ligne,:])+[ligne]#We save the last known coordinates
 
             else:
                 last_angle=-1000
@@ -570,9 +879,11 @@ class speed_calculations:
         if Sdists>0:
             Mean_dist=Sdists/nb_dists
             Prop_Time_in=is_inside/nb_inside
+            Absolute_time_inside = is_inside_abs/parent.Vid.Frame_rate[1]
         else:
             Mean_dist = "NA"
             Prop_Time_in = "NA"
+            Absolute_time_inside="NA"
 
         if nb_lost>0:
             Prop_Time_lost_in= 1- Slost/nb_lost
@@ -610,9 +921,9 @@ class speed_calculations:
             return([Mean_dist, Latency, Prop_Time_in])
             #Average distance between the point and the target of interest, Latency before the distance between the point and the target is lower than Dist
         else:
-            return ([Mean_dist, Latency, Prop_Time_in, Nb_entries,Prop_Time_lost_in,Mean_time_moving_in,Distance_traveled_in,Distance_traveled_moving_in,Speed_in,Speed_moving_in,Meander_in,Meander_moving_in, dists])
+            return ([Mean_dist, Latency, Prop_Time_in, Nb_entries,Prop_Time_lost_in,Mean_time_moving_in,Distance_traveled_in,Distance_traveled_moving_in,Speed_in,Speed_moving_in,Meander_in,Meander_moving_in, Absolute_time_inside, dists])
 
-    def calculate_intersect(self, parent, Points, ind):
+    def calculate_intersect(self, Vid, Coos, Points):
         """Count the number of times a target crosses a segment. Also record the latency to cross
         parent: higher level class calling this function
         Points: coordinates of the segment
@@ -625,7 +936,7 @@ class speed_calculations:
             nb_cross_TL_BR =0
             last=[-1000,-1000]
             dist_seg=math.sqrt((Points[0][0]-Points[1][0])**2 + (Points[0][1]-Points[1][1])**2)
-
+            list_of_crosses=[]
 
             if dist_seg>0:#We verify that the two points defining the segment are not at the same place
                 if abs(Points[1][0] - Points[0][0]) > abs(Points[1][1] - Points[0][1]):
@@ -633,14 +944,14 @@ class speed_calculations:
                 else:
                     vertical = False
 
-                for ligne in range(len(parent.Coos[ind])):
-                    if ligne > 0 and parent.Coos[ind,ligne,0] != -1000:
-                        if parent.Coos[ind,ligne - 1,0] != -1000:
-                            last = parent.Coos[ind][ligne]
-                            dist_trav =math.sqrt((float(parent.Coos[ind,ligne,0]) - float(parent.Coos[ind,ligne - 1,0])) ** 2 + (float(parent.Coos[ind,ligne,1]) - float(parent.Coos[ind,ligne - 1,1])) ** 2)
+                for ligne in range(len(Coos)):
+                    if ligne > 0 and Coos[ligne,0] != -1000:
+                        if Coos[ligne - 1,0] != -1000:
+                            last = Coos[ligne]
+                            dist_trav =math.sqrt((float(Coos[ligne,0]) - float(Coos[ligne - 1,0])) ** 2 + (float(Coos[ligne,1]) - float(Coos[ligne - 1,1])) ** 2)
                             if dist_trav>0:#Si l'individu est en mouvement
-                                Pt1 = (float(parent.Coos[ind,ligne-1,0]), float(parent.Coos[ind,ligne-1,1]))
-                                Pt2=(float(parent.Coos[ind,ligne,0]),float(parent.Coos[ind,ligne,1]))
+                                Pt1 = (float(Coos[ligne-1,0]), float(Coos[ligne-1,1]))
+                                Pt2=(float(Coos[ligne,0]),float(Coos[ligne,1]))
 
 
                                 is_inter=self.inter(Points[0], Pt1, Pt2)[0] != self.inter(Points[1], Pt1, Pt2)[0] and self.inter(Points[0], Points[1], Pt1)[0] != self.inter(Points[0], Points[1], Pt2)[0]
@@ -666,18 +977,22 @@ class speed_calculations:
                                     else:
                                         if Pt1[0]<t[0]:
                                             nb_cross_TL_BR += 1
+
                                     nb_cross+=1
+                                    list_of_crosses.append(ligne/Vid.Frame_rate[1])
+
+
                                     if Latency=="NA":
-                                        Latency=ligne/parent.Vid.Frame_rate[1]
+                                        Latency=ligne/Vid.Frame_rate[1]
                                     if is_crossed and not is_inter:
                                         touched_border = True
                                 else:
                                     touched_border = False
                         elif last[0]!=-1000:
-                            dist_trav = math.sqrt((float(parent.Coos[ind,ligne,0]) - float(last[0])) ** 2 + (float(parent.Coos[ind,ligne,1]) - float(last[1])) ** 2)
+                            dist_trav = math.sqrt((float(Coos[ligne,0]) - float(last[0])) ** 2 + (float(Coos[ligne,1]) - float(last[1])) ** 2)
                             if dist_trav > 0:
                                 Pt1 = (float(last[0]), float(last[1]))
-                                Pt2 = (float(parent.Coos[ind,ligne,0]), float(parent.Coos[ind,ligne,1]))
+                                Pt2 = (float(Coos[ligne,0]), float(Coos[ligne,1]))
                                 is_inter = self.inter(Points[0], Pt1, Pt2)[0] != self.inter(Points[1], Pt1, Pt2)[0] and \
                                            self.inter(Points[0], Points[1], Pt1)[0] != \
                                            self.inter(Points[0], Points[1], Pt2)[0]
@@ -706,16 +1021,17 @@ class speed_calculations:
                                             nb_cross_TL_BR += 1
 
                                     nb_cross += 1
+                                    list_of_crosses.append(ligne / Vid.Frame_rate[1])
                                     if Latency=="NA":
-                                        Latency=ligne/parent.Vid.Frame_rate[1]
+                                        Latency=ligne/Vid.Frame_rate[1]
                                     if is_crossed and not is_inter:
                                         touched_border = True
                                 else:
                                     touched_border = False
 
-            return(nb_cross, nb_cross_TL_BR, Latency, vertical)
+            return(nb_cross, nb_cross_TL_BR, Latency, vertical, list_of_crosses)
         else:
-            return ("NA", "NA", "NA", "NA")
+            return ("NA", "NA", "NA", "NA", "NA")
 
     def inter(self, A, B, C):
         return ((C[1] - A[1]) * (B[0] - A[0]) > (B[1] - A[1]) * (C[0] - A[0]),(C[1] - A[1]) * (B[0] - A[0]) >= (B[1] - A[1]) * (C[0] - A[0]))
@@ -864,10 +1180,11 @@ class speed_calculations:
         Latency = "NA"
         if return_vals: dists=[]
         if len(cnt)>0:
-            last = [-1000, -1000]  # Last know position
+            last = [-1000, -1000, 0]  # Last know position
 
             is_inside = 0
             nb_inside = 0
+            is_inside_abs = 0
 
             last_in = "NA"  # Whether the target was already inside the perimeter
             Nb_entries = 0  # Number of time the target entered the area
@@ -925,6 +1242,8 @@ class speed_calculations:
 
                         last_in = True
                         is_inside += 1  # We count the number of frame for which the target was seen inside
+                        is_inside_abs+=1
+
 
                         if Latency == "NA":
                             Latency = ligne / parent.Vid.Frame_rate[1]  # If it is the first time the target is seen inside, we save this time it
@@ -995,6 +1314,8 @@ class speed_calculations:
                             speed = (dist_move) / (1 / parent.Vid.Frame_rate[1])
                             Sloc += dist_move
 
+                            is_inside_abs+=ligne - last[2]
+
                             if (speed > self.seuil_movement):
                                 Sloc_move += dist_move
 
@@ -1005,7 +1326,7 @@ class speed_calculations:
                             last_angle = -1000
                             last_angle_moving = -1000
 
-                    last = parent.Coos[ind, ligne]  # We save the last known coordinates
+                    last = parent.Coos[ind, ligne] + [ligne]  # We save the last known coordinates
 
                 else:
                     last_angle=-1000
@@ -1015,8 +1336,10 @@ class speed_calculations:
 
             if nb_inside > 0:
                 Prop_inside = is_inside / nb_inside
+                Absolute_time_inside = is_inside_abs/parent.Vid.Frame_rate[1]
             else:
                 Prop_inside = "NA"
+                Absolute_time_inside="NA"
 
             if nb_lost > 0:
                 Prop_Time_lost_in = 1 - Slost / nb_lost
@@ -1063,7 +1386,7 @@ class speed_calculations:
         if not return_vals:
             return (Prop_inside, Latency)
         else:
-            return (Prop_inside, Latency, Nb_entries,Prop_Time_lost_in,Mean_time_moving_in,Distance_traveled_in,Distance_traveled_moving_in,Speed_in,Speed_moving_in,Meander_in,Meander_moving_in, dists)
+            return (Prop_inside, Latency, Nb_entries,Prop_Time_lost_in,Mean_time_moving_in,Distance_traveled_in,Distance_traveled_moving_in,Speed_in,Speed_moving_in,Meander_in,Meander_moving_in, Absolute_time_inside, dists)
 
     def calculate_all_inter_dists(self, Pts_coos, Scale):
         """Average the inter-individual distances found and extract its minimum and maximum values.
@@ -1129,3 +1452,171 @@ class speed_calculations:
             return(new_img,all_dists,center)
         else:
             return (all_dists)
+
+
+
+    def Shape_characteristics(self, Shape, Vid, Area):
+        Scale=Vid.Scale[0]
+        if Shape[0]=="Point":
+            Centroid=[Shape[1][0][0] / Scale, Shape[1][0][1] / Scale]
+            Xmin=(Shape[1][0][0]  / Scale )- Shape[2]
+            Xmax=(Shape[1][0][0] / Scale) + Shape[2]
+            Ymin=(Shape[1][0][1]  / Scale) - Shape[2]
+            Ymax=(Shape[1][0][1] / Scale) + Shape[2]
+            Area=math.pi * (Shape[2]) **2
+            Perimeter=math.pi * (Shape[2]) *2
+
+            char = [Centroid[0],Centroid[1],Xmin,Xmax,Ymin,Ymax,Area,Perimeter]
+
+        elif Shape[0]=="Line":
+            Centroid=[((Shape[1][0][0]+Shape[1][1][0])/2)/ Scale,((Shape[1][0][1]+Shape[1][1][1])/2) / Scale]
+            Xs=[Shape[1][0][0],Shape[1][1][0]]
+            Ys = [Shape[1][0][1], Shape[1][1][1]]
+            Xmin=(min(Xs)) / Scale
+            Xmax=(max(Xs)) / Scale
+            Ymin=(min(Ys)) / Scale
+            Ymax=(max(Ys)) / Scale
+            Area="NA"
+            Perimeter=math.sqrt((Shape[1][0][0]-Shape[1][1][0])**2 + (Shape[1][0][1]-Shape[1][1][1])**2) / Scale
+
+            char = [Centroid[0],Centroid[1],Xmin,Xmax,Ymin,Ymax,Area,Perimeter]
+
+        else:
+            Xs=[pt[0] for pt in Shape[1]]
+            Ys=[pt[1] for pt in Shape[1]]
+
+            mask = Function_draw_mask.draw_mask(Vid)
+            Arenas, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+            Arenas = Function_draw_mask.Organise_Ars(Arenas)
+            Arena_pts = Arenas[Area]
+
+            feasable, cnt, feasable_cleaned, cnt_cleaned = draw_shape(Vid,Arena_pts,Shape)
+
+            if feasable:
+                chars=self.Cnt_characteristics([cnt],Scale)
+                if Shape[0] == "All_borders":
+                    char=chars[0]
+                    char[6]="NA"
+                    char[7]="NA"
+                elif Shape[0] == "Borders":
+                    char=chars[0]
+                    char[0]=np.mean([elem[0] for elem in chars])
+                    char[1] = np.mean([elem[1] for elem in chars])
+                    char[2] = np.min([elem[2] for elem in chars])
+                    char[3] = np.max([elem[3] for elem in chars])
+                    char[4] = np.min([elem[4] for elem in chars])
+                    char[5] = np.max([elem[5] for elem in chars])
+                    char[6]="NA"
+                    char[7]="NA"
+
+                else:
+                    char=chars[0]
+            else:
+                char=["NA"]*8
+
+        return (char + [Shape[1]])
+
+
+    def Cnt_characteristics(self, cnts, Scale):
+        results=[]
+        for cnt in cnts:
+            M = cv2.moments(cnt)
+            Centroid = [(M["m10"] / M["m00"]) / Scale, (M["m01"] / M["m00"]) / Scale]
+            Xmin = cnt[cnt[:, :, 0].argmin()][0][0] / Scale
+            Xmax = cnt[cnt[:, :, 0].argmax()][0][0] / Scale
+            Ymin = cnt[cnt[:, :, 1].argmin()][0][1] / Scale
+            Ymax = cnt[cnt[:, :, 1].argmax()][0][1] / Scale
+
+            Area = cv2.contourArea(cnt) * (1 / float(Scale)) ** 2
+            Perimeter = cv2.arcLength(cnt, True) / Scale
+            results.append([Centroid[0],Centroid[1],Xmin,Xmax,Ymin,Ymax,Area,Perimeter])
+        return(results)
+
+
+
+
+    def details_Point(self, Xs, Ys, Shape, Scale):
+        Dist_to_point = np.sqrt(
+            (Xs - Shape[1][0][0]) ** 2 + (Ys - Shape[1][0][1]) ** 2) / Scale
+        Inside_circle = np.zeros(len(Dist_to_point))
+        Inside_circle[np.where(Dist_to_point <= Shape[2])] = 1
+        Inside_circle[np.where(np.isnan(Dist_to_point))] = np.nan
+        return([Dist_to_point, Inside_circle])
+
+    def details_All_borders(self, Xs, Ys, Shape, Cnt_Area, Scale):
+        def PolyTest(X, Y):
+            if np.isnan(X) or np.isnan(Y):
+                return (np.nan)
+            else:
+                return (cv2.pointPolygonTest(Cnt_Area, (X, Y), True))
+
+        Poly_vectorised = np.vectorize(PolyTest)
+        Dist_to_border = Poly_vectorised(Xs, Ys) / Scale
+        Inside_border = np.zeros(len(Dist_to_border))
+        Inside_border[np.where(Dist_to_border <= Shape[2])] = 1
+        Inside_border[np.where(np.isnan(Dist_to_border))] = np.nan
+        return([Dist_to_border, Inside_border])
+
+    def details_Borders(self, Xs, Ys, Shape, Scale):
+        Dist_border = np.zeros([len(Shape[1]), len(Xs)])
+        pos = 0
+        for Seg in Shape[1]:
+            Dist_border[pos, :] = self.Calculate_distance_Line(Seg, Xs, Ys) / Scale
+            pos += 1
+        Distances_borders = Dist_border.min(axis=0)
+        Inside_border = np.zeros(len(Distances_borders))
+        Inside_border[np.where(Distances_borders <= Shape[2])] = 1
+        Inside_border[np.where(np.isnan(Distances_borders))] = np.nan
+        return([Distances_borders, Inside_border])
+
+    def details_shape(self, Xs, Ys, Shape, Scale, Vid, Arena):
+        res_cnt, cnt, res_cnt_clean, cnt_clean=draw_shape(Vid, Arena, Shape)
+
+        if res_cnt_clean:
+            def PolyTest(X, Y):
+                if np.isnan(X) or np.isnan(Y):
+                    return (np.nan)
+                else:
+                    return (cv2.pointPolygonTest(cnt_clean, (X, Y), True))
+
+            Poly_vectorised = np.vectorize(PolyTest)
+            Dist_to_shape = Poly_vectorised(Xs, Ys) / Scale
+            Inside = np.zeros(len(Dist_to_shape))
+            Inside[np.where(Dist_to_shape >= 0)] = 1
+            Inside[np.where(np.isnan(Dist_to_shape))] = np.nan
+            return ([Dist_to_shape, Inside])
+        else:
+            return ([["NA"]*len(Xs),["NA"]*len(Ys)])
+
+
+    def details_line(self, Xs, Ys, Shape, Scale):
+        Dist_to_line = self.Calculate_distance_Line(Shape[1],Xs,Ys) / Scale
+        return (Dist_to_line)
+
+
+    def Calculate_distance_Line(self,Line, Xs, Ys):
+        between_Pt_dist = math.sqrt((Line[1][0] - Line[0][0]) ** 2 + (Line[1][1] - Line[0][1]) ** 2)
+
+        if between_Pt_dist > 0:
+            dx = Line[0][0] - Line[1][0]
+            dy = Line[0][1] - Line[1][1]
+            Products = (Xs - Line[1][0]) * dx + (Ys - Line[1][1]) * dy
+
+            dists_cond1 = abs((Line[1][0] - Line[0][0]) * (Line[0][1] - Ys) - (
+                        Line[0][0] - Xs) * (Line[1][1] - Line[0][1])) / between_Pt_dist
+            dist_pt1 = np.sqrt((Line[0][0] - Xs) ** 2 + (Line[0][1] - Ys) ** 2)
+            dist_pt2 = np.sqrt((Line[1][0] - Xs) ** 2 + (Line[1][1] - Ys) ** 2)
+            dists_cond2 = np.minimum(dist_pt1, dist_pt2)
+
+            Dist_to_line = np.zeros(len(Xs))
+            Dist_to_line[np.where((Products >= 0) & (Products <= (dx * dx + dy * dy)))] = dists_cond1[
+                np.where((Products >= 0) & (Products <= (dx * dx + dy * dy)))]
+            Dist_to_line[np.where(np.logical_not((Products >= 0) & (Products <= (dx * dx + dy * dy))))] = dists_cond2[
+                np.where(np.logical_not((Products >= 0) & (Products <= (dx * dx + dy * dy))))]
+
+            Dist_to_line = Dist_to_line
+
+        else:
+            Dist_to_line = np.array(len(Xs), np.nan)
+
+        return(Dist_to_line)

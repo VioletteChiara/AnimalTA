@@ -1,6 +1,6 @@
 from tkinter import *
 from tkinter import ttk
-from AnimalTA.E_Post_tracking.b_Analyses import Function_extend_elements
+from AnimalTA.E_Post_tracking.b_Analyses import Interface_sequences
 from AnimalTA.A_General_tools import Function_draw_mask, UserMessages, Class_loading_Frame, Color_settings
 import cv2
 import numpy as np
@@ -11,7 +11,7 @@ import copy
 class Lists(Frame):
     """ This Frame displays a list of the videos and their arenas from the project that have been tracked.
     The user can select some arenas to copy-paste there the elements of interest from the current arena"""
-    def __init__(self, parent, boss, liste_videos, Current_Vid, Current_Area, **kwargs):
+    def __init__(self, parent, boss, liste_videos, Current_Vid, Current_Area, Current_Ind, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
         self.config(**Color_settings.My_colors.Frame_Base)
         self.parent=parent
@@ -19,6 +19,7 @@ class Lists(Frame):
         self.grid()
         self.Current_Vid=Current_Vid
         self.Current_Area=Current_Area
+        self.Current_Ind=Current_Ind
         self.liste_videos=liste_videos
 
         #Import messages
@@ -43,14 +44,15 @@ class Lists(Frame):
         self.Button_sel_al=Button(self,text=self.Messages["ExtendB1"], command=self.select_all_objs, **Color_settings.My_colors.Button_Base)
         self.Button_sel_al.grid(row=1, column=0, columnspan=2)
         self.all_sel_objs = False
+
         self.yscrollbar = ttk.Scrollbar(self)
         self.yscrollbar.grid(row=2,column=1, sticky="ns")
         self.Liste_objects=Listbox(self, selectmode = "multiple", width=50, height=20, exportselection=0, yscrollcommand=self.yscrollbar.set, **Color_settings.My_colors.ListBox)
         self.yscrollbar.config(command=self.Liste_objects.yview)
         ID = 0
 
-        for Shape in self.boss.main.Calc_speed.Areas[Current_Area]:
-            self.Liste_objects.insert(END, Shape[3])
+        for Seq in [s.Seq_name.get() for s in self.boss.liste_sequences if s!=None]:
+            self.Liste_objects.insert(END, Seq)
             ID += 1
 
         self.Liste_objects.grid(row=2, column=0, sticky="nsew")
@@ -77,30 +79,29 @@ class Lists(Frame):
                     self.Liste_Vids.itemconfig(0, fg=Color_settings.My_colors.list_colors["Fg_not_valide"], bg=Color_settings.My_colors.list_colors["Table2"])
                     self.to_remove_sel=[val+1 for val in self.to_remove_sel]
                     self.to_remove_sel.append(0)
-                    self.pointers.insert(0,[Vid, None])
+                    self.pointers.insert(0,[Vid, None, None])
                 else:
                     self.Liste_Vids.insert(END, self.Messages["Video"] +": "+Vid.User_Name)
                     self.Liste_Vids.itemconfig("end", fg=Color_settings.My_colors.list_colors["Fg_T2"], bg=Color_settings.My_colors.list_colors["Table2"])
                     self.to_remove_sel.append(self.Liste_Vids.size()-1)
-                    self.pointers.append([Vid,None])
+                    self.pointers.append([Vid,None, None])
 
-                AID = 0
                 Ar_cur_vid=1
-                for Arena in Vid.Analyses[1]:
-                    if not (AID==Current_Area and Vid == Current_Vid):
+                for IndID in range(len(Vid.Identities)):
+                    if not (Vid == Current_Vid and IndID==Current_Ind):
                         if Vid == Current_Vid:
-                            self.Liste_Vids.insert(Ar_cur_vid, "  -" + self.Messages["Arena"] + "_" + str(AID))
-                            self.pointers.insert(Ar_cur_vid, [Vid, AID])
+                            self.Liste_Vids.insert(Ar_cur_vid, "  -" + self.Messages["Arena"] + "_" + str( Vid.Identities[IndID][0]) + "_" + Vid.Identities[IndID][1])
+                            self.pointers.insert(Ar_cur_vid, [Vid, Vid.Identities[IndID][0], IndID])
                             self.Liste_Vids.itemconfig(Ar_cur_vid, fg=Color_settings.My_colors.list_colors["Fg_T1"],
                                                        bg=Color_settings.My_colors.list_colors["Table1"])
                             self.to_remove_sel = [0] + [val + 1 for val in self.to_remove_sel if val>0]
                             Ar_cur_vid += 1
                         else:
-                            self.Liste_Vids.insert(END, "  -"+ self.Messages["Arena"]+"_" + str(AID))
+                            self.Liste_Vids.insert(END, "  -"+ self.Messages["Arena"]+"_" + str( Vid.Identities[IndID][0]) + "_" + Vid.Identities[IndID][1])
                             self.Liste_Vids.itemconfig("end", fg=Color_settings.My_colors.list_colors["Fg_T1"],
                                                        bg=Color_settings.My_colors.list_colors["Table1"])
-                            self.pointers.append([Vid, AID])
-                    AID+=1
+                            self.pointers.append([Vid,Vid.Identities[IndID][0], IndID])
+
 
         self.Liste_Vids.grid(row=2, column=3, sticky="nsew")
         self.Liste_Vids.bind('<<ListboxSelect>>',self.remove_sel)
@@ -108,6 +109,7 @@ class Lists(Frame):
         self.Liste_Vids.bind("<Leave>", self.stop_show_Arenas)
 
         self.Validate_button=Button(self, text=self.Messages["Validate"], command=self.validate, **Color_settings.My_colors.Button_Base)
+        self.Validate_button.config(background=Color_settings.My_colors.list_colors["Validate"],fg=Color_settings.My_colors.list_colors["Fg_Validate"])
         self.Validate_button.grid(row=3, columnspan=5, sticky="nsew")
         self.Validate_button.config(state="disable")
 
@@ -116,7 +118,7 @@ class Lists(Frame):
         self.max_can_width = self.parent.winfo_screenwidth()-self.parent.winfo_width()-200
 
         #In this canves, we will show the video and position of arenas
-        self.Canvas_shaow_Ar=Canvas(self)
+        self.Canvas_shaow_Ar=Canvas(self, **Color_settings.My_colors.Frame_Base)
         self.Canvas_shaow_Ar.grid(row=0, column=5, rowspan=4, sticky="nsew")
 
         self.stay_on_top()
@@ -161,11 +163,8 @@ class Lists(Frame):
         Load_show.grid(row=6,column=0,columnspan=6)
 
         #Extend the elements to other arenas
-        list_of_shapes=[self.boss.main.Calc_speed.Areas[self.Current_Area][i] for i in self.Liste_objects.curselection()]
-
-        mask = Function_draw_mask.draw_mask(self.Current_Vid)
-        Or_Arenas, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        Or_Arenas = Function_draw_mask.Organise_Ars(Or_Arenas)
+        all_seqs=[self.boss.convert_seq(s) for s in self.boss.liste_sequences if s != None]
+        list_of_seqs_copy=[all_seqs[i] for i in self.Liste_objects.curselection()]
 
         Np_style_pts=np.array([self.pointers[i] for i in self.Liste_Vids.curselection()])
         list_of_vids =[]
@@ -174,96 +173,24 @@ class Lists(Frame):
                 list_of_vids.append(Vid)
 
         nb_V=0
-
         for Vid in list_of_vids:#For each of these videos, we look for the arenas
             Load_show.show_load(nb_V/len(list_of_vids))#Show the progress
-            mask = Function_draw_mask.draw_mask(Vid)
-            nb_V+=1
-            Arenas, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            Arenas = Function_draw_mask.Organise_Ars(Arenas)
 
-            for Area in range(len(Arenas)):
-                if Area in [self.pointers[i][1] for i in self.Liste_Vids.curselection() if self.pointers[i][0]==Vid]:#If the arena was selected
-                    list_of_points = []
-                    if not (Area==self.Current_Area and Vid == self.Current_Vid):#We ensure it is not the current arena
-                        for shape in list_of_shapes:
+            for IndID in range(len(Vid.Identities)):
+                if IndID in [self.pointers[i][2] for i in self.Liste_Vids.curselection() if self.pointers[i][0]==Vid]:#If the individual was selected
+                    if not (IndID==self.Current_Ind and Vid == self.Current_Vid):#We ensure it is not the current arena
+                        for seq in list_of_seqs_copy:
+                            if seq[0] not in [seq_sub[0] for seq_sub in Vid.Sequences[IndID]]:
+                                Vid.Sequences[IndID].append(seq)
+                            else:
+                                position = [seq_sub[0] for seq_sub in Vid.Sequences[IndID]].index(seq[0])
+                                Vid.Sequences[IndID][position] = seq
+
                             #we first check if an element of interest with similar name has already been defined:
-                            if shape[0] != "Borders" and shape[0] != "All_borders":
-                                list_of_points = list_of_points + shape[1]
-                            elif shape[0] == "Borders":
-                                for bd in shape[1]:
-                                    list_of_points = list_of_points + bd
-                            elif shape[0] == "All_borders":
-                                Shape2=shape[2].get()
 
-                                if Vid == self.Current_Vid:
-                                    if shape[3] not in [Ars[3] for Ars in self.boss.main.Calc_speed.Areas[Area]]:#If this shape does not exist yet
-                                        self.boss.main.Calc_speed.Areas[Area].append(["All_borders", [], Shape2, shape[3]])
-                                    else:
-                                        position=[Ars[3] for Ars in self.boss.main.Calc_speed.Areas[Area]].index(shape[3])#If this shape already exists inside the arena, we remplace it
-                                        self.boss.main.Calc_speed.Areas[Area][position]=["All_borders", [], Shape2, shape[3]]
-                                else:
-                                    if shape[3] not in [Ars[3] for Ars in Vid.Analyses[1][Area]]:#If this shape does not exist yet
-                                        Vid.Analyses[1][Area].append(["All_borders", [], Shape2, shape[3]])
-                                    else:
-                                        position=[Ars[3] for Ars in Vid.Analyses[1][Area]].index(shape[3])#If this shape already exists inside the arena, we remplace it
-                                        Vid.Analyses[1][Area][position]=["All_borders", [], Shape2, shape[3]]
 
-                        if len(list_of_points) > 0:
-                            work, new_pts = Function_extend_elements.match_shapes(Arenas[Area], Or_Arenas[self.Current_Area], list_of_points)
-                            if work:
-                                for shape in list_of_shapes:
-                                    if shape[0]!="Borders" and shape[0]!="All_borders":
-                                        Shape2=shape[2].get()
 
-                                        if Vid == self.Current_Vid:
-                                            if shape[3] not in [Ars[3] for Ars in self.boss.main.Calc_speed.Areas[Area]]:  # if this element did not exist
-                                                self.boss.main.Calc_speed.Areas[Area].append([shape[0], new_pts[0:len(shape[1])], Shape2, shape[3]])
-                                            else:
-                                                position = [Ars[3] for Ars in self.boss.main.Calc_speed.Areas[Area]].index(shape[3])  # if an element with similar name was already present in the arena, we replace it and throw a warning.
-                                                self.boss.main.Calc_speed.Areas[Area][position] = [shape[0], new_pts[0:len(shape[1])],Shape2, shape[3]]
 
-                                        else:
-                                            if shape[3] not in [Ars[3] for Ars in Vid.Analyses[1][Area]]:  # if this element did not exist
-                                                Vid.Analyses[1][Area].append([shape[0], new_pts[0:len(shape[1])],Shape2, shape[3]])
-                                            else:
-                                                position = [Ars[3] for Ars in Vid.Analyses[1][Area]].index(shape[3])  # if an element with similar name was already present in the arena, we replace it and throw a warning.
-                                                Vid.Analyses[1][Area][position] = [shape[0], new_pts[0:len(shape[1])],Shape2, shape[3]]
-
-                                        del new_pts[0:len(shape[1])]
-
-                                    elif shape[0] == "Borders":
-                                        new_shape2 = []
-                                        for bd in shape[1]:
-                                            new_shape2.append(new_pts[0:len(bd)])
-                                            del new_pts[0:len(bd)]
-                                            Shape2=shape[2].get()
-
-                                        if Vid == self.Current_Vid:
-                                            if shape[3] not in [Ars[3] for Ars in self.boss.main.Calc_speed.Areas[Area]]:
-                                                self.boss.main.Calc_speed.Areas[Area].append([shape[0], new_shape2, Shape2, shape[3]])
-                                            else:
-                                                position = [Ars[3] for Ars in self.boss.main.Calc_speed.Areas[Area]].index(shape[3])
-                                                self.boss.main.Calc_speed.Areas[Area][position] = [shape[0], new_shape2, Shape2, shape[3]]
-
-                                        else:
-                                            if shape[3] not in [Ars[3] for Ars in Vid.Analyses[1][Area]]:
-                                                Vid.Analyses[1][Area].append([shape[0], new_shape2, Shape2, shape[3]])
-                                            else:
-                                                position = [Ars[3] for Ars in Vid.Analyses[1][Area]].index(shape[3])
-                                                Vid.Analyses[1][Area][position] = [shape[0], new_shape2, Shape2, shape[3]]
-
-        for Ar in self.boss.main.Calc_speed.Areas:
-            for shape in Ar:
-                try:#If it is already a float
-                    shape[2] = float(shape[2].get())
-                except:
-                    pass
-        self.Current_Vid.Analyses[1] = copy.deepcopy(self.boss.main.Calc_speed.Areas)
-
-        for Ar in self.boss.main.Calc_speed.Areas:
-            for shape in Ar:
-                shape[2] = DoubleVar(value=shape[2])
 
         self.parent.destroy()
         self.boss.ready=True

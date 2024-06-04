@@ -1,10 +1,11 @@
 from tkinter import *
+from tkinter import ttk
 import os
-from AnimalTA.A_General_tools import Function_draw_mask, UserMessages, Class_stabilise
+from AnimalTA.A_General_tools import Function_draw_mask, UserMessages, Class_stabilise, Color_settings, Class_loading_Frame, Message_simple_question as MsgBox
 import math
 import cv2
 from copy import deepcopy
-from tkinter import messagebox
+
 
 class Extend(Frame):
     """ This Frame display a list of the videos from the project.
@@ -24,6 +25,7 @@ class Extend(Frame):
         self.do_self=do_self
         self.value=value
         self.all_sel=False
+        self.config(**Color_settings.My_colors.Frame_Base)
 
         #Import messages
         self.Language = StringVar()
@@ -36,52 +38,74 @@ class Extend(Frame):
         Grid.rowconfigure(self.parent, 0, weight=1)  ########NEW
 
         self.Messages = UserMessages.Mess[self.Language.get()]
-        self.winfo_toplevel().title(self.Messages["Extend1"] + " "+ self.Messages[type])
+        self.winfo_toplevel().title(self.Messages["ExtendT"])
+
+
+        Label(self,text=self.Messages["Extend1"] + " " + self.Messages[type], wraplength=500, **Color_settings.My_colors.Label_Base).grid(row=0, columnspan=2, sticky="nsew")
 
         #This button allows to directly select/unselect all the videos from the list
         self.sel_state=StringVar()
         self.sel_state.set(self.Messages["ExtendB1"])
-        self.bouton_sel_all=Button(self,textvariable=self.sel_state,command=self.select_all)
-        self.bouton_sel_all.grid(row=0,columnspan=2, sticky="nsew")
+        self.bouton_sel_all=Button(self,textvariable=self.sel_state,command=self.select_all,**Color_settings.My_colors.Button_Base)
+        self.bouton_sel_all.grid(row=1,columnspan=2, sticky="ns")
 
         #Navigate throught the list
-        self.yscrollbar = Scrollbar(self)
-        self.yscrollbar.grid(row=1,column=1, sticky="ns")
-        self.Liste=Listbox(self, selectmode = EXTENDED, width=100, yscrollcommand=self.yscrollbar.set)
+        self.yscrollbar = ttk.Scrollbar(self)
+        self.yscrollbar.grid(row=2,column=1, sticky="ns")
+        self.Liste=Listbox(self, selectmode = EXTENDED, width=100, yscrollcommand=self.yscrollbar.set,**Color_settings.My_colors.ListBox)
 
         #To validate and share the parameters
-        self.bouton=Button(self,text=self.Messages["Validate"],command=self.validate)
-        self.bouton.grid(row=2, sticky="nsew")
+        Frame_val_can=Frame(self)
+        Frame_val_can.grid(row=3, sticky="nsew")
+        Grid.columnconfigure(Frame_val_can,0, weight=1)
+        Grid.columnconfigure(Frame_val_can,1, weight=1)
+        self.bouton=Button(Frame_val_can,text=self.Messages["Validate"],command=self.validate, **Color_settings.My_colors.Button_Base, width=15)
+        self.bouton.config(background=Color_settings.My_colors.list_colors["Validate"],fg=Color_settings.My_colors.list_colors["Fg_Validate"])
+        self.bouton.grid(row=0, column=0)
+
+        self.bouton_can = Button(Frame_val_can, text=self.Messages["Cancel"], command=self.End_of_window, **Color_settings.My_colors.Button_Base, width=15)
+        self.bouton_can.config(background=Color_settings.My_colors.list_colors["Cancel"], fg=Color_settings.My_colors.list_colors["Fg_Cancel"])
+        self.bouton_can.grid(row=0, column=1)
+
         self.yscrollbar.config(command=self.Liste.yview)
 
         #Progression time-bar to show the loading
+
         self.loading_canvas=Frame(self)
         self.loading_state=Label(self.loading_canvas, text="")
         self.loading_state.grid(row=0, column=0)
 
-        self.loading_bar=Canvas(self.loading_canvas, height=10)
-        self.loading_bar.create_rectangle(0, 0, 400, self.loading_bar.cget("height"), fill="red")
-        self.loading_bar.grid(row=0, column=1)
+        self.load_frame = Class_loading_Frame.Loading(self.loading_canvas)  # Progression bar
+        self.load_frame.show_load(0)
+        self.load_frame.grid(row=0, column=1)
+
 
         #We add all the videos
         self.list_vid_minus=[]
         for i in range(len(self.list_vid)):
             if self.list_vid[i]!=self.Vid or self.do_self:
+                if type=="IDs":
+                    if self.list_vid[i].Track[1][6] == self.Vid.Track[1][6] and self.list_vid[i].Tracked:
+                        self.list_vid_minus.append(self.list_vid[i])
+                        self.Liste.insert(i, self.list_vid[i].User_Name)
+
                 #The untracked videos will not be displayed if we want to share analyses parameters
-                if not (type=="analyses_smooth" or type=="analyses_thresh" or type=="analyses_explo" or type=="analyses_inter" or type=="analyses_deform") or (self.list_vid[i].Tracked):
+                elif not (type=="analyses_smooth" or type=="analyses_thresh" or type=="analyses_explo" or type=="analyses_inter" or type=="analyses_deform") or (self.list_vid[i].Tracked):
                     self.list_vid_minus.append(self.list_vid[i])
                     self.Liste.insert(i, self.list_vid[i].User_Name)
                     if self.list_vid[i].Tracked and not (type=="analyses_smooth" or type=="analyses_thresh" or type=="analyses_explo" or type=="analyses_inter" or type=="analyses_deform"):
-                        self.Liste.itemconfig(self.Liste.size()-1, {'fg': 'red'})
+                        self.Liste.itemconfig(self.Liste.size()-1, {'fg': Color_settings.My_colors.list_colors["Fg_not_valide"]})
                         #The tracked videos will appear in red if they were already tracked (except for changes in analyses parameters).
                         #Indeed, changing a parameter of these videos will remove the trackings.
 
-        self.Liste.grid(row=1,column=0, sticky="nsew")
+        self.Liste.grid(row=2,column=0, sticky="nsew")
 
-        Grid.columnconfigure(self, 0, weight=1)  ########NEW
-        Grid.rowconfigure(self, 0, weight=1)  ########NEW
-        Grid.rowconfigure(self, 1, weight=100)  ########NEW
-        Grid.rowconfigure(self, 2, weight=1)  ########NEW
+        Grid.columnconfigure(self, 0, weight=1)
+        Grid.rowconfigure(self, 0, weight=1)
+        Grid.rowconfigure(self, 1, weight=1)
+        Grid.rowconfigure(self, 2, weight=100)
+        Grid.rowconfigure(self, 3, weight=1)
+        Grid.rowconfigure(self, 4, weight=1)
 
         self.grab_set()
         self.parent.protocol("WM_DELETE_WINDOW", self.rebind)
@@ -98,7 +122,7 @@ class Extend(Frame):
 
     def validate(self):
         #Apply the parameters to the selected videos and close the window
-        if self.type=="back" or self.type=="stab": #There is only in the case of background that the process is slow (we don't show loading bar for other kind of parameters).
+        if self.type=="back" or self.type=="stab" or self.type=="IDs": #There is only in the case of background that the process is slow (we don't show loading bar for other kind of parameters).
             self.loading_canvas.grid(row=3, column=0, columnspan=2)
 
         list_item = self.Liste.curselection()
@@ -108,7 +132,7 @@ class Extend(Frame):
         for V in list_item:
             #If the tracking parameters were changed we remove the existing trackings
             cleared=True
-            if self.list_vid_minus[V].Tracked and self.type!="analyses_smooth" and self.type!="analyses_thresh" and self.type!="analyses_explo" and self.type!="analyses_inter" and self.type!="analyses_deform":
+            if self.list_vid_minus[V].Tracked and self.type!="analyses_smooth" and self.type!="analyses_thresh" and self.type!="analyses_explo" and self.type!="analyses_inter" and self.type!="analyses_deform" and self.type!="IDs":
                 cleared=self.list_vid_minus[V].clear_files()
                 self.list_vid_minus[V].Tracked = False
             if cleared:
@@ -140,21 +164,21 @@ class Extend(Frame):
                         self.list_vid_minus[V].Track[1][6]=self.list_vid_minus[V].Track[1][6] + ([self.list_vid_minus[V].Track[1][6][0]] * (nb_ar-len(self.list_vid_minus[V].Track[1][6])))
 
                 elif self.type == "fps":
-                    if self.list_vid_minus[V].Frame_rate[1] != self.list_vid_minus[V].Frame_rate[0] / self.value:
-                        self.list_vid_minus[V].Frame_rate[1] = self.list_vid_minus[V].Frame_rate[0] / self.value
-                        self.list_vid_minus[V].Frame_nb[1] = math.floor(self.list_vid_minus[V].Frame_nb[0] / round(
-                            self.list_vid_minus[V].Frame_rate[0] / self.list_vid_minus[V].Frame_rate[1]))  ######NEW
+                    if self.list_vid_minus[V].Frame_rate[1] != self.value:
+                        new_frame_rate = self.value
+                        one_every = self.list_vid_minus[V].Frame_rate[0] / new_frame_rate
+                        new_frame_nb = int(self.list_vid_minus[V].Frame_nb[0] / (self.list_vid_minus[V].Frame_rate[0] / new_frame_rate))
+
+                        self.list_vid_minus[V].Cropped[1][0] = round(round(self.list_vid_minus[V].Cropped[1][0] / one_every) * one_every)  # Avoid to try to open un-existing frames after changes in frame-rate
+                        self.list_vid_minus[V].Cropped[1][1] = round(round(self.list_vid_minus[V].Cropped[1][1] / one_every) * one_every)
+                        self.list_vid_minus[V].Frame_rate[1]=new_frame_rate
+                        self.list_vid_minus[V].Frame_nb[1] = new_frame_nb
 
                 elif self.type == "stab":
-                    self.loading_bar.delete('all')
-                    heigh = self.loading_bar.cget("height")
                     self.bouton.config(state="disable")
-                    self.loading_bar.create_rectangle(0, 0, 400, heigh, fill="red")
-                    self.loading_bar.create_rectangle(0, 0, ((item + 1) / nb_items) * 400, heigh, fill="blue")
-                    self.loading_bar.update()
-                    self.loading_state.config(
-                        text=self.Messages["Video"] + ": {act}/{tot}".format(act=item + 1, tot=nb_items))
-                    self.list_vid_minus[V].make_back()
+                    self.load_frame.show_load(((item + 1) / nb_items))
+                    self.loading_state.config(text=self.Messages["Video"] + ": {act}/{tot}".format(act=item + 1, tot=nb_items))
+                    self.list_vid_minus[V].Back=[0,[]]
 
                     self.list_vid_minus[V].Stab[0] = self.value[0]
                     self.list_vid_minus[V].Stab[2] = self.value[2].copy()
@@ -162,7 +186,7 @@ class Extend(Frame):
                     Which_part = [index for index, Fu_inf in enumerate(self.list_vid_minus[V].Fusion) if Fu_inf[0] <= self.list_vid_minus[V].Cropped[1][0]][-1]
                     Capture = cv2.VideoCapture(self.list_vid_minus[V].Fusion[Which_part][1])
 
-                    Capture.set(cv2.CAP_PROP_POS_FRAMES, int(self.list_vid_minus[V].Cropped[1][0] - self.list_vid_minus[V].Fusion[Which_part][0]))
+                    Capture.set(cv2.CAP_PROP_POS_FRAMES, round(self.list_vid_minus[V].Cropped[1][0] - self.list_vid_minus[V].Fusion[Which_part][0]))
                     _, Prem_im=Capture.read()
                     if self.list_vid_minus[V].Cropped_sp[0]:
                         Prem_im = Prem_im[self.list_vid_minus[V].Cropped_sp[1][0]:self.list_vid_minus[V].Cropped_sp[1][2],self.list_vid_minus[V].Cropped_sp[1][1]:self.list_vid_minus[V].Cropped_sp[1][3]]
@@ -174,15 +198,15 @@ class Extend(Frame):
 
                 elif self.type == "crop":
                     if self.value[0][0]:
-                        one_every = int(round(round(self.list_vid_minus[V].Frame_rate[0], 2) / self.list_vid_minus[V].Frame_rate[1]))
+                        one_every = self.list_vid_minus[V].Frame_rate[0] / self.list_vid_minus[V].Frame_rate[1]
                         if self.value[0][1][0]<=self.list_vid_minus[V].Frame_nb[0]-1:
                             self.list_vid_minus[V].Cropped[0]=True
-                            self.list_vid_minus[V].Cropped[1][0] = int(math.floor(self.value[0][1][0] / one_every) * one_every)
+                            self.list_vid_minus[V].Cropped[1][0] = round(round(self.value[0][1][0] / one_every) * one_every)
                         else:
                             problems.append([V,True])
 
                         if self.value[0][1][1] <= self.list_vid_minus[V].Frame_nb[0]-1:
-                            self.list_vid_minus[V].Cropped[1][1] = int(math.floor(self.value[0][1][1] / one_every) * one_every)  # Avoid to try to open un-existing frames after changes in frame-rate
+                            self.list_vid_minus[V].Cropped[1][1] = round(round(self.value[0][1][1] / one_every) * one_every)  # Avoid to try to open un-existing frames after changes in frame-rate
 
                         else:
                             self.list_vid_minus[V].Cropped[1][1]=self.list_vid_minus[V].Frame_nb[0]-1
@@ -238,14 +262,9 @@ class Extend(Frame):
 
 
                 elif self.type == "back":
-                    self.loading_bar.delete('all')
-                    heigh = self.loading_bar.cget("height")
                     self.bouton.config(state="disable")
-                    self.loading_bar.create_rectangle(0, 0, 400, heigh, fill="red")
-                    self.loading_bar.create_rectangle(0, 0, ((item + 1) / nb_items) * 400, heigh, fill="blue")
-                    self.loading_bar.update()
-                    self.loading_state.config(
-                        text=self.Messages["Video"] + ": {act}/{tot}".format(act=item + 1, tot=nb_items))
+                    self.load_frame.show_load((item + 1) / nb_items)
+                    self.loading_state.config(text=self.Messages["Video"] + ": {act}/{tot}".format(act=item + 1, tot=nb_items))
                     self.list_vid_minus[V].make_back()
 
                 elif self.type == "analyses_smooth":
@@ -271,6 +290,11 @@ class Extend(Frame):
                         self.list_vid_minus[V].Analyses[4] = deepcopy(self.value)
 
 
+                elif self.type == "IDs":
+                    if self.list_vid_minus[V].Tracked:
+                        self.list_vid_minus[V].Identities = deepcopy(self.value)
+
+
             item+=1
         if len(problems)>0:
             Time=[]
@@ -285,19 +309,27 @@ class Extend(Frame):
 
             Message=""
             if len(Time)>0:
-                Message=Message+"The following videos were not cropped as asked because their duration is shorter than expected cropping:\n" + str(", ".join(Time))
+                Message=Message+self.Messages["Extend_Error1"]+"\n" + str(", ".join(Time))
                 if len(Size)>0:
                     Message=Message+"\n \n"
 
             if len(Size) > 0:
-                Message=Message+"The following videos were not cropped as asked because their size is smaller than expected cropping:\n" + str(", ".join(Size))
-
-            messagebox.showwarning("Some videos have not been normally processed",Message)
+                Message=Message+self.Messages["Extend_Error2"]+"\n" + str(", ".join(Size))
 
 
+            question = MsgBox.Messagebox(parent=self, title=self.Messages["Extend_TError"],
+                                       message=Message, Possibilities=self.Messages["Continue"])
+            self.wait_window(question)
+
+
+
+        self.End_of_window()
+
+    def End_of_window(self):
         self.boss.update_projects()
         self.boss.bind_all("<MouseWheel>", self.boss.on_mousewheel)
         self.parent.destroy()
+
 
     def rebind(self):
         self.parent.destroy()

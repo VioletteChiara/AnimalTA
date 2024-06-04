@@ -1,11 +1,18 @@
 from tkinter import *
-from AnimalTA.A_General_tools import Function_draw_mask, UserMessages, User_help
-from AnimalTA.E_Post_tracking.b_Analyses import Class_Shapes_rows, Interface_border_portion, Interface_extend_elements, Functions_deformation
+from tkinter import ttk
+from AnimalTA.A_General_tools import Function_draw_mask, UserMessages, User_help, Class_loading_Frame, Color_settings
+from AnimalTA.E_Post_tracking.b_Analyses import Class_Shapes_rows, Interface_border_portion, Interface_extend_elements, Functions_deformation, Functions_Analyses_Speed
 import numpy as np
 import PIL
 import math
 import cv2
 from operator import itemgetter
+from skimage import draw
+from functools import partial
+import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
+from tkinter import filedialog
+from tkinter import ttk
 
 
 """This script codes four classes inherited from Frame, each one associated with one kind of data analyses. 
@@ -20,6 +27,7 @@ class Details_basics(Frame):
     #It allows the user to change the movement thershold of the targets (under this threshold, targets are considered stopped).
     def __init__(self, parent, main, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
+        self.config(**Color_settings.My_colors.Frame_Base)
         self.parent=parent
         self.parent.geometry("1050x620")
         self.main=main
@@ -52,11 +60,13 @@ class Details_basics(Frame):
         self.Ind_name=StringVar()
         self.Ind_name.set(self.Messages["Arena_short"]+ "{}, ".format(self.main.Vid.Identities[0][0])+ self.Messages["Individual_short"] +" {}".format(self.main.Vid.Identities[0][1]))
         self.Which_ind = OptionMenu(self, self.Ind_name, *self.List_inds_names.values(), command=self.change_ind)
+        self.Which_ind["menu"].config(**Color_settings.My_colors.OptnMenu_Base)
+        self.Which_ind.config(**Color_settings.My_colors.Button_Base)
         self.Which_ind.grid(row=0, column=0,sticky="n")
 
         #A graph is shown that represent the movement speed of the taregt as a function of time.
         #In this graph, the user can also see and modify the target's movement threshold.
-        Frame_for_Graph=Frame(self)
+        Frame_for_Graph=Frame(self, **Color_settings.My_colors.Frame_Base)
         Frame_for_Graph.grid(row=1, column=0, stick="nsew")
         Grid.columnconfigure(Frame_for_Graph, 0, weight=1)  ########NEW
         Grid.columnconfigure(Frame_for_Graph, 1, weight=1)  ########NEW
@@ -66,28 +76,28 @@ class Details_basics(Frame):
         Grid.rowconfigure(Frame_for_Graph, 1, weight=1)  ########NEW
         Grid.rowconfigure(Frame_for_Graph, 2, weight=1)  ########NEW
 
-        self.Ylab_can = Canvas(Frame_for_Graph, width=20, height=300)
+        self.Ylab_can = Canvas(Frame_for_Graph, width=20, height=300, **Color_settings.My_colors.Frame_Base)
         self.Ylab_can.grid(row=0,column=0, sticky="nsew")
 
-        self.Yaxe_can = Canvas(Frame_for_Graph, width=50, height=300)
+        self.Yaxe_can = Canvas(Frame_for_Graph, width=50, height=300, **Color_settings.My_colors.Frame_Base)
         self.Yaxe_can.grid(row=0,column=1, sticky="nsew")
 
-        self.Graph=Canvas(Frame_for_Graph, width=300, height=300, scrollregion=(0,0,0,0))
+        self.Graph=Canvas(Frame_for_Graph, width=300, height=300, scrollregion=(0,0,0,0), **Color_settings.My_colors.Frame_Base)
         self.Graph.grid(row=0,column=2,sticky="nsew")
         self.Graph.bind("<Configure>", self.show_graph)
         self.Graph.bind("<Button-1>", self.callback)
         self.Graph.bind("<B1-Motion>", self.move_seuil)
 
-        self.Xaxe_can = Canvas(Frame_for_Graph, height=15)
+        self.Xaxe_can = Canvas(Frame_for_Graph, height=15, **Color_settings.My_colors.Frame_Base)
         self.Xaxe_can.grid(row=1,column=2, sticky="nsew")
         self.Xaxe_can.create_text(210, 7, text=self.Messages["Analyses_details_graph_X"])
 
-        hsb=Scrollbar(Frame_for_Graph, orient=HORIZONTAL, command=self.Graph.xview)
+        hsb=ttk.Scrollbar(Frame_for_Graph, orient=HORIZONTAL, command=self.Graph.xview)
         hsb.grid(row=2,column=2,sticky="ew")
         self.Graph.config(xscrollcommand=hsb.set)
         self.stay_on_top()
 
-        User_Frame=Frame(self)
+        User_Frame=Frame(self, **Color_settings.My_colors.Frame_Base)
         User_Frame.grid(row=1, column=1, sticky="nsew")
         Grid.rowconfigure(User_Frame, 0, weight=100)
         Grid.rowconfigure(User_Frame, 1, weight=1)
@@ -99,16 +109,16 @@ class Details_basics(Frame):
         self.HW.grid_propagate(False)
 
         #The results related to the current target will appear in this Frame, they are updated each time that the movement threshold is changed.
-        Frame_for_results=Frame(User_Frame)
+        Frame_for_results=Frame(User_Frame, **Color_settings.My_colors.Frame_Base)
         Frame_for_results.grid(row=1, column=0)
 
         ##Different results
         # Prop time lost
         self.Prop_lost=StringVar()
         self.Prop_lost.set("0.0")
-        self.Label_Prop_lost=Label(Frame_for_results, text=self.Messages["Analyses_details_Lab1"])
+        self.Label_Prop_lost=Label(Frame_for_results, text=self.Messages["Analyses_details_Lab1"], **Color_settings.My_colors.Label_Base)
         self.Label_Prop_lost.grid(row=1, column=0, sticky="e")
-        self.Show_Prop_lost=Label(Frame_for_results, textvariable=self.Prop_lost)
+        self.Show_Prop_lost=Label(Frame_for_results, textvariable=self.Prop_lost, **Color_settings.My_colors.Label_Base)
         self.Show_Prop_lost.grid(row=1, column=1, sticky="w")
         self.Show_Prop_lost.grid()
         self.Label_Prop_lost.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Analyses_details1"]))
@@ -117,9 +127,9 @@ class Details_basics(Frame):
         #Mean speed
         self.Mean_Speed=StringVar()
         self.Mean_Speed.set("0.0")
-        self.Label_mean=Label(Frame_for_results, text=self.Messages["Analyses_details_Lab2"])
+        self.Label_mean=Label(Frame_for_results, text=self.Messages["Analyses_details_Lab2"], **Color_settings.My_colors.Label_Base)
         self.Label_mean.grid(row=2, column=0, sticky="e")
-        self.Show_mean=Label(Frame_for_results, textvariable=self.Mean_Speed)
+        self.Show_mean=Label(Frame_for_results, textvariable=self.Mean_Speed, **Color_settings.My_colors.Label_Base)
         self.Show_mean.grid(row=2, column=1, sticky="w")
         self.Label_mean.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Analyses_details2"]))
         self.Label_mean.bind("<Leave>", self.HW.remove_tmp_message)
@@ -127,9 +137,9 @@ class Details_basics(Frame):
         # Mean speed in move
         self.Mean_Speed_Move=StringVar()
         self.Mean_Speed_Move.set("0.0")
-        self.Label_mean_move=Label(Frame_for_results, text=self.Messages["Analyses_details_Lab3"])
+        self.Label_mean_move=Label(Frame_for_results, text=self.Messages["Analyses_details_Lab3"], **Color_settings.My_colors.Label_Base)
         self.Label_mean_move.grid(row=3, column=0, sticky="e")
-        self.Show_mean_move=Label(Frame_for_results, textvariable=self.Mean_Speed_Move)
+        self.Show_mean_move=Label(Frame_for_results, textvariable=self.Mean_Speed_Move, **Color_settings.My_colors.Label_Base)
         self.Show_mean_move.grid(row=3, column=1, sticky="w")
         self.Show_mean_move.grid()
         self.Label_mean_move.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Analyses_details3"]))
@@ -138,9 +148,9 @@ class Details_basics(Frame):
         # Prop time move
         self.Prop_move=StringVar()
         self.Prop_move.set("0.0")
-        self.Label_Prop_move=Label(Frame_for_results, text=self.Messages["Analyses_details_Lab4"])
+        self.Label_Prop_move=Label(Frame_for_results, text=self.Messages["Analyses_details_Lab4"], **Color_settings.My_colors.Label_Base)
         self.Label_Prop_move.grid(row=4, column=0, sticky="e")
-        self.Show_Prop_move=Label(Frame_for_results, textvariable=self.Prop_move)
+        self.Show_Prop_move=Label(Frame_for_results, textvariable=self.Prop_move, **Color_settings.My_colors.Label_Base)
         self.Show_Prop_move.grid(row=4, column=1, sticky="w")
         self.Show_Prop_move.grid()
         self.Label_Prop_move.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Analyses_details4"]))
@@ -149,9 +159,9 @@ class Details_basics(Frame):
         # Dist traveled
         self.Dist_total=StringVar()
         self.Dist_total.set("0.0")
-        self.Label_Dist_total=Label(Frame_for_results, text=self.Messages["Analyses_details_Lab5"])
+        self.Label_Dist_total=Label(Frame_for_results, text=self.Messages["Analyses_details_Lab5"], **Color_settings.My_colors.Label_Base)
         self.Label_Dist_total.grid(row=5, column=0, sticky="e")
-        self.Show_Dist_total=Label(Frame_for_results, textvariable=self.Dist_total)
+        self.Show_Dist_total=Label(Frame_for_results, textvariable=self.Dist_total, **Color_settings.My_colors.Label_Base)
         self.Show_Dist_total.grid(row=5, column=1, sticky="w")
         self.Show_Dist_total.grid()
         self.Label_Dist_total.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Analyses_details5"]))
@@ -160,16 +170,17 @@ class Details_basics(Frame):
         # Dist traveled while moving
         self.Dist_total_move=StringVar()
         self.Dist_total_move.set("0.0")
-        self.Label_Dist_total_move=Label(Frame_for_results, text=self.Messages["Analyses_details_Lab6"])
+        self.Label_Dist_total_move=Label(Frame_for_results, text=self.Messages["Analyses_details_Lab6"], **Color_settings.My_colors.Label_Base)
         self.Label_Dist_total_move.grid(row=6, column=0, sticky="e")
-        self.Show_Dist_total_move=Label(Frame_for_results, textvariable=self.Dist_total_move)
+        self.Show_Dist_total_move=Label(Frame_for_results, textvariable=self.Dist_total_move, **Color_settings.My_colors.Label_Base)
         self.Show_Dist_total_move.grid(row=6, column=1, sticky="w")
         self.Show_Dist_total_move.grid()
         self.Label_Dist_total_move.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Analyses_details6"]))
         self.Label_Dist_total_move.bind("<Leave>", self.HW.remove_tmp_message)
 
         #Close the Frame/window
-        self.Quit_button=Button(self, text=self.Messages["Analyses_details_B1"], command=self.parent.destroy, background="#6AED35")
+        self.Quit_button=Button(self, text=self.Messages["Validate"], command=self.parent.destroy, **Color_settings.My_colors.Button_Base)
+        self.Quit_button.config(background=Color_settings.My_colors.list_colors["Validate"],fg=Color_settings.My_colors.list_colors["Fg_Validate"])
         self.Quit_button.grid(row=7, column=0, columnspan=2, sticky="sew")
 
         #Show the results for the selected target
@@ -177,13 +188,12 @@ class Details_basics(Frame):
 
 
         #Entry to modify manually the threshold:
-
-        Lab_ent_thresh=Label(Frame_for_results, text=self.Messages["Names6"])
+        Lab_ent_thresh=Label(Frame_for_results, text=self.Messages["Names6"], **Color_settings.My_colors.Label_Base)
         Lab_ent_thresh.grid(row=0, column=0, sticky="e")
         verif_E_float = (self.register(self.update_threshold), '%P', '%V')
         tmp_var=StringVar()
         tmp_var.set("")
-        self.Ent_threshold=Entry(Frame_for_results, textvariable=tmp_var, validatecommand=verif_E_float, validate="all")
+        self.Ent_threshold=Entry(Frame_for_results, textvariable=tmp_var, validatecommand=verif_E_float, validate="all", **Color_settings.My_colors.Entry_Base)
         self.Ent_threshold.grid(row=0, column=1, sticky="e")
 
 
@@ -298,23 +308,23 @@ class Details_basics(Frame):
         Corr_Xs = [self.Ratio_Xs * val for val in Xs]
 
         #Axes labels
-        self.Ylab_can.create_text(10,self.Height/2,text=self.Messages["Analyses_details_graph_Y"].format(self.main.Vid.Scale[1]),angle=90)
+        self.Ylab_can.create_text(10,self.Height/2,text=self.Messages["Analyses_details_graph_Y"].format(self.main.Vid.Scale[1]),angle=90,fill=Color_settings.My_colors.list_colors["Fg_Base"])
 
         #Axes values
-        self.Graph.create_line(0,self.Height-self.ecart,self.Width,self.Height-self.ecart, width=2)
+        self.Graph.create_line(0,self.Height-self.ecart,self.Width,self.Height-self.ecart, width=2,fill=Color_settings.My_colors.list_colors["Fg_Base"])
         for text in np.arange (0, Ymax, Ymax/6):
-            self.Yaxe_can.create_text(self.ecart/2,(self.Height-(self.ecart+text*self.Ratio_Ys)),text=round(text,2))
-            self.Yaxe_can.create_line(self.Yaxe_can.winfo_width()-10,(self.Height-(self.ecart+text*self.Ratio_Ys)),self.Yaxe_can.winfo_width()+10,(self.Height-(self.ecart+text*self.Ratio_Ys)))
+            self.Yaxe_can.create_text(self.ecart/2,(self.Height-(self.ecart+text*self.Ratio_Ys)),text=round(text,2),fill=Color_settings.My_colors.list_colors["Fg_Base"])
+            self.Yaxe_can.create_line(self.Yaxe_can.winfo_width()-10,(self.Height-(self.ecart+text*self.Ratio_Ys)),self.Yaxe_can.winfo_width()+10,(self.Height-(self.ecart+text*self.Ratio_Ys)),fill=Color_settings.My_colors.list_colors["Fg_Base"])
 
-        self.Graph.create_line(0, self.ecart, 0, self.Height-self.ecart, width=2)
+        self.Graph.create_line(0, self.ecart, 0, self.Height-self.ecart, width=2,fill=Color_settings.My_colors.list_colors["Fg_Base"])
         for text in np.arange(200, (self.main.Vid.Cropped[1][1]-self.main.Vid.Cropped[1][0])/self.main.one_every, 200):
-            self.Graph.create_text(text,self.Height-(self.ecart/2),text=round(((int((text)/self.Ratio_Xs) + int(round((self.main.Vid.Cropped[1][0])/self.main.one_every)))/self.main.Vid.Frame_rate[1]),2))
-            self.Graph.create_line(text-1,self.Height-(self.ecart)+10,text-1,self.Height-(self.ecart))
+            self.Graph.create_text(text,self.Height-(self.ecart/2),text=round(((int((text)/self.Ratio_Xs) + round(round((self.main.Vid.Cropped[1][0])/self.main.one_every)))/self.main.Vid.Frame_rate[1]),2),fill=Color_settings.My_colors.list_colors["Fg_Base"])
+            self.Graph.create_line(text-1,self.Height-(self.ecart)+10,text-1,self.Height-(self.ecart),fill=Color_settings.My_colors.list_colors["Fg_Base"])
 
         #Draw the data
         for point in range(len(Ys)):
             if point>0:
-                self.Graph.create_line(Corr_Xs[point-1], self.Height-(Corr_Ys[point-1]+self.ecart),Corr_Xs[point], self.Height-(Corr_Ys[point]+self.ecart), fill="black")
+                self.Graph.create_line(Corr_Xs[point-1], self.Height-(Corr_Ys[point-1]+self.ecart),Corr_Xs[point], self.Height-(Corr_Ys[point]+self.ecart),fill=Color_settings.My_colors.list_colors["Fg_Base"])
 
         #Draw a line to show where we are in the video (which frame is displayed on the video reader)
         self.add_cur_loc()
@@ -324,7 +334,7 @@ class Details_basics(Frame):
     def add_seuil(self):
         #Draw an horizontal line on the graph to show the threshold limit
         val=self.main.Calc_speed.seuil_movement
-        self.seuil_line=self.Graph.create_line(0, self.Height - (self.Ratio_Ys*val + self.ecart), self.Width,self.Height - (self.Ratio_Ys*val + self.ecart), fill="red", width=2)
+        self.seuil_line=self.Graph.create_line(0, self.Height - (self.Ratio_Ys*val + self.ecart), self.Width,self.Height - (self.Ratio_Ys*val + self.ecart), fill=Color_settings.My_colors.list_colors["Threshold_ana"], width=2)
 
 
     def add_cur_loc(self):
@@ -333,8 +343,8 @@ class Details_basics(Frame):
             self.Graph.delete(self.line_pos)
         except:
             pass
-        cur_pos=self.main.Scrollbar.active_pos- int(round((self.main.Vid.Cropped[1][0])/self.main.one_every))
-        self.line_pos=self.Graph.create_line(cur_pos*self.Ratio_Xs,self.ecart,cur_pos*self.Ratio_Xs,self.Height-self.ecart, width=2, fill="blue")
+        cur_pos=self.main.Scrollbar.active_pos- round(round((self.main.Vid.Cropped[1][0])/self.main.one_every))
+        self.line_pos=self.Graph.create_line(cur_pos*self.Ratio_Xs,self.ecart,cur_pos*self.Ratio_Xs,self.Height-self.ecart, width=2, fill=Color_settings.My_colors.list_colors["Position_ana"])
 
     def stay_on_top(self):
         # We want this window to remain on the top of the others
@@ -355,9 +365,9 @@ class Details_basics(Frame):
         #Else, we move display the video associated with the time's value clicked by the user (X axis value).
         else:
             self.moving = False
-            self.main.Scrollbar.active_pos=int((x)/self.Ratio_Xs) + int(round((self.main.Vid.Cropped[1][0])/self.main.one_every))
+            self.main.Scrollbar.active_pos=int((x)/self.Ratio_Xs) + round(self.main.Vid.Cropped[1][0]/self.main.one_every)
             self.main.Scrollbar.refresh()
-            self.main.Vid_Lecteur.update_image(int((x)/self.Ratio_Xs)+ int(round((self.main.Vid.Cropped[1][0])/self.main.one_every)))
+            self.main.Vid_Lecteur.update_image(int((x)/self.Ratio_Xs)+ round(self.main.Vid.Cropped[1][0]/self.main.one_every))
 
     def move_seuil(self, event):
         #Move the movement threshold and change its value
@@ -400,6 +410,7 @@ class Details_spatial(Frame):
     """
     def __init__(self, parent, main, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
+        self.config(**Color_settings.My_colors.Frame_Base)
         self.parent=parent
         self.parent.geometry("1050x620")
         self.main=main
@@ -412,7 +423,7 @@ class Details_spatial(Frame):
         self.show_mask=False
         Grid.columnconfigure(self.parent, 0, weight=1)  ########NEW
         Grid.rowconfigure(self.parent, 0, weight=1)  ########NEW
-        self.last_cur_pos = self.main.Scrollbar.active_pos - int(round((self.main.Vid.Cropped[1][0]) / self.main.one_every))
+        self.last_cur_pos = self.main.Scrollbar.active_pos - round(self.main.Vid.Cropped[1][0] / self.main.one_every)
         self.parent.attributes('-toolwindow', True)
 
         #Import messages
@@ -460,10 +471,12 @@ class Details_spatial(Frame):
         self.Ind_name.set(self.Messages["Arena_short"]+ "{}, ".format(self.main.Vid.Identities[0][0])+ self.Messages["Individual_short"] +" {}".format(self.main.Vid.Identities[0][1]))
 
         self.Which_ind = OptionMenu(self, self.Ind_name, *self.List_inds_names.values(), command=self.change_ind)
+        self.Which_ind["menu"].config(**Color_settings.My_colors.OptnMenu_Base)
+        self.Which_ind.config(**Color_settings.My_colors.Button_Base)
         self.Which_ind.grid(row=0, column=0,)
 
         #One frame of the video is used to show the arenas and to place, show and modify the elements of interest
-        self.Canvas_for_video=Canvas(self, width=700, height=500, bd=0, highlightthickness=0)
+        self.Canvas_for_video=Canvas(self, width=700, height=500, bd=0, highlightthickness=0, **Color_settings.My_colors.Frame_Base)
         self.Canvas_for_video.grid(row=1, column=0, sticky="nsew")
         Grid.columnconfigure(self, 0, weight=5)  ########NEW
         Grid.columnconfigure(self, 1, weight=1)  ########NEW
@@ -478,7 +491,7 @@ class Details_spatial(Frame):
         self.Canvas_for_video.bind("<Control-3>", self.Zoom_out)
         self.Canvas_for_video.bind("<B1-Motion>", self.callback_move_vid)
 
-        self.Frame_user=Frame(self, width=150)
+        self.Frame_user=Frame(self, width=150, **Color_settings.My_colors.Frame_Base)
         self.Frame_user.grid(row=0, column=1, rowspan=2, sticky="nsew")
         Grid.columnconfigure(self.Frame_user, 0, weight=1)  ########NEW
         Grid.columnconfigure(self.Frame_user, 1, weight=1)  ########NEW
@@ -491,29 +504,29 @@ class Details_spatial(Frame):
         self.HW.grid(row=0, column=0, columnspan=3,sticky="nsew")
 
         #Buttons to modify the elements defined by user
-        self.Button_expend=Button(self.Frame_user, text=self.Messages["Analyses_details_sp_B1"], command=self.expend, width=37)
+        self.Button_expend=Button(self.Frame_user, text=self.Messages["Analyses_details_sp_B1"], command=self.expend, width=37, **Color_settings.My_colors.Button_Base)
         self.Button_expend.grid(row=1, column=0, sticky="new")
         self.Button_expend.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Analyses_details_sp1"]))
         self.Button_expend.bind("<Leave>", self.HW.remove_tmp_message)
 
-        self.Supress_This=Button(self.Frame_user, text=self.Messages["Analyses_details_sp_B2"], command=self.supr_this, width=37)
+        self.Supress_This=Button(self.Frame_user, text=self.Messages["Analyses_details_sp_B2"], command=self.supr_this, width=37, **Color_settings.My_colors.Button_Base)
         self.Supress_This.grid(row=1, column=1, sticky="new")
         self.Supress_This.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Analyses_details_sp2"]))
         self.Supress_This.bind("<Leave>", self.HW.remove_tmp_message)
 
-        Frame_Ana=Frame(self.Frame_user)
+        Frame_Ana=Frame(self.Frame_user, **Color_settings.My_colors.Frame_Base)
         Frame_Ana.grid(row=2, column=0, columnspan=2, sticky="nsew")
         Grid.columnconfigure(Frame_Ana, 0, weight=1)  ########NEW
         Grid.rowconfigure(Frame_Ana, 0, weight=1)  ########NEW
 
         #Where the results associated with elements of interest are shown
-        self.Liste_analyses=Canvas(Frame_Ana, height=200, width=400)
+        self.Liste_analyses=Canvas(Frame_Ana, height=200, width=400, **Color_settings.My_colors.Frame_Base)
         self.Liste_analyses.grid(row=0, column=0, sticky="nsew")
         self.Liste_analyses.columnconfigure(0, weight=1)
 
-        self.vsb=Scrollbar(Frame_Ana, orient=VERTICAL, command=self.Liste_analyses.yview)
+        self.vsb=ttk.Scrollbar(Frame_Ana, orient=VERTICAL, command=self.Liste_analyses.yview)
         self.vsb.grid(row=0,column=1, sticky="ns")
-        self.Frame_for_results=Frame(self.Liste_analyses)
+        self.Frame_for_results=Frame(self.Liste_analyses, **Color_settings.My_colors.Frame_Base)
         self.Frame_for_results.bind("<Configure>",self.on_frame_conf)
 
         self.Liste_analyses.create_window((4,4), window=self.Frame_for_results, anchor="nw")
@@ -521,13 +534,16 @@ class Details_spatial(Frame):
         self.Frame_for_results.columnconfigure(0, weight=1)
 
         #More general buttons
-        self.Quit_button=Button(self.Frame_user, text=self.Messages["Analyses_details_sp_B3"], command=self.close, background="#6AED35")
+        self.Quit_button=Button(self.Frame_user, text=self.Messages["Validate"], command=self.close, **Color_settings.My_colors.Button_Base)
+        self.Quit_button.config(background=Color_settings.My_colors.list_colors["Validate"],fg=Color_settings.My_colors.list_colors["Fg_Validate"])
         self.Quit_button.grid(row=3, column=0, columnspan=2, sticky="sew")
 
-        self.Supress_All_Vid=Button(self.Frame_user, text=self.Messages["Analyses_details_sp_B4"], command=self.supr_all_this_vid, width=35, background="orange")
+        self.Supress_All_Vid=Button(self.Frame_user, text=self.Messages["Analyses_details_sp_B4"], command=self.supr_all_this_vid, width=35, **Color_settings.My_colors.Button_Base)
+        self.Supress_All_Vid.config(background=Color_settings.My_colors.list_colors["Cancel"], fg=Color_settings.My_colors.list_colors["Fg_Cancel"])
         self.Supress_All_Vid.grid(row=4, column=0, sticky="new")
 
-        self.Supress_All=Button(self.Frame_user, text=self.Messages["Analyses_details_sp_B5"], command=self.supr_all, width=35, background="red")
+        self.Supress_All=Button(self.Frame_user, text=self.Messages["Analyses_details_sp_B5"], command=self.supr_all, width=35, **Color_settings.My_colors.Button_Base)
+        self.Supress_All.config(background=Color_settings.My_colors.list_colors["Danger"], fg=Color_settings.My_colors.list_colors["Fg_Danger"])
         self.Supress_All.grid(row=4, column=1, sticky="new")
 
         self.ready = True
@@ -574,27 +590,13 @@ class Details_spatial(Frame):
 
     def update_area(self):
         #If the user changes the target of interest, the function look for which is the new arena and save its contour
-        place = 0
-        self.Area = None
         selected=list(self.List_inds_names.values()).index(self.Ind_name.get())
-        for Ar in range(len(self.main.Vid.Track[1][6])):
-            for Ind in range(self.main.Vid.Track[1][6][Ar]):
-                if selected==place:
-                    self.Area=Ar
-                place+=1
+        self.Area = self.main.Vid.Identities[selected][0]
 
         mask = Function_draw_mask.draw_mask(self.main.Vid)
-        Arenas, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        Arenas_with_holes, Arenas = Function_draw_mask.exclude_inside(mask)
         Arenas = Function_draw_mask.Organise_Ars(Arenas)
         self.Arena_pts = Arenas[self.Area]
-
-        if len(self.main.Vid.Analyses[4][0])>0:
-            self.Arena_pts=self.Arena_pts[:, 0, :]
-            self.Arena_pts = np.array([self.Arena_pts], dtype=np.float32)
-            self.Arena_pts = cv2.perspectiveTransform(self.Arena_pts, self.main.Vid.Analyses[4][0])
-            self.Arena_pts=cv2.convexHull(self.Arena_pts.astype(np.int32))
-
-
 
     def load_img(self,*args):
         #Load the image and hilight the position of the current arena
@@ -659,7 +661,7 @@ class Details_spatial(Frame):
 
     def change_image(self):
         #Change the displayedimage according to the position in the video
-        cur_pos=self.main.Scrollbar.active_pos- int(round((self.main.Vid.Cropped[1][0])/self.main.one_every))
+        cur_pos=self.main.Scrollbar.active_pos - round(self.main.Vid.Cropped[1][0]/self.main.one_every)
         if cur_pos!=self.last_cur_pos:
             self.load_img()
         self.last_cur_pos=cur_pos
@@ -671,12 +673,9 @@ class Details_spatial(Frame):
             self.add_pt=[None,-1]
             self.show_mask = False
             self.show_img()
-            self.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="active")
+            self.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="normal")
             self.HW.change_default_message(self.Messages["Analyses_details_sp00"])
             self.show_results()
-
-
-
 
     ####### self.add_pt is a variable whose value is [None,-1] when the user did not ask to addnew element of interest.
     # When the user ask to add an element of interest, self.add_pt is modified according to the kind of element.
@@ -772,7 +771,7 @@ class Details_spatial(Frame):
             self.show_img()
             self.show_results()
             self.add_pt = [None,-1]
-            self.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="active")
+            self.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="normal")
             self.HW.change_default_message(self.Messages["Analyses_details_sp00"])
 
         elif self.under_mouse==None and self.add_pt[0]=="Line":#If the user wanted to add a line
@@ -784,7 +783,7 @@ class Details_spatial(Frame):
             elif self.add_pt[1]==0:# If there was already one point defined
                 self.main.Calc_speed.Areas[self.Area][len(self.main.Calc_speed.Areas[self.Area])-1][1].append((PtX,PtY))
                 self.add_pt = [None,-1]
-                self.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="active")
+                self.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="normal")
                 self.HW.change_default_message(self.Messages["Analyses_details_sp00"])
                 self.show_results()
             self.show_img()
@@ -799,7 +798,7 @@ class Details_spatial(Frame):
                     elif self.add_pt[1]==0:
                         self.main.Calc_speed.Areas[self.Area][len(self.main.Calc_speed.Areas[self.Area]) - 1][1].append(self.list_of_pts[pt])
                         self.add_pt = [None, -1]
-                        self.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="active")
+                        self.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="normal")
                         self.HW.change_default_message(self.Messages["Analyses_details_sp00"])
                         self.show_mask = False
                         self.show_results()
@@ -814,7 +813,7 @@ class Details_spatial(Frame):
                         self.main.Calc_speed.Areas[self.Area][len(self.main.Calc_speed.Areas[self.Area]) - 1][1].append((int(round(self.list_of_pts[pt-1][0] * self.ratio_border + self.list_of_pts[pt][0] * (1 - self.ratio_border))),
                                        int(round(self.list_of_pts[pt-1][1] * (self.ratio_border) + self.list_of_pts[pt][1] * (1 - self.ratio_border)))))
                         self.add_pt = [None]
-                        self.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="active")
+                        self.menubar.entryconfig(self.Messages["Analyses_details_sp_Menu0"], state="normal")
                         self.HW.change_default_message(self.Messages["Analyses_details_sp00"])
                         self.show_mask = False
                         self.show_results()
@@ -987,8 +986,8 @@ class Details_spatial(Frame):
             widg.destroy()
 
         if len(self.main.Calc_speed.Areas[self.Area])>0:
-            self.Button_expend.config(state="active")
-            self.Supress_This.config(state="active")
+            self.Button_expend.config(state="normal")
+            self.Supress_This.config(state="normal")
             self.HW.change_default_message(self.Messages["Analyses_details_sp00"])
         else:
             self.Button_expend.config(state="disable")
@@ -1094,6 +1093,7 @@ class Details_spatial(Frame):
 class Details_explo(Frame):
     def __init__(self, parent, main, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
+        self.config(**Color_settings.My_colors.Frame_Base)
         self.parent = parent
         self.parent.geometry("1050x620")
         self.main = main
@@ -1102,6 +1102,7 @@ class Details_explo(Frame):
         self.add_pt = [None, -1]
         self.zoom_strength = 0.3
         self.final_width = 251
+        self.stop_top = False
         Grid.columnconfigure(self.parent, 0, weight=1)
         Grid.rowconfigure(self.parent, 0, weight=1)
         self.last_cur_pos = self.main.Scrollbar.active_pos - int(round((self.main.Vid.Cropped[1][0]) / self.main.one_every))
@@ -1125,9 +1126,11 @@ class Details_explo(Frame):
         self.Ind_name.set(self.Messages["Arena_short"]+ "{}, ".format(self.main.Vid.Identities[0][0])+ self.Messages["Individual_short"] +" {}".format(self.main.Vid.Identities[0][1]))
 
         self.Which_ind = OptionMenu(self, self.Ind_name, *self.List_inds_names.values(), command=self.change_ind)
+        self.Which_ind["menu"].config(**Color_settings.My_colors.OptnMenu_Base)
+        self.Which_ind.config(**Color_settings.My_colors.Button_Base)
         self.Which_ind.grid(row=0, column=0, )
 
-        self.Canvas_for_video = Canvas(self, width=700, height=500, bd=0, highlightthickness=0)
+        self.Canvas_for_video = Canvas(self, width=700, height=500, bd=0, highlightthickness=0, **Color_settings.My_colors.Frame_Base)
         self.Canvas_for_video.grid(row=1, column=0, sticky="nsew")
         Grid.columnconfigure(self, 0, weight=1)
         Grid.columnconfigure(self, 1, weight=1)
@@ -1140,7 +1143,7 @@ class Details_explo(Frame):
         self.Canvas_for_video.bind("<Control-3>", self.Zoom_out)
         self.Canvas_for_video.bind("<Configure>", self.show_img)
 
-        self.Frame_user = Frame(self, width=150)
+        self.Frame_user = Frame(self, width=150, **Color_settings.My_colors.Frame_Base)
         self.Frame_user.grid(row=0, column=1, rowspan=2, sticky="nsew")
         Grid.columnconfigure(self.Frame_user, 0, weight=1)
         Grid.columnconfigure(self.Frame_user, 1, weight=1)
@@ -1152,41 +1155,50 @@ class Details_explo(Frame):
         self.HW = User_help.Help_win(self.Frame_user, default_message=self.Messages["Analyses_details_exp0"])
         self.HW.grid(row=0, column=0, columnspan=2, sticky="nsew")
 
-        Frame_Ana = Frame(self.Frame_user)
+        Frame_Ana = Frame(self.Frame_user, **Color_settings.My_colors.Frame_Base)
         Frame_Ana.grid(row=2, column=0, columnspan=2, sticky="nsew")
         Grid.columnconfigure(Frame_Ana, 0, weight=1)
         Grid.rowconfigure(Frame_Ana, 0, weight=1)
 
-        Frame_check = Frame(Frame_Ana)
+        Frame_check = Frame(Frame_Ana, **Color_settings.My_colors.Frame_Base)
         Frame_check.grid(row=0, column=0, columnspan=3)
 
         #Show the parameters and the results
         self.param_p = IntVar(value=self.main.Infos_explo[2])
-        self.param_p_explo =Frame(Frame_Ana)
+        self.param_p_explo =Frame(Frame_Ana, **Color_settings.My_colors.Frame_Base)
         Grid.columnconfigure(self.param_p_explo, 0, weight=1)
         Grid.columnconfigure(self.param_p_explo, 1, weight=1)
 
-        lab_param_p = Label(self.param_p_explo, text=self.Messages["Analyses_details_exp_Lab3"])
+        lab_param_p = Label(self.param_p_explo, text=self.Messages["Analyses_details_exp_Lab3"], **Color_settings.My_colors.Label_Base)
         lab_param_p.grid(row=0, column=0, sticky="nse")
 
+        self.param_p_heatmap = Frame(Frame_Ana, **Color_settings.My_colors.Frame_Base)
+        Grid.columnconfigure(self.param_p_heatmap, 0, weight=1)
+        Grid.columnconfigure(self.param_p_heatmap, 1, weight=1)
+        Do_heat_mp_B=Button(self.param_p_heatmap, text=self.Messages["Analyses_details_exp4"],command=self.draw_heatmap_mod, **Color_settings.My_colors.Button_Base)
+        Do_heat_mp_B.grid(row=0, column=0, sticky="nsew")
+
+        if self.main.Vid.Track[1][6][self.Area]>1:
+            Do_heat_mp_B_comb=Button(self.param_p_heatmap, text=self.Messages["Analyses_details_exp5"],command=partial(self.draw_heatmap_mod, multi=True), **Color_settings.My_colors.Button_Base)
+            Do_heat_mp_B_comb.grid(row=0, column=1, sticky="nsew")
 
         #We have checkbuttons to allow user to select which of the three methods is prefered
         self.shape_mesh = IntVar()
         self.shape_mesh.set(self.main.Infos_explo[0])
         # The target explores a circular area around it at each frame
-        Check_mod = Checkbutton(Frame_check, text=self.Messages["Analyses_details_exp1"], variable=self.shape_mesh, onvalue=0, command=self.show_explored)
+        Check_mod = Checkbutton(Frame_check, text=self.Messages["Analyses_details_exp1"], variable=self.shape_mesh, onvalue=0, command=self.show_explored, **Color_settings.My_colors.Checkbutton_Base)
         Check_mod.grid(row=0, column=0)
 
         #Traditional method
         #Rectangular mesh
-        Check_rect = Checkbutton(Frame_check, text=self.Messages["Analyses_details_exp2"], variable=self.shape_mesh, onvalue=1, command=self.show_explored)
+        Check_rect = Checkbutton(Frame_check, text=self.Messages["Analyses_details_exp2"], variable=self.shape_mesh, onvalue=1, command=self.show_explored, **Color_settings.My_colors.Checkbutton_Base)
         Check_rect.grid(row=0, column=1)
 
         #circular mesh
-        Check_circle = Checkbutton(Frame_check, text=self.Messages["Analyses_details_exp3"], variable=self.shape_mesh, onvalue=2, command=self.show_explored)
+        Check_circle = Checkbutton(Frame_check, text=self.Messages["Analyses_details_exp3"], variable=self.shape_mesh, onvalue=2, command=self.show_explored, **Color_settings.My_colors.Checkbutton_Base)
         Check_circle.grid(row=0, column=2)
         #In the case of the circle, we have a second parameter which allow to change the shape of the internal cells
-        scale_param_p = Scale(self.param_p_explo, from_=1, variable=self.param_p, to=4, resolution=1, orient=HORIZONTAL, command=self.show_explored)
+        scale_param_p = Scale(self.param_p_explo, from_=1, variable=self.param_p, to=4, resolution=1, orient=HORIZONTAL, command=self.show_explored, **Color_settings.My_colors.Scale_Base)
         scale_param_p.grid(row=0, column=1, sticky="nsw")
 
         Grid.columnconfigure(Frame_Ana, 0, weight=1)
@@ -1201,38 +1213,41 @@ class Details_explo(Frame):
         self.min_explo_area=(cv2.contourArea(self.Arena_pts)*scale_mm2)/1000
 
         #We can define it using the scale
-        Squares_explo_lab=Label(Frame_Ana, text=self.Messages["Analyses_details_exp_Lab4"])
+        Squares_explo_lab=Label(Frame_Ana, text=self.Messages["Analyses_details_exp_Lab4"], **Color_settings.My_colors.Label_Base)
         Squares_explo_lab.grid(row=1, column=0, sticky="se")
         self.Explo_size_squares_scale=StringVar(value=self.main.Infos_explo[1])
         self.Explo_size_squares_scale.trace("w", lambda a,b,c: self.Explo_size_squares.set(self.Explo_size_squares_scale.get()))
-        Squares_explo=Scale(Frame_Ana, from_=self.min_explo_area, variable=self.Explo_size_squares_scale, to=(cv2.contourArea(self.Arena_pts)*scale_mm2), resolution=0.05, orient=HORIZONTAL)
+        Squares_explo=Scale(Frame_Ana, from_=self.min_explo_area, variable=self.Explo_size_squares_scale, to=(cv2.contourArea(self.Arena_pts)*scale_mm2), resolution=0.05, orient=HORIZONTAL, **Color_settings.My_colors.Scale_Base)
         Squares_explo.grid(row=1, column=1, sticky="nsew")
 
         #Or writing directly in the Entry box
         verif_E_float = (self.register(self.update_area_val), '%P', '%V')
-        Squares_explo_entry=Entry(Frame_Ana,textvariable=self.Explo_size_squares, width=10, validate="all", validatecommand=verif_E_float, background="grey80")
+        Squares_explo_entry=Entry(Frame_Ana,textvariable=self.Explo_size_squares, width=10, validate="all", validatecommand=verif_E_float, **Color_settings.My_colors.Entry_Base)
         Squares_explo_entry.grid(row=1,column=2, sticky="se")
 
         self.Explo_size_squares.trace("w", self.show_explored)
 
-        Squares_explo_units=Label(Frame_Ana, text=str(self.main.Vid.Scale[1])+"\u00b2")
+        Squares_explo_units=Label(Frame_Ana, text=str(self.main.Vid.Scale[1])+"\u00b2", **Color_settings.My_colors.Label_Base)
         Squares_explo_units.grid(row=1, column=3, sticky="sw")
 
         #Result variable
         self.Prop_explored=DoubleVar()
 
-        Frame_res = Frame(self.Frame_user)
+        Frame_res = Frame(self.Frame_user, **Color_settings.My_colors.Frame_Base)
         Frame_res.grid(row=3, column=0)
 
         self.type_res=StringVar()
         self.type_res.set(self.Messages["Analyses_details_exp_Lab1"])
-        Show_res_lab=Label(Frame_res, textvariable=self.type_res)
+        Show_res_lab=Label(Frame_res, textvariable=self.type_res, **Color_settings.My_colors.Label_Base)
         Show_res_lab.grid(row=0, column=0, sticky="nsew")
 
-        Show_res=Label(Frame_res, textvariable=self.Prop_explored)
+        Show_res=Label(Frame_res, textvariable=self.Prop_explored, **Color_settings.My_colors.Label_Base)
         Show_res.grid(row=0, column=1, sticky="w")
 
-        self.Quit_button = Button(self.Frame_user, text=self.Messages["Analyses_details_sp_B3"], command=self.close, background="#6AED35")
+
+
+        self.Quit_button = Button(self.Frame_user, text=self.Messages["Validate"], command=self.close, **Color_settings.My_colors.Frame_Base)
+        self.Quit_button.config(background=Color_settings.My_colors.list_colors["Validate"],fg=Color_settings.My_colors.list_colors["Fg_Validate"])
         self.Quit_button.grid(row=5, column=0, columnspan=2, sticky="sew")
 
         self.ready = True
@@ -1256,225 +1271,271 @@ class Details_explo(Frame):
             self.show_img()
 
 
+    def draw_heatmap_mod(self, multi=False):
+        load_frame = Class_loading_Frame.Loading(self)
+        load_frame.grid()
+
+        load_frame.show_load(0)
+
+        radius=math.sqrt((float(self.Explo_size_squares.get()))/math.pi)
+
+        rectangle, mask = Function_draw_mask.enclosing_rectangle(self.Area, self.main.Vid, ret=True)
+        cropx, cropy, width, heigh = rectangle
+
+        mask=mask[cropy:(cropy+heigh),cropx:(cropx+width)]
+        heatmap = np.zeros((heigh,width, 1), np.int64)
+
+        if radius > 0:
+            if multi:
+                list_inds = np.array([idx for idx, Ind in enumerate(self.main.Vid.Identities) if Ind[0] == self.Area])
+            else:
+                list_inds = [self.Ind]
+
+            nb_row=len(self.main.Coos[0])
+            count_ind=0
+            for ind in list_inds:
+                count_row=0
+                for pt in self.main.Coos[int(ind)]:
+                    if count_row%100==0:
+                        load_frame.show_load((count_ind+(count_row/nb_row))/len(list_inds))
+                    if pt[0] != "NA":
+                        xx, yy = draw.disk((int(pt[0])-cropx, int(pt[1])-cropy), radius=int(radius * float(self.main.Vid.Scale[0])), shape=[heatmap.shape[1], heatmap.shape[0],1])
+                        heatmap[yy,xx]+=1
+                    count_row+=1
+                count_ind+=1
+
+        load_frame.destroy()
+        heatmap[np.where(mask == 0)] = -1
+        heatmap = np.ma.masked_where(heatmap<0, heatmap)
+
+        self.stop_top = True
+        self.open_heatmap(heatmap)
+
+
+
+    def open_heatmap(self, heatmap_raw):
+        selected=list(self.List_inds_names.values()).index(self.Ind_name.get())
+        Area = self.main.Vid.Identities[selected][0]
+        def main_top(*args):
+            self.stop_top=False
+            self.stay_on_top()
+
+        newWindow = Toplevel(self.main.master)
+        newWindow.bind("<Destroy>", main_top)
+        newWindow.grab_set()
+
+        def stay_on_top():
+            # Maintain this window on top
+            if self.stay_top_heat:
+                newWindow.lift()
+                newWindow.after(50, stay_on_top)
+
+        self.stay_top_heat=True
+        stay_on_top()
+
+        Grid.columnconfigure(newWindow, 0, weight=1)
+        Grid.rowconfigure(newWindow, 0, weight=1)
+
+        main_Frame=Frame(newWindow, **Color_settings.My_colors.Frame_Base)
+        main_Frame.grid(sticky="nsew")
+
+
+        Grid.rowconfigure(main_Frame, 0, weight=1)
+        Grid.columnconfigure(main_Frame, 0, weight=100)
+        Grid.columnconfigure(main_Frame, 1, weight=1)
+
+
+        Canvas_img=Canvas(main_Frame, background="white", width=500, height=500)
+        Canvas_img.grid(row=0, column=0,sticky="nsew")
+
+        Canvas_optn=Canvas(main_Frame, **Color_settings.My_colors.Frame_Base)
+        Canvas_optn.grid(row=0, column=1,sticky="nsew")
+
+        Canvas_img.update()
+        self.last_w=0
+
+        list_possibilities = ['viridis', 'plasma', 'inferno', 'magma', 'cividis']
+        palette=IntVar()
+        palette.set(0)
+
+        reversed=BooleanVar()
+        reversed.set(0)
+
+        repre=IntVar()
+        repre.set(0)
+
+        title=StringVar()
+        title.set("")
+
+        colorbar_label=StringVar()
+        colorbar_label.set("")
+
+        def change_style(heatmap_raw):
+            heatmap_raw = heatmap_raw.copy().astype(np.float)
+            if repre.get()==0:
+                heatmap_raw=np.divide(heatmap_raw,self.main.Vid.Frame_rate[1])
+            else:
+                heatmap_raw = np.divide(heatmap_raw, len(self.main.Coos[0]))
+
+            fig, ax = plt.subplots()
+            if reversed.get():
+                color=list_possibilities[palette.get()]+"_r"
+            else:
+                color = list_possibilities[palette.get()]
+
+            #We remove the black lines
+            ax.spines[['right', 'top', "left", "bottom"]].set_visible(False)
+            im=ax.imshow(heatmap_raw, cmap=color, interpolation='nearest', extent=[0,heatmap_raw.shape[1]/self.main.Vid.Scale[0],0,heatmap_raw.shape[0]/self.main.Vid.Scale[0]])
+            plt.title(title.get(), pad=10)
+            cax = fig.add_axes([ax.get_position().x1 + 0.01, ax.get_position().y0, 0.02, ax.get_position().height])
+            cbar=plt.colorbar(im, cax=cax)
+            cbar.set_label(colorbar_label.get())
+
+            self.heatmap_col = canvas_to_array(fig)
+
+            plt.close("all")
+
+
+        change_style(heatmap_raw)
+
+        def save(selected):
+            heatmap_RGB=cv2.cvtColor(self.heatmap_col,cv2.COLOR_BGR2RGB)
+            self.stay_top_heat=False
+            file = filedialog.asksaveasfilename(defaultextension=".png",
+                                                initialfile=str(self.main.Vid.Identities[selected][1]) + "_Heatmap.png",
+                                                filetypes=(("Image", "*.png"),))
+            if file != "":
+                cv2.imwrite(file, heatmap_RGB)
+            self.stay_top_heat = True
+            stay_on_top()
+
+        def update_img(*args):
+            self.last_w = Canvas_img.winfo_width()
+            ratioW = self.heatmap_col.shape[1] / (Canvas_img.winfo_width()-25)
+            ratioH = self.heatmap_col.shape[0] / (Canvas_img.winfo_height()-25)
+            ratio=max(ratioW,ratioH)
+            heatmap_col=cv2.resize(self.heatmap_col, (int(self.heatmap_col.shape[1]/ratio),int(self.heatmap_col.shape[0]/ratio)))
+
+            self.heatmap = PIL.ImageTk.PhotoImage(image=PIL.Image.fromarray(heatmap_col))
+            Canvas_img.create_image(10, 10, anchor=NW, image=self.heatmap)
+
+        update_img(self.heatmap_col)
+
+        Canvas_img.bind("<Configure>", partial(update_img))
+
+        def change_new_style(heatmap_raw, *args):
+            change_style(heatmap_raw)
+            update_img()
+
+        cur_row=0
+
+        #Put a title:
+        Label(Canvas_optn, text=self.Messages["Heatmap1"], font='Helvetica 12 bold', **Color_settings.My_colors.Label_Base).grid(row=cur_row,column=0, columnspan=2,sticky="ew")
+        cur_row += 1
+        Entry(Canvas_optn, textvariable=title, **Color_settings.My_colors.Entry_Base).grid(row=cur_row,column=0, columnspan=2,sticky="ew")
+        title.trace("w", partial(change_new_style, heatmap_raw))
+        cur_row += 1
+
+        ttk.Separator(Canvas_optn, orient=HORIZONTAL).grid(row=cur_row, column=0,columnspan=2, sticky="ew")
+        cur_row += 1
+
+        #Choose which units we want
+        Label(Canvas_optn, text=self.Messages["Heatmap2"], font='Helvetica 12 bold', **Color_settings.My_colors.Label_Base).grid(row=cur_row,column=0, columnspan=2,sticky="ew")
+        cur_row += 1
+        Radiobutton(Canvas_optn, text=self.Messages["Heatmap3"], variable=repre, value=0, command=partial(change_new_style, heatmap_raw), **Color_settings.My_colors.Radiobutton_Base).grid(row=cur_row,column=0,sticky="w")
+        Radiobutton(Canvas_optn, text=self.Messages["Heatmap4"], variable=repre, value=1,command=partial(change_new_style, heatmap_raw), **Color_settings.My_colors.Radiobutton_Base).grid(row=cur_row,column=1,sticky="w")
+        cur_row+=1
+        Label(Canvas_optn, text=self.Messages["Heatmap5"]+":", **Color_settings.My_colors.Label_Base).grid(row=cur_row,column=0,sticky="ew")
+        Entry(Canvas_optn, textvariable=colorbar_label, **Color_settings.My_colors.Entry_Base).grid(row=cur_row,column=1,sticky="ew")
+        colorbar_label.trace("w", partial(change_new_style, heatmap_raw))
+        cur_row += 1
+
+        ttk.Separator(Canvas_optn, orient=HORIZONTAL).grid(row=cur_row, column=0,columnspan=2, sticky="ew")
+        cur_row += 1
+
+        Label(Canvas_optn, text=self.Messages["Heatmap6"], font='Helvetica 12 bold', **Color_settings.My_colors.Label_Base).grid(row=cur_row,column=0, columnspan=2,sticky="ew")
+        cur_row += 1
+
+        v = 0
+        for color in list_possibilities:
+            if v%2==0:
+                column=0
+            else:
+                column=1
+            Radiobutton(Canvas_optn, text=list_possibilities[v], variable=palette, value=v,
+                        command=partial(change_new_style, heatmap_raw), **Color_settings.My_colors.Radiobutton_Base).grid(row=cur_row, column=column,sticky="w")
+
+            if column==1:
+                cur_row+=1
+            v += 1
+
+
+        Check_rev=Checkbutton(Canvas_optn,text=self.Messages["Heatmap7"], variable=reversed, command=partial(change_new_style, heatmap_raw), **Color_settings.My_colors.Checkbutton_Base)
+        Check_rev.grid(row=cur_row, columnspan=2, column=0, sticky="ew")
+        cur_row += 1
+
+        ttk.Separator(Canvas_optn, orient=HORIZONTAL).grid(row=cur_row, column=0,columnspan=2, sticky="ew")
+        cur_row += 1
+
+        Butt_save=Button(Canvas_optn,text=self.Messages["Heatmap8"], command=partial(save, selected), **Color_settings.My_colors.Button_Base)
+        Butt_save.grid(row=cur_row, columnspan=2, column=0, sticky="ew")
+        cur_row += 1
+
     def draw_mod(self):
         #Draw a red path where the target traveled, this path width is determined by user. In the end, we will calculate the proportion of arena pixels being part of this path.
         self.param_p_explo.grid_forget()
+        self.param_p_heatmap.grid(row=4, column=0, columnspan=4, sticky="nsew")
         self.type_res.set(self.Messages["Analyses_details_exp_Lab1"])
-        radius=math.sqrt((float(self.Explo_size_squares.get()))/math.pi)
+        surface=float(self.Explo_size_squares.get())
         self.image=np.copy(self.image_clean)
-        empty=np.zeros((self.image.shape[0],self.image.shape[1],1), np.uint8)
 
-        last_pt=["NA","NA"]
-        if radius > 0:
-            for pt in self.main.Coos[self.Ind]:
-                if pt[0]!="NA" and last_pt[0]!="NA" and pt[0]!=-1000 and last_pt[0]!=-1000:
-                    cv2.line(empty, (int(float(last_pt[0])), int(float(last_pt[1]))),
-                             (int(float(pt[0])), int(float(pt[1]))), (1), max(1,int(radius * float(self.main.Vid.Scale[0])))*2)
-                elif pt[0]!="NA":
-                    cv2.circle(empty,(int(float(pt[0])),int(float(pt[1]))),int(radius*float(self.main.Vid.Scale[0])),(1),-1)
-                last_pt=pt
+        new_val, empty = Functions_Analyses_Speed.calculate_exploration(method=[0,surface], Vid=self.main.Vid, Coos=self.main.Coos[self.Ind], deb=0, end=len(self.main.Coos[self.Ind])-1, Arena=self.Arena_pts, show=True)
 
-        mask = np.zeros([self.image.shape[0], self.image.shape[1], 1], np.uint8)
-        mask=cv2.drawContours(mask, [self.Arena_pts], -1,(255),-1)
-        empty=cv2.bitwise_and(mask, empty)
-
-        self.Prop_explored.set(round(len(np.where(empty > [0])[0])/len(np.where(mask == [255])[0]),3))
+        self.Prop_explored.set(round(new_val[1],3))
         bool_mask = empty.astype(bool)
         empty=cv2.cvtColor(empty, cv2.COLOR_GRAY2RGB)
-        empty[:,:,0]=empty[:,:,0]*255
+        empty[np.where((empty==[255,255,255]).all(axis=2))]=[255,0,0]
+
+        radius = math.sqrt((float(surface)) / math.pi)
 
         alpha=0.5
         self.image[bool_mask] = cv2.addWeighted(self.image, alpha, empty, 1 - alpha, 0)[bool_mask]
-
+        self.image=cv2.circle(self.image, (int(float(self.main.Coos[self.Ind][self.last_cur_pos][0])), int(float(self.main.Coos[self.Ind][self.last_cur_pos][1]))), int(radius*self.main.Vid.Scale[0]),(111,0,129), max(1,int(3*self.ratio)))
 
     def draw_squares(self):
         #We draw a rectangular mesh on the top of the arena and color the cells according to the proportion of time the target spent in each of them
         #We also set the number of visited cell as the result to be shown
         self.param_p_explo.grid_forget()
+        self.param_p_heatmap.grid_forget()
         self.type_res.set(self.Messages["Analyses_details_exp_Lab2"])
+        surface=float(self.Explo_size_squares.get())
 
         self.image = np.copy(self.image_clean)
-        No_NA_Coos = np.array(self.main.Coos[self.Ind])
-        No_NA_Coos = No_NA_Coos[np.all(No_NA_Coos != -1000, axis=1)]
-        No_NA_Coos = No_NA_Coos.astype('float')
-
-        largeur = math.sqrt(float(self.Explo_size_squares.get()) * float(self.main.Vid.Scale[0]) ** 2)
-        nb_squares_v = math.ceil((max(self.Arena_pts[:, :, 0]) - min(self.Arena_pts[:, :, 0])) / largeur)
-        nb_squares_h = math.ceil((max(self.Arena_pts[:, :, 1]) - min(self.Arena_pts[:, :, 1])) / largeur)
-
-        max_x = min(self.Arena_pts[:, :, 0]) + nb_squares_v * (largeur)
-        max_y = min(self.Arena_pts[:, :, 1]) + nb_squares_h * (largeur)
-
-        decal_x = (max_x - max(self.Arena_pts[:, :, 0])) / 2
-        decal_y = (max_y - max(self.Arena_pts[:, :, 1])) / 2
-
-        colors = np.array([[255] * 128 + [255] * 128 + list(reversed(range(256))),
-                           [255] * 128 + list(reversed(range(0, 256, 2))) + [0] * 256,
-                           list(reversed(range(0, 256, 2))) + [0] * 128 + [0] * 256], dtype=int).T
-
-        if len(No_NA_Coos)>0:
-
-            Xs = (np.floor((No_NA_Coos[:, 0] - (min(self.Arena_pts[:, :, 0]) - decal_x)) / largeur))
-            Ys = (np.floor((No_NA_Coos[:, 1] - (min(self.Arena_pts[:, :, 1]) - decal_y)) / largeur))
-
-            XYs = np.array(list(zip(Xs, Ys)))
-            unique, count = np.unique(XYs, axis=0, return_counts=True)
-            self.Prop_explored.set(len(unique))
-            self.image = cv2.rectangle(self.image, pt1=(int(min(self.Arena_pts[:, :, 0]) - decal_x),int(min(self.Arena_pts[:, :, 1])-decal_y)), pt2=(int(min(self.Arena_pts[:, :, 0])- decal_x +largeur*nb_squares_v), int(min(self.Arena_pts[:, :, 1])- decal_y+largeur*nb_squares_h)), color=[int(c) for c in colors[0]], thickness=-1)
-
-            for square in range(len(count)):
-                color = colors[int(round((count[square]/sum(count))*(len(colors)-1)))]
-                self.image = cv2.rectangle(self.image, pt1=(
-                    int(min(self.Arena_pts[:, :, 0]) - decal_x + unique[square][0] * (largeur)),
-                    int(min(self.Arena_pts[:, :, 1]) - decal_y + unique[square][1] * (largeur))),
-                                           pt2=(int(min(self.Arena_pts[:, :, 0]) - decal_x + (unique[square][0] + 1) * (
-                                               largeur)),
-                                                int(min(self.Arena_pts[:, :, 1]) - decal_y + (unique[square][1] + 1) * (
-                                                    largeur))),
-                                           color=[int(c) for c in color], thickness=-1)
-
-        else:
-            self.Prop_explored.set("NA")
-
-        for vert in range(nb_squares_v + 1):
-            self.image = cv2.line(self.image, pt1=(int(min(self.Arena_pts[:, :, 0]) - decal_x + vert * (largeur)),
-                                                   int(min(self.Arena_pts[:, :, 1]) - decal_y)), pt2=(
-            int(min(self.Arena_pts[:, :, 0]) - decal_x + vert * (largeur)),
-            int(max(self.Arena_pts[:, :, 1]) + decal_y)), color=(0, 0, 0), thickness=2)
-
-        for horz in range(nb_squares_h + 1):
-            self.image = cv2.line(self.image, pt1=(int(min(self.Arena_pts[:, :, 0]) - decal_x),
-                                                   int(min(self.Arena_pts[:, :, 1]) - decal_y + horz * (largeur))),
-                                  pt2=(int(max(self.Arena_pts[:, :, 0]) + decal_x),
-                                       int(min(self.Arena_pts[:, :, 1]) - decal_y + horz * (largeur))),
-                                  color=(0, 0, 0),
-                                  thickness=2)
-
-        self.image[(50) : (self.image.shape[0]-50), (self.image.shape[1] - 75):(self.image.shape[1])]=(150,150,150)
-
-        for raw in range(self.image.shape[0]-150):
-            color=colors[int((raw/(self.image.shape[0]-150))*(len(colors)-1))]
-            self.image[self.image.shape[0]-75-raw,(self.image.shape[1]-65):(self.image.shape[1]-45)]=color
-
-        self.image=cv2.putText(self.image,"100%",(self.image.shape[1]-43,75), cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.4,color=(0, 0, 0), thickness=1)
-        self.image = cv2.putText(self.image, "50%", (self.image.shape[1] - 43, int(self.image.shape[0]/2)), cv2.FONT_HERSHEY_SIMPLEX,fontScale=0.4, color=(0, 0, 0), thickness=1)
-        self.image=cv2.putText(self.image, "0%", (self.image.shape[1]-43, self.image.shape[0] - 75), cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.4,color=(0, 0, 0), thickness=1)
-
+        new_val, self.image = Functions_Analyses_Speed.calculate_exploration(method=[1,surface], Vid=self.main.Vid, Coos=self.main.Coos[self.Ind], deb=0, end=len(self.main.Coos[self.Ind])-1, Arena=self.Arena_pts, image=self.image, show=True)
+        self.Prop_explored.set(round(new_val[1],3))
 
 
     def draw_circles(self, *arg):
         #We draw a circular mesh on the top of the arena and color the cells according to the proportion of time the target spent in each of them
         #We also set the number of visited cell as the result to be shown
         #The calculation used come from the paper: Beckers, B., & Beckers, P. (2012). A general rule for disk and hemisphere partition into equal-area cells. Computational Geometry, 45(7), 275-283.
-        self.param_p_explo.grid(row=4, column=0, columnspan=3, sticky="nsew")
+        self.param_p_explo.grid(row=4, column=0, columnspan=4, sticky="nsew")
+        self.param_p_heatmap.grid_forget()
         self.type_res.set(self.Messages["Analyses_details_exp_Lab2"])
 
+        surface = float(self.Explo_size_squares.get())
+        param_2=self.param_p.get()
+
+
         self.image = np.copy(self.image_clean)
-        No_NA_Coos = np.asarray(self.main.Coos[self.Ind])
-        No_NA_Coos = No_NA_Coos[np.all(No_NA_Coos != -1000, axis=1)]
-        No_NA_Coos = No_NA_Coos.astype('float')
 
-        M=cv2.moments(self.Arena_pts)
-        cX = int(M["m10"] / M["m00"])
-        cY = int(M["m01"] / M["m00"])
+        new_val, self.image = Functions_Analyses_Speed.calculate_exploration(method=[2, surface, param_2], Vid=self.main.Vid,
+                                                                             Coos=self.main.Coos[self.Ind], deb=0,
+                                                                             end=len(self.main.Coos[self.Ind]) - 1,
+                                                                             Arena=self.Arena_pts, image=self.image,
+                                                                             show=True)
 
-        max_size=max(list(np.sqrt((self.Arena_pts[:,:, 0] - cX) ** 2 + (self.Arena_pts[:,:, 1] - cY) ** 2)))
-
-        last_rad = math.sqrt((float(self.Explo_size_squares.get()) * float(self.main.Vid.Scale[0])**2)/math.pi)
-        last_nb = 1
-
-        list_rads=[last_rad]
-        list_nb=[1]
-        list_angles=[[0]]
-
-        while last_rad< max_size:
-            new_rad= ((math.sqrt(last_nb)+math.sqrt(self.param_p.get()**2))/math.sqrt(last_nb)) * last_rad
-            new_nb = int(round((math.sqrt(last_nb) + math.sqrt(self.param_p.get()**2))**2))
-            cur_nb=new_nb-last_nb
-
-            list_nb.append(cur_nb)
-
-            one_angle=(2*math.pi)/cur_nb
-            cur_angle=0
-            tmp_angles=[0]
-            for angle in range(cur_nb):
-                cur_angle += one_angle
-                tmp_angles.append(cur_angle)
-
-
-            list_angles.append(tmp_angles)
-            list_rads.append(new_rad)
-
-            last_rad = new_rad
-            last_nb=new_nb
-
-        if len(No_NA_Coos)>0:
-            #We summarise the position of the individual:
-            Dists=list(np.sqrt((No_NA_Coos[:,0]-cX)**2 + (No_NA_Coos[:,1]-cY)**2))
-            Circles=([np.argmax(list_rads>dist) for dist in Dists])#In which circle
-            Angles= np.arctan2((No_NA_Coos[:,1]-cY),(No_NA_Coos[:,0]-cX))
-            liste_angles_per_I=list(itemgetter(*Circles)(list_angles))
-            Portions=([np.argmax(liste_angles_per_I[idx]>=(angle+math.pi)) for idx,angle in enumerate(Angles)])#In which portion
-
-            Pos=np.array(list(zip(Circles,Portions)))
-
-            unique, count=np.unique(Pos, axis=0, return_counts=True)#On regarde ou la bete est et combien de fois
-            self.Prop_explored.set(len(unique))
-
-            colors=np.array([[255]*128 + [255]*128 + list(reversed(range(256))),[255]*128 + list(reversed(range(0,256,2)))+ [0]*256,list(reversed(range(0,256,2)))+[0]*128 +[0]*256], dtype=int).T
-
-            self.image = cv2.circle(self.image, (cX, cY), int(last_rad), [int(c) for c in colors[0]], -1)
-
-            for square in range(len(unique)):
-                color = colors[int(round((count[square]/sum(count))*(len(colors)-1)))]
-                if unique[square][0]==0:
-                    self.image = cv2.circle(self.image, (cX, cY), (int(list_rads[unique[square][0]])), color=[int(c) for c in color], thickness=-1)
-                else:
-                    diameters=[int(list_rads[unique[square][0]]),int(list_rads[unique[square][0]-1])]
-                    first_angle = 180+((list_angles[unique[square][0]][unique[square][1]])*180/math.pi)
-                    sec_angle = 180+((list_angles[unique[square][0]][unique[square][1]-1])*180/math.pi)
-
-                    empty_img= np.zeros([self.image.shape[0], self.image.shape[1], 1], np.uint8)
-                    empty_img=cv2.ellipse(empty_img, (cX,cY), (diameters[0],diameters[0]), 0, startAngle=first_angle+1, endAngle=sec_angle-1, color=255, thickness=1)
-                    empty_img = cv2.ellipse(empty_img, (cX, cY), (diameters[1], diameters[1]), 0,startAngle=first_angle+1, endAngle=sec_angle-1, color=255, thickness=1)
-
-                    pt1=(int(cX + math.cos((first_angle)/180*math.pi)*(diameters[0]+2)),int(cY + math.sin(first_angle/180*math.pi) * (diameters[0]+2)))
-                    pt2 = (int(cX + math.cos((first_angle)/180*math.pi) * (diameters[1]-2)), int(cY + math.sin(first_angle/180*math.pi) * (diameters[1]-2)))
-                    empty_img=cv2.line(empty_img,pt1,pt2,255,1)#We draw the limits
-
-                    pt1=(int(cX + math.cos((sec_angle)/180*math.pi)*(diameters[0]+2)),int(cY + math.sin(sec_angle/180*math.pi) * (diameters[0]+2)))
-                    pt2 = (int(cX + math.cos(sec_angle/180*math.pi) * (diameters[1]-2)), int(cY + math.sin(sec_angle/180*math.pi) * (diameters[1]-2)))
-                    empty_img=cv2.line(empty_img,pt1,pt2,255,1)#We draw the limits
-                    empty_img = cv2.rectangle(empty_img, (0, 0), (self.image.shape[1], self.image.shape[0]), color=255,thickness=1)#If the shape is bigger than image
-
-
-                    cnts, h = cv2.findContours(empty_img, cv2.RETR_CCOMP , cv2.CHAIN_APPROX_SIMPLE)
-                    cnts=[cnts[i] for i in range(len(cnts)) if h[0][i][3] >= 0]
-                    self.image=cv2.drawContours(self.image,cnts,-1,[int(c) for c in color],-1)
-
-
-        for circle in range(len(list_rads)):
-            self.image = cv2.circle(self.image, (cX, cY), int(list_rads[circle]), (0, 0, 0), 2)
-            if circle>0:
-                for cur_angle in list_angles[circle]:
-                    pt1=(int(cX + math.cos(math.pi+cur_angle)*list_rads[circle-1]),int(cY + math.sin(math.pi+cur_angle) * list_rads[circle-1]))
-                    pt2 = (int(cX + math.cos(math.pi+cur_angle) * list_rads[circle]), int(cY + math.sin(math.pi+cur_angle) * list_rads[circle]))
-                    self.image=cv2.line(self.image,pt1,pt2,(0,0,0),2)#We draw the limits
-        self.image = cv2.circle(self.image, (cX, cY), int(last_rad), (0, 0, 0), 2)
-
-
-
-        self.image[(50) : (self.image.shape[0]-50), (self.image.shape[1] - 75):(self.image.shape[1])]=(150,150,150)
-
-        for raw in range(self.image.shape[0]-150):
-            color=colors[int((raw/(self.image.shape[0]-150))*(len(colors)-1))]
-            self.image[self.image.shape[0]-75-raw,(self.image.shape[1]-65):(self.image.shape[1]-45)]=color
-
-        self.image=cv2.putText(self.image,"100%",(self.image.shape[1]-43,75), cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.4,color=(0, 0, 0), thickness=1)
-        self.image = cv2.putText(self.image, "50%", (self.image.shape[1] - 43, int(self.image.shape[0] / 2)),
-                                 cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.4, color=(0, 0, 0), thickness=1)
-
-        self.image=cv2.putText(self.image, "0%", (self.image.shape[1]-43, self.image.shape[0] - 75), cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.4,color=(0, 0, 0), thickness=1)
+        self.Prop_explored.set(round(new_val[1],3))
 
     def close(self):
         #Close properly this window
@@ -1488,25 +1549,13 @@ class Details_explo(Frame):
 
     def update_area(self):
         #When we change the target of interest, we look for the new arena and save its contours
-        place = 0
-        self.Area = None
         selected=list(self.List_inds_names.values()).index(self.Ind_name.get())
-        for Ar in range(len(self.main.Vid.Track[1][6])):
-            for Ind in range(self.main.Vid.Track[1][6][Ar]):
-                if selected==place:
-                    self.Area=Ar
-                place+=1
+        self.Area = self.main.Vid.Identities[selected][0]
 
         mask = Function_draw_mask.draw_mask(self.main.Vid)
-        Arenas, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        Arenas_with_holes, Arenas = Function_draw_mask.exclude_inside(mask)
         Arenas = Function_draw_mask.Organise_Ars(Arenas)
         self.Arena_pts = Arenas[self.Area]
-
-        if len(self.main.Vid.Analyses[4][0])>0:
-            self.Arena_pts=self.Arena_pts[:, 0, :]
-            self.Arena_pts = np.array([self.Arena_pts], dtype=np.float32)
-            self.Arena_pts = cv2.perspectiveTransform(self.Arena_pts, self.main.Vid.Analyses[4][0])
-            self.Arena_pts=cv2.convexHull(self.Arena_pts.astype(np.int32))
 
     def load_img(self,*args):
         #Load the image to be displayed
@@ -1553,10 +1602,11 @@ class Details_explo(Frame):
 
     def stay_on_top(self):
         #We want this window to be always on top of the others
-        if self.ready:
-            self.parent.lift()
-            self.change_image()
-        self.parent.after(50, self.stay_on_top)
+        if not self.stop_top:
+            if self.ready:
+                self.parent.lift()
+                self.change_image()
+            self.parent.after(50, self.stay_on_top)
 
     def change_image(self):
         #If the displayed image is changed, display it
@@ -1650,6 +1700,7 @@ class Details_explo(Frame):
 class Details_inter(Frame):
     def __init__(self, parent, main, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
+        self.config(**Color_settings.My_colors.Frame_Base)
         self.parent=parent
         self.parent.geometry("1050x620")
         self.main=main
@@ -1681,10 +1732,12 @@ class Details_inter(Frame):
         self.Ind_name.set(self.Messages["Arena_short"]+ "{}, ".format(self.main.Vid.Identities[0][0])+ self.Messages["Individual_short"] +" {}".format(self.main.Vid.Identities[0][1]))
 
         self.Which_ind = OptionMenu(self, self.Ind_name, *self.List_inds_names.values(), command=self.change_ind)
+        self.Which_ind["menu"].config(**Color_settings.My_colors.OptnMenu_Base)
+        self.Which_ind.config(**Color_settings.My_colors.Button_Base)
         self.Which_ind.grid(row=0, column=0, )
 
         #organization of the Frame
-        self.Canvas_for_video = Canvas(self, width=700, height=500, bd=0, highlightthickness=0)
+        self.Canvas_for_video = Canvas(self, width=700, height=500, bd=0, highlightthickness=0, **Color_settings.My_colors.Frame_Base)
         self.Canvas_for_video.grid(row=1, column=0, sticky="nsew")
         Grid.columnconfigure(self, 0, weight=1)  ########NEW
         Grid.columnconfigure(self, 1, weight=1)  ########NEW
@@ -1697,104 +1750,61 @@ class Details_inter(Frame):
         self.Canvas_for_video.bind("<Control-3>", self.Zoom_out)
         self.Canvas_for_video.bind("<Configure>", self.show_img)
 
-        self.Frame_user = Frame(self, width=150)
+        self.Frame_user = Frame(self, width=150, **Color_settings.My_colors.Frame_Base)
         self.Frame_user.grid(row=0, column=1, rowspan=2, sticky="nsew")
         Grid.columnconfigure(self.Frame_user, 0, weight=1)  ########NEW
-        Grid.rowconfigure(self.Frame_user, 0, weight=1)  ########NEW
+        Grid.rowconfigure(self.Frame_user, 0, weight=10000)  ########NEW
         Grid.rowconfigure(self.Frame_user, 1, weight=1)  ########NEW
-        Grid.rowconfigure(self.Frame_user, 2, weight=100)  ########NEW
+        Grid.rowconfigure(self.Frame_user, 2, weight=1)  ########NEW
 
 
         # Help user and parameters
         self.HW = User_help.Help_win(self.Frame_user, default_message=self.Messages["Analyses_details_inter0"])
         self.HW.grid(row=0, column=0, sticky="nsew")
 
-        Frame_Ana = Frame(self.Frame_user)
-        Frame_Ana.grid(row=2, column=0, columnspan=2, sticky="nsew")
+        Frame_Ana = Frame(self.Frame_user, **Color_settings.My_colors.Frame_Base)
+        Frame_Ana.grid(row=1, column=0, columnspan=2, sticky="nsew")
         Grid.columnconfigure(Frame_Ana, 0, weight=1)  ########NEW
         Grid.rowconfigure(Frame_Ana, 0, weight=1)  ########NEW
 
 
         #allow the user to choose the threshold distance between two targets to consider that they are close
-        Squares_explo = Label(Frame_Ana, text=self.Messages["Analyses_details_inter_Lab1"])
-        Squares_explo.grid(row=1, column=0, sticky="se")
+        Squares_explo = Label(Frame_Ana, text=self.Messages["Analyses_details_inter_Lab1"], **Color_settings.My_colors.Label_Base)
+        Squares_explo.grid(row=0, column=0, sticky="se")
 
         Squares_explo = Scale(Frame_Ana, from_=0.01, variable=self.Dist_soc,to=math.sqrt((((max(cv2.minAreaRect(self.Arena_pts)[1]) / float(self.main.Vid.Scale[0])) ** 2))/math.pi),
-                              resolution=0.05, orient=HORIZONTAL)
-        Squares_explo.grid(row=1, column=1, sticky="nsew")
+                              resolution=0.05, orient=HORIZONTAL, **Color_settings.My_colors.Scale_Base)
+        Squares_explo.grid(row=0, column=1, sticky="sew")
 
         verif_E_float = (self.register(self.update_area_val), '%P', '%V')
         Squares_explo_entry = Entry(Frame_Ana, textvariable=self.Dist_soc, width=10, validate="all",
-                                    validatecommand=verif_E_float, background="grey80")
-        Squares_explo_entry.grid(row=1, column=2, sticky="se")
+                                    validatecommand=verif_E_float, **Color_settings.My_colors.Entry_Base)
+        Squares_explo_entry.grid(row=0, column=2, sticky="se")
         self.Dist_soc.trace("w", self.dist_soc_updated)
 
-        Squares_explo_units = Label(Frame_Ana, text=str(self.main.Vid.Scale[1]))
-        Squares_explo_units.grid(row=1, column=3, sticky="sw")
+        Squares_explo_units = Label(Frame_Ana, text=str(self.main.Vid.Scale[1]), **Color_settings.My_colors.Label_Base)
+        Squares_explo_units.grid(row=0, column=3, sticky="sw")
 
         #Show the results:
-        Frame_res = Frame(self.Frame_user)
-        Frame_res.grid(row=3, column=0, columnspan=2, sticky="nsew")
+        self.Quit_button = Button(self.Frame_user, text=self.Messages["Validate"], command=self.close, **Color_settings.My_colors.Button_Base)
+        self.Quit_button.config(background=Color_settings.My_colors.list_colors["Validate"],fg=Color_settings.My_colors.list_colors["Fg_Validate"])
+        self.Quit_button.grid(row=2, column=0, sticky="sew")
 
-        self.Nb_nei=StringVar()
-        self.Prop_time_nei=StringVar()
-        self.Min_dist_nei = StringVar()
-
-        #Averagee number of neighbors
-        Show_res_lab=Label(Frame_res, text=self.Messages["Analyses_details_inter_Lab2"])
-        Show_res_lab.grid(row=0, column=0, sticky="nsew")
-        Show_res=Label(Frame_res, textvariable=self.Nb_nei)
-        Show_res.grid(row=0, column=1, sticky="w")
-
-        #Proportion of time with at least one neighbor
-        Show_res2_lab = Label(Frame_res, text=self.Messages["Analyses_details_inter_Lab3"])
-        Show_res2_lab.grid(row=1, column=0, sticky="nsew")
-        Show_res2 = Label(Frame_res, textvariable=self.Prop_time_nei)
-        Show_res2.grid(row=1, column=1, sticky="w")
-
-        #Average distance to the closest neighbor
-        Show_res3_lab = Label(Frame_res, text=self.Messages["Analyses_details_inter_Lab4"])
-        Show_res3_lab.grid(row=2, column=0, sticky="nsew")
-        Show_res3 = Label(Frame_res, textvariable=self.Min_dist_nei)
-        Show_res3.grid(row=2, column=1, sticky="w")
-        Show_res_unit3 = Label(Frame_res, text=self.main.Vid.Scale[1])
-        Show_res_unit3.grid(row=2, column=2, sticky="w")
-
-        self.Quit_button = Button(self.Frame_user, text=self.Messages["Analyses_details_sp_B3"], command=self.close, background="#6AED35")
-        self.Quit_button.grid(row=5, column=0, sticky="sew")
+        Grid.columnconfigure(self.Frame_user, 0, weight=1)  ########NEW
+        Grid.rowconfigure(self.Frame_user, 1, weight=100)  ########NEW
+        Grid.rowconfigure(self.Frame_user, 2, weight=1)  ########NEW
 
         self.ready = True
         self.stay_on_top()
         self.parent.protocol("WM_DELETE_WINDOW", self.close)
-
-        self.show_soc()
+        self.show_img()
 
 
     def dist_soc_updated(self, *args):
         #Avoid a but if the user wat typing in the Entrybox
         if not self.Dist_soc.get()=="":
-            self.show_soc()
+            self.show_img()
 
-    def show_soc(self, *args):
-        #Recalculate the results values and display them
-
-        # Extract the coordinates of interest (i.e. of targets that are associated to the considered arena)
-        Pts_coos = []
-        if self.Area>0:
-            nb_prev=sum([self.main.Vid.Track[1][6][Ar] for Ar in range(0,self.Area)])
-        else:
-            nb_prev=0
-        for fish in range(self.main.Vid.Track[1][6][self.Area]):
-            Pts_coos.append(self.main.Coos[fish + nb_prev])
-
-        #Calculate the values
-        avg_nb_nei, prop_with_nei, min_dist_nei, sum_dists=self.main.Calc_speed.calculate_nei(Pts_coos = Pts_coos, ind=int(self.Ind)-nb_prev, dist=self.Dist_soc.get(), Scale = float(self.main.Vid.Scale[0]), Fr_rate=self.main.Vid.Frame_rate[1])
-
-        #Show them to user
-        self.Nb_nei.set(round(avg_nb_nei,3))
-        self.Prop_time_nei.set(round(prop_with_nei,3))
-        self.Min_dist_nei.set(round(min_dist_nei/self.main.Vid.Scale[0],3))
-        self.show_img()
 
     def close(self):
         #properly close the parent window
@@ -1809,17 +1819,11 @@ class Details_inter(Frame):
 
     def update_area(self):
         #When the user change the target of interest, this function look for which arena is associated to the target and take the contour of the arena
-        place = 0
-        self.Area = None
-        selected = list(self.List_inds_names.values()).index(self.Ind_name.get())
-        for Ar in range(len(self.main.Vid.Track[1][6])):
-            for Ind in range(self.main.Vid.Track[1][6][Ar]):
-                if selected == place:
-                    self.Area = Ar
-                place += 1
+        selected=list(self.List_inds_names.values()).index(self.Ind_name.get())
+        self.Area = self.main.Vid.Identities[selected][0]
 
         mask = Function_draw_mask.draw_mask(self.main.Vid)
-        Arenas, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        Arenas_with_holes, Arenas = Function_draw_mask.exclude_inside(mask)
         Arenas = Function_draw_mask.Organise_Ars(Arenas)
         self.Arena_pts = Arenas[self.Area]
 
@@ -1832,7 +1836,6 @@ class Details_inter(Frame):
         self.image_clean1 = self.main.img_no_shapes
         mask = np.zeros([self.image_clean1.shape[0], self.image_clean1.shape[1], 1], np.uint8)
         mask = cv2.drawContours(mask, [self.Arena_pts], -1, (255, 255, 255), -1)
-        mask = Functions_deformation.transform(mask, self.main.Vid.Analyses[4][1], self.main.Vid.Analyses[4][2])
 
         #Application of the mask so it appears as a black veil everywhere except where the arena is
         self.image_clean_trans = cv2.bitwise_and(self.image_clean1, self.image_clean1, mask=mask)
@@ -1880,7 +1883,7 @@ class Details_inter(Frame):
         self.update_area()
         self.main.modif_image()
         self.load_img()
-        self.show_soc()
+        self.show_img()
 
     def stay_on_top(self):
         #We want the parent windows to always remain at the top.
@@ -1978,3 +1981,6 @@ class Details_inter(Frame):
 
 
 
+def canvas_to_array(fig):
+    fig.canvas.draw()
+    return np.array(fig.canvas.renderer._renderer)
