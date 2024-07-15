@@ -10,7 +10,7 @@ class Stabilise(Frame):
     """In this Frame, the user can choose which points of interest will be used to stabilise the video (correction for optical flow)"""
     def __init__(self, parent, boss, main_frame, Video_file, speed=0, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
-        self.config(**Color_settings.My_colors.Frame_Base)
+        self.config(**Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.main_frame=main_frame
         self.boss=boss
         self.parent=parent
@@ -100,7 +100,7 @@ class Stabilise(Frame):
         self.B_Validate_NContinue.grid(row=7,column=0, sticky="ews")
 
         # Video reader
-        self.Vid_Lecteur = Class_Lecteur.Lecteur(self, self.Vid, ecart=10)
+        self.Vid_Lecteur = Class_Lecteur.Lecteur(self, self.Vid, ecart=0)
         self.Vid_Lecteur.grid(row=1, column=0, sticky="nsew")
         self.Vid_Lecteur.speed.set(speed)
         self.Vid_Lecteur.change_speed()

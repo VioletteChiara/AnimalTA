@@ -7,6 +7,7 @@ import PIL.Image, PIL.ImageTk
 import psutil
 import os
 import math
+from PIL import ImageFont, ImageDraw, Image
 
 class Lecteur(Frame):
     """
@@ -15,7 +16,7 @@ class Lecteur(Frame):
     containers (higher level classes) through bindings on the image canvas.
     """
 
-    def __init__(self, parent, Vid, ecart=0, show_cropped=False, show_whole_frame=False, **kwargs):
+    def __init__(self, parent, Vid, ecart=0, show_cropped=True, show_whole_frame=False, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
         self.parent=parent #The container of the Video Reader
         self.Vid=Vid #The Video to be displayed
@@ -55,7 +56,7 @@ class Lecteur(Frame):
         Grid.columnconfigure(self, 0, weight=1)
         Grid.rowconfigure(self, 1, weight=1)
 
-        self.Frame_scrollbar = Frame(self,**Color_settings.My_colors.Frame_Base)
+        self.Frame_scrollbar = Frame(self,**Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.Frame_scrollbar.grid(row=2, column=0, sticky="swe")
         Grid.columnconfigure(self.Frame_scrollbar, 0, weight=1)
         self.Scrollbar = Class_Scroll_crop.Pers_Scroll(self.Frame_scrollbar, container=self, bd=2, highlightthickness=1, relief='ridge', ecart=self.ecart, show_cropped=self.show_cropped)  #################NEWWWW
@@ -118,7 +119,7 @@ class Lecteur(Frame):
             self.parent.End_of_window()
 
             question = MsgBox.Messagebox(parent=self, title=self.Messages["TError_memory"],
-                                       message=self.Messages["Error_memory"], Possibilities=self.Messages["Continue"])
+                                       message=self.Messages["Error_memory"], Possibilities=[self.Messages["Continue"]])
             self.wait_window(question)
 
 
@@ -374,12 +375,12 @@ class Lecteur(Frame):
         self.canvas_video.bind("<Configure>", lambda x: self.afficher_img(self.last_img))
         self.Frame_scrollbar.bind("<Configure>", self.Scrollbar.refresh)
 
-        self.canvas_video.bind("<Button-1>", self.callback)
         self.canvas_video.bind("<Shift-B1-Motion>", lambda x: self.callback_move(event=x,Shift=True))
         self.canvas_video.bind("<B1-Motion>", self.callback_move)
         self.canvas_video.bind("<Motion>", self.mouse_over)
         self.canvas_video.bind("<ButtonRelease>", self.release)
         self.canvas_video.bind("<Button-3>", self.right_click)
+        self.canvas_video.bind("<Button-1>", self.callback)
 
     def unbindings(self):
         '''Remove all the bindings'''
@@ -411,6 +412,7 @@ class Lecteur(Frame):
             pass
 
     def callback(self, event):
+        print("A")
         '''When we press on the frame, the info about where the frame was clicked is sent to the Video Reader container'''
         if not bool(event.state & 0x1) and bool(event.state & 0x4):
             self.Sq_Zoom_beg(event)
@@ -453,7 +455,7 @@ class Lecteur(Frame):
         event.y = self.ratio * (event.y - (self.canvas_video.winfo_height()-self.shape[0])/2) + self.zoom_sq[1]
         self.parent.released_can((event.x,event.y))
 
-    def afficher_img(self, img):
+    def afficher_img(self, img, locked=False):
         '''Once the image is adapted by the video container, it is here resized and displayed'''
         self.update_ratio()
         self.last_img=img
@@ -477,6 +479,17 @@ class Lecteur(Frame):
             img2= cv2.add(TMP_image_to_show2,np.array([-75.0]))
         else:
             img2=TMP_image_to_show2
+
+        if locked:
+            fontpath = os.path.join(".", "simsun.ttc")
+            font = ImageFont.truetype(fontpath, 20)
+            stroke_width = 2
+            first_im = Image.fromarray(img2)
+            draw = ImageDraw.Draw(first_im)
+            draw.text((TMP_image_to_show2.shape[1] - 40,TMP_image_to_show2.shape[0] - 25), "[○]", font=font, fill=(255, 255, 255, 0), stroke_width=stroke_width)
+            draw.text((TMP_image_to_show2.shape[1] - 40,TMP_image_to_show2.shape[0] - 25), "[○]", font=font, fill=(0, 0, 0, 0))
+            img2 = np.array(first_im)
+
 
         self.image_to_show3 = PIL.ImageTk.PhotoImage(image=PIL.Image.fromarray(img2))
         self.can_import = self.canvas_video.create_image((self.canvas_video.winfo_width()-self.shape[1])/2, (self.canvas_video.winfo_height()-self.shape[0])/2, image=self.image_to_show3, anchor=NW)

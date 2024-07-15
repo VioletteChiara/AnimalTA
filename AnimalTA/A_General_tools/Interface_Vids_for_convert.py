@@ -10,7 +10,7 @@ class Convert(Frame):
     """When the user ask to add new videos, these videos must be avi. If they are not, this window will open and ask the user which of the videos have to be converted to avi."""
     def __init__(self, parent, boss, list_to_convert, Video=None):
         Frame.__init__(self, parent, bd=5)
-        self.config(**Color_settings.My_colors.Frame_Base)
+        self.config(**Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.parent=parent
         self.boss=boss
         self.grid()
@@ -65,7 +65,7 @@ class Convert(Frame):
 
 
         #Validate
-        Frame_Buttons=Frame(self, **Color_settings.My_colors.Frame_Base)
+        Frame_Buttons=Frame(self, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         Frame_Buttons.grid(row=5, sticky="nsew")
         Grid.columnconfigure(Frame_Buttons,0, weight=1)
         Grid.columnconfigure(Frame_Buttons, 1, weight=1)
@@ -79,12 +79,12 @@ class Convert(Frame):
         self.yscrollbar.config(command=self.Liste.yview)
 
         #Show the progression of the convertions
-        self.loading_canvas=Frame(self, **Color_settings.My_colors.Frame_Base)
+        self.loading_canvas=Frame(self, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.loading_canvas.grid(row=6,columnspan=2)
         self.loading_state=Label(self.loading_canvas, text="", **Color_settings.My_colors.Label_Base)
         self.loading_state.grid(row=0, column=0)
 
-        self.loading_bar=Canvas(self.loading_canvas, height=10, **Color_settings.My_colors.Frame_Base)
+        self.loading_bar=Canvas(self.loading_canvas, height=10, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.loading_bar.create_rectangle(0, 0, 400, self.loading_bar.cget("height"), fill=Color_settings.My_colors.list_colors["Loading_before"])
         self.loading_bar.grid(row=0, column=1)
 
@@ -145,7 +145,7 @@ class Convert(Frame):
 
         for elem in self.list_errors:
             question = MsgBox.Messagebox(parent=self, title=self.Messages["GWarnT5"],
-                                       message=self.Messages["GWarn6"], Possibilities=self.Messages["Continue"])
+                                       message=self.Messages["GWarn6"], Possibilities=[self.Messages["Continue"]])
             self.wait_window(question)
 
             self.boss.HW.change_tmp_message(self.Messages["General1"])
@@ -190,7 +190,7 @@ class Convert(Frame):
 
 class Frame_new_fps(Frame):
     def __init__(self, parent):
-        Frame.__init__(self, parent, **Color_settings.My_colors.Frame_Base)
+        Frame.__init__(self, parent, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.config(background=Color_settings.My_colors.list_colors["Entry_error"])
         self.parent=parent
         self.tmp_val=StringVar()

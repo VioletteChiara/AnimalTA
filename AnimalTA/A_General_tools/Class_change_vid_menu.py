@@ -3,7 +3,7 @@ from AnimalTA.B_Project_organisation import Class_Row_Videos
 from AnimalTA.A_General_tools import Color_settings
 
 
-"This Frame is used to propose n OptionMenu with all available videos, so the user can jump from one video to another without going back to the main menu"
+"This Frame is used to propose the OptionMenu with all available videos, so the user can jump from one video to another without going back to the main menu"
 class Change_Vid_Menu(Frame):
     def __init__(self, parent, main_frame, Vid, func):
         Frame.__init__(self, parent, bd=2, highlightthickness=1, relief='flat', **Color_settings.My_colors.Frame_Base)

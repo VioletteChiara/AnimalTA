@@ -9,12 +9,13 @@ import os
 import pickle
 
 
-def Image_modif(Vid, start, end, one_every, Which_part, Prem_image_to_show, mask, or_bright, Extracted_cnts, Too_much_frame, AD):
+def Image_modif(Vid, start, end, one_every, Which_part, Prem_image_to_show, mask, or_bright, Extracted_cnts, Too_much_frame, AD, silhouette=False):
     if Vid.Stab[0]:
         prev_pts = Vid.Stab[1]
     last_grey=None#We keep here the last grey image for flicker correction
     penult_grey=None
-    progressive_back = cv2.createBackgroundSubtractorMOG2(history=1000, varThreshold= Vid.Track[1][0], detectShadows=False)
+    if Vid.Back[0] == 2:  # Dynamic background
+        progressive_back = cv2.createBackgroundSubtractorMOG2(history=1000, varThreshold= Vid.Track[1][0], detectShadows=False)
 
     Param_file = UserMessages.resource_path(os.path.join("AnimalTA", "Files", "Settings"))
     with open(Param_file, 'rb') as fp:
@@ -104,7 +105,14 @@ def Image_modif(Vid, start, end, one_every, Which_part, Prem_image_to_show, mask
         img=Timg
 
         # Backgroud and threshold
-        if Vid.Back[0] == 1: #A background is defined
+        if Vid.Back[0] == 2:  # Dynamic background
+            TMP_back = progressive_back.getBackgroundImage()
+            if TMP_back is None:
+                TMP_back=img.copy()
+            progressive_back.apply(img)
+
+
+        if Vid.Back[0] == 1 or Vid.Back[0] == 2: #A background is defined or dynamical background
             if Vid.Track[1][10][1] == 0:
                 img = cv2.absdiff(TMP_back, img)
             elif Vid.Track[1][10][1] == 1:
@@ -120,20 +128,22 @@ def Image_modif(Vid, start, end, one_every, Which_part, Prem_image_to_show, mask
             if Vid.Track[1][10][0] == 1:
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-        elif Vid.Back[0]==2: #Dynamic background
-            img  = progressive_back.apply(img)
-
         elif Vid.Back[0]==0 and Vid.Track[1][10][0] == 1:
             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
 
         #Threshold
-        if Vid.Back[0]==1:# ABack subtraction
+        if Vid.Back[0]==1 or Vid.Back[0]==2:# ABack subtraction
             _, img = cv2.threshold(img, Vid.Track[1][0], 255, cv2.THRESH_BINARY)
+
         elif Vid.Back[0]==0: #Adpative threshold
-            img = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, Vid.Track[1][0] + 1, 10)
-        else: #Dynamical background
-            _, img = cv2.threshold(img, 10, 255, cv2.THRESH_BINARY)
+            if Vid.Track[1][10][1] == 2:
+                img = cv2.bitwise_not(img)
+            img = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV,  Vid.Track[1][0] + 1 , 10)
+
+
+
+
 
         # Mask
         if Vid.Mask[0]:

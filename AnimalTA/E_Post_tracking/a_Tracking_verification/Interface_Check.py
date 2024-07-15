@@ -6,7 +6,7 @@ from AnimalTA.E_Post_tracking.a_Tracking_verification import Interface_portion, 
 from AnimalTA.E_Post_tracking.b_Analyses import Interface_sequences
 from AnimalTA.E_Post_tracking import Coos_loader_saver as CoosLS
 from AnimalTA.A_General_tools import Class_change_vid_menu, Class_Lecteur, Function_draw_mask as Dr, UserMessages, \
-    User_help, Class_stabilise, Diverse_functions, Message_simple_question, Interface_extend, Color_settings, Message_simple_question as MsgBox
+    User_help, Class_stabilise, Diverse_functions, Interface_extend, Color_settings, Message_simple_question as MsgBox
 
 import csv
 import math
@@ -27,7 +27,7 @@ class Lecteur(Frame):
     """
     def __init__(self, parent, boss, main_frame, Vid, Video_liste, speed=0, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
-        self.config(**Color_settings.My_colors.Frame_Base)
+        self.config(**Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.parent=parent
         self.main_frame=main_frame
         self.boss=boss
@@ -43,15 +43,17 @@ class Lecteur(Frame):
         self.Xpos.set(1)
         self.copied_cells=[]
 
+        self.windowed = False
+        self.resize=False
+        self.locked_view=False
+
         #We save the state of the indviduals at the moment of opening:
         self.opening_Identities = copy.deepcopy(self.Vid.Identities)
         self.opening_Sequences = copy.deepcopy(self.Vid.Sequences)
         self.opening_Track= copy.deepcopy(self.Vid.Track[1][6])
+
+
         # self.Vid.Morphometrics = copy.deepcopy(self.Vid.Morphometrics)
-
-
-
-
         #Whether the individuals absent on the current frame should be hidden or not
         Param_file = UserMessages.resource_path(os.path.join("AnimalTA", "Files", "Settings"))
         with open(Param_file, 'rb') as fp:
@@ -98,6 +100,7 @@ class Lecteur(Frame):
                                                 self.Messages["Short_A"]: self.Messages["Short_A_Ch"],
                                                 self.Messages["Short_Tab"]: self.Messages["Short_Tab_Ch"],
                                                 self.Messages["Short_Return"]: self.Messages["Short_Return_Ch"],
+                                                self.Messages["Short_L"]: self.Messages["Short_L_Ch"],
                                                 self.Messages["Short_Alt_C"]: self.Messages["Short_Alt_C_Ch"],
                                                 self.Messages["Short_Right_column"]: self.Messages["Short_Right_column_Ch"],
                                                 self.Messages["Short_Ctrl_W"]: self.Messages["Short_Ctrl_W_Ch"],
@@ -110,12 +113,12 @@ class Lecteur(Frame):
 
         self.HW.grid(row=0, column=1, sticky="nsew")
 
-        self.User_params_cont=Frame(self.parent)
+        self.User_params_cont=Frame(self.parent, **Color_settings.My_colors.Frame_Base)
         self.User_params_cont.grid(row=1,column=1)
 
         self.show_arenas = False
 
-        Traj_param=Frame(self.User_params_cont,highlightthickness=4, **Color_settings.My_colors.Frame_Base)
+        Traj_param=Frame(self.User_params_cont, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         Traj_param.grid(row=0, column=0, columnspan=3, sticky="nsew")
         Grid.columnconfigure(Traj_param, 0, weight=1)
         Grid.columnconfigure(Traj_param, 1, weight=1)
@@ -125,7 +128,7 @@ class Lecteur(Frame):
         self.max_tail=IntVar()
         self.max_tail.set(600)
         self.Scale_tail=Scale(Traj_param, from_=0, to=self.max_tail.get(), resolution=0.5, variable=self.tail_size, orient="horizontal", label=self.Messages["Control4"], **Color_settings.My_colors.Scale_Base)
-        self.Scale_tail.grid(row=0,column=0, columnspan=3, sticky="ew")
+        self.Scale_tail.grid(row=0,column=0, columnspan=2, sticky="ew")
         self.Scale_tail.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Control14"]))
         self.Scale_tail.bind("<Leave>", lambda a: self.HW.remove_tmp_message())
 
@@ -133,64 +136,25 @@ class Lecteur(Frame):
         self.bouton_show_all_traj=Button(Traj_param, text=self.Messages["Control11"], command=self.show_all_com, **Color_settings.My_colors.Button_Base)
         self.bouton_show_all_traj.grid(row=1,column=1, sticky="nsew")
 
-        F_NAs=Frame(self.User_params_cont, **Color_settings.My_colors.Frame_Base)
-        F_NAs.grid(row=1,column=0, columnspan=3, sticky="ewns")
-        Grid.columnconfigure(F_NAs, 0, weight=100)
-        Grid.columnconfigure(F_NAs, 1, weight=1)
-
-        #Button to look for the next NA values:
-        self.B_look_NA=Button(F_NAs, text=self.Messages["Control17"], command=self.next_NA, **Color_settings.My_colors.Button_Base)
-        self.B_look_NA.config(background=Color_settings.My_colors.list_colors["NA_present"],fg=Color_settings.My_colors.list_colors["Fg_NA_present"])
-        self.B_look_NA.grid(row=0,column=0, sticky="ew")
-        self.B_look_NA.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Control19"]))
-        self.B_look_NA.bind("<Leave>", self.HW.remove_tmp_message)
-
-        #Button to change values for NA
-        B_change_for_NA=Button(F_NAs, text=self.Messages["Control20"], command=self.change_for_NA, **Color_settings.My_colors.Button_Base)
-        B_change_for_NA.grid(row=0,column=1,sticky="ew")
-        B_change_for_NA.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Control21"]))
-        B_change_for_NA.bind("<Leave>", self.HW.remove_tmp_message)
-
-        #This canvas is used to build a table in which the coordinate sof the targets as a function of time can be viewed
-        self.container_table = Canvas(self.User_params_cont, heigh=300, width=300, bd=2, highlightthickness=1, relief='ridge' ,scrollregion=(0,0,500,500), **Color_settings.My_colors.Frame_Base)
-        self.container_table.grid(row=2, column=0, columnspan=2, sticky="ew")
-        self.container_table.grid_propagate(False)
-        Grid.columnconfigure(self.container_table, 0, weight=1)
+        self.Frame_ind_ID=Frame(Traj_param, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
+        self.Frame_ind_ID.grid(row=1,column=0, sticky="nsew")
 
 
-        Frame_last_row=Frame(self.User_params_cont, **Color_settings.My_colors.Frame_Base)
-        Frame_last_row.grid(row=4, column=0, columnspan=3, sticky="sewn")
-        Grid.columnconfigure(Frame_last_row, 0, weight=1)
-        Grid.columnconfigure(Frame_last_row, 1, weight=0)
-        Grid.columnconfigure(Frame_last_row, 2, weight=0)
-        Grid.columnconfigure(Frame_last_row, 3, weight=0)
+        self.F_NAs=Frame(self.User_params_cont, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
+        self.F_NAs.grid(row=1,column=0, columnspan=3, sticky="ewns")
+        Grid.columnconfigure(self.F_NAs, 0, weight=100)
+        Grid.columnconfigure(self.F_NAs, 1, weight=1)
 
-        #Once the user selected a bunch of frames and a target, this button will create an interpolation of the target's coordinates over the selected frames.
-        self.bouton_inter = Button(Frame_last_row, text=self.Messages["Control5"], command=self.interpolate, **Color_settings.My_colors.Button_Base)
-        self.bouton_inter.grid(row=0, column=0, sticky="we")
-        self.bouton_inter.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Control12"]))
-        self.bouton_inter.bind("<Leave>", self.HW.remove_tmp_message)
 
-        #After selecting a bunch of frames, this button will open a new window in which the user will be able to re-run part of the tracking with different parameters
-        self.bouton_redo_track=Button(Frame_last_row, text=self.Messages["Control6"], command=self.redo_tracking, **Color_settings.My_colors.Button_Base)
-        self.bouton_redo_track.grid(row=0, column=1,  sticky="we")
-        self.bouton_redo_track.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Control13"]))
-        self.bouton_redo_track.bind("<Leave>", self.HW.remove_tmp_message)
-
-        #If the user wants to do a manual tracking, we allow the possibility to add new individuals
-        self.bouton_add_new=Button(Frame_last_row, text=self.Messages["Control22"], command=self.add_ind, **Color_settings.My_colors.Button_Base)
-        self.bouton_add_new.grid(row=0, column=2,  sticky="we")
-        self.bouton_add_new.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Control23"]))
-        self.bouton_add_new.bind("<Leave>", self.HW.remove_tmp_message)
-
-        self.bouton_del_ind=Button(Frame_last_row, text=self.Messages["Control24"], command=lambda: self.del_ind(ind=self.selected_ind), **Color_settings.My_colors.Button_Base)
-        self.bouton_del_ind.grid(row=0, column=3,  sticky="we")
-        self.bouton_del_ind.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Control25"]))
-        self.bouton_del_ind.bind("<Leave>", self.HW.remove_tmp_message)
-
+        self.Frame_last_row=Frame(self.User_params_cont, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
+        self.Frame_last_row.grid(row=4, column=0, columnspan=3, sticky="sewn")
+        Grid.columnconfigure(self.Frame_last_row, 0, weight=1)
+        Grid.columnconfigure(self.Frame_last_row, 1, weight=0)
+        Grid.columnconfigure(self.Frame_last_row, 2, weight=0)
+        Grid.columnconfigure(self.Frame_last_row, 3, weight=0)
         #Save the modified coordinates
 
-        Frame_save_quit=Frame(self.User_params_cont, **Color_settings.My_colors.Frame_Base)
+        Frame_save_quit=Frame(self.User_params_cont, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         Frame_save_quit.grid(row=5, column=0, columnspan=3, sticky="sewn")
         Grid.columnconfigure(Frame_save_quit, 0, weight=1)
         Grid.columnconfigure(Frame_save_quit, 1, weight=1)
@@ -214,8 +178,20 @@ class Lecteur(Frame):
         self.bouton_remove_corrections.grid(row=1, column=1, sticky="nswe")
         self.bouton_remove_corrections.config(bg=Color_settings.My_colors.list_colors["Danger"],fg=Color_settings.My_colors.list_colors["Fg_Danger"])
 
+
         #Load the video
+        self.create_container()
         self.load_Vid(self.Vid)
+        self.create_options()
+
+
+        #The redo-tracking option is not available for unknown number of targets:
+        if self.Vid.Track[1][8] and self.Vid.Track[0]:#If the user choose manual tracking or variable number of target no possibility to add/remove inds
+            self.bouton_redo_track.grid(row=0, column=1, sticky="we")
+        else:
+            self.bouton_redo_track.grid_forget()
+        self.calculate_NA()
+
         self.bind_all("<Shift-space>", self.play_and_select)
         self.bind_all("<Control-z>", self.remove_last)
         self.bind_all("<Control-w>", self.reset_view)
@@ -225,36 +201,7 @@ class Lecteur(Frame):
         self.bind_all("<KeyRelease>", self.keyrelease)
         self.bind_all("<Alt-c>",self.copy_IDs)
 
-        #We create a frame that will contain all the widgets allowing to re-name a target and change its color of representation
-        Frame_ind_ID=Frame(Traj_param, **Color_settings.My_colors.Frame_Base)
-        Frame_ind_ID.grid(row=1,column=0, sticky="nsew")
-        Arena_Lab0 = Label(Frame_ind_ID, text=self.Messages["Arena_short"], **Color_settings.My_colors.Label_Base)
-        Arena_Lab0.grid(row=0, column=0, sticky="nsew")
-        Arena_Lab0.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Control15"]))
-        Arena_Lab0.bind("<Leave>", lambda a: self.HW.remove_tmp_message())
-        self.Arena_Lab=Label(Frame_ind_ID, text=str(self.Vid.Identities[self.selected_ind][0])+" ", **Color_settings.My_colors.Label_Base)
-        self.Arena_Lab.grid(row=0, column=1, sticky="nsew")
-        self.Arena_Lab.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Control15"]))
-        self.Arena_Lab.bind("<Leave>", lambda a: self.HW.remove_tmp_message())
-        #Target name
-        self.ID_Entry=Entry(Frame_ind_ID, **Color_settings.My_colors.Entry_Base)
-        self.ID_Entry.grid(row=0, column=2, sticky="nsew")
-        self.ID_Entry.insert(0,self.Vid.Identities[self.selected_ind][1])
-        self.ID_Entry.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Control16"]))
-        self.ID_Entry.bind("<Leave>", lambda a: self.HW.remove_tmp_message())
-        Val_button=Button(Frame_ind_ID, text=self.Messages["Validate"], command=self.change_ID_name, **Color_settings.My_colors.Button_Base)
-        Val_button.grid(row=1, column=2, sticky="nsew")
-        Val_button.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Control16"]))
-        Val_button.bind("<Leave>", lambda a: self.HW.remove_tmp_message())
-        #Targte color
-        self.Can_Col=Canvas(Frame_ind_ID, background="#%02x%02x%02x" % self.Vid.Identities[0][2], height=15, width=20)
-        self.Can_Col.grid(row=0, column=3, sticky="nsew")
-        self.Can_Col.bind("<Button-1>", self.change_color)
-        self.Can_Col.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Control1"]))
-        self.Can_Col.bind("<Leave>", lambda a: self.HW.remove_tmp_message())
 
-        self.vsbx = Scale(self.User_params_cont, orient="horizontal", command=partial(self.afficher_table, None, True), variable=self.Xpos, from_=1, to=len(self.Vid.Identities), **Color_settings.My_colors.Scale_Base)
-        self.vsbx.grid(row=3, column=0, columnspan=3, sticky="ew")
 
     def copy_data(self, event):
         if event.widget==self.tree and len(self.selected_rows)>0:
@@ -283,12 +230,17 @@ class Lecteur(Frame):
                                             Video_file=self.Vid, type="IDs")
 
     def keypress(self, event):
-        if event.char=="a" or event.char=="A":
+        if (event.char=="a" or event.char=="A") and event.widget.winfo_class()!="Entry":
             self.show_arenas=True
             self.modif_image()
 
+        if (event.char=="l" or event.char=="L") and event.widget.winfo_class()!="Entry":
+            self.locked_view= not self.locked_view
+            self.modif_image()
+
+
     def keyrelease(self, event):
-        if event.char == "a" or event.char == "A":
+        if (event.char == "a" or event.char == "A") and event.widget.winfo_class()!="Entry":
             self.show_arenas = False
             self.modif_image()
 
@@ -384,6 +336,13 @@ class Lecteur(Frame):
             #self.Vid.Morphometrics = copy.deepcopy(self.Vid.Morphometrics)
             self.Vid.Track[1][6]= copy.deepcopy(self.Vid.saved_repartition)
             self.load_Vid(self.Vid)
+            # The redo-tracking option is not available for unknown number of targets:
+            if self.Vid.Track[1][8] and self.Vid.Track[
+                0]:  # If the user choose manual tracking or variable number of target no possibility to add/remove inds
+                self.bouton_redo_track.grid(row=0, column=1, sticky="we")
+            else:
+                self.bouton_redo_track.grid_forget()
+            self.calculate_NA()
             self.save_changes=[]
             self.copied_cells = []
             self.calculate_NA()
@@ -483,11 +442,12 @@ class Lecteur(Frame):
 
     def redo_Lecteur(self):
         #If the Video reader was destroyed (i.e. redo_tracking function), this function allows to rebuild the video reader.
-        self.Vid_Lecteur = Class_Lecteur.Lecteur(self, self.Vid, ecart=10)
+        self.Vid_Lecteur = Class_Lecteur.Lecteur(self, self.Vid, ecart=0)
         self.Vid_Lecteur.grid(row=1, column=0, sticky="nsew")
         self.Vid_Lecteur.speed.set(self.speed)
         self.Vid_Lecteur.change_speed()
         self.Scrollbar=self.Vid_Lecteur.Scrollbar
+
 
         if self.Vid.Stab[0]:
             self.prev_pts = self.Vid.Stab[1]
@@ -795,10 +755,212 @@ class Lecteur(Frame):
             self.copied_cells=[]
 
 
+    def Coos_new_windows(self):
+        if not self.windowed:
+            self.Top_lvl=Toplevel(self.parent.master, **Color_settings.My_colors.Frame_Base, borderwidth=10)
+            self.Top_lvl.propagate(False)
+            self.Top_lvl.protocol("WM_DELETE_WINDOW", self.Coos_old_window)
+
+            Grid.columnconfigure(self.Top_lvl, 0, weight=100)  ########NEW
+            Grid.rowconfigure(self.Top_lvl, 0, weight=1)  ########NEW
+            Grid.rowconfigure(self.Top_lvl, 1, weight=1)  ########NEW
+            Grid.rowconfigure(self.Top_lvl, 2, weight=100)  ########NEW
+            Grid.rowconfigure(self.Top_lvl, 3, weight=1)  ########NEW
+
+            self.Frame_ID=Frame(self.Top_lvl, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
+            self.Frame_ID.grid(row=0, column=0,sticky="nsw")
+
+            Grid.columnconfigure(self.Frame_ID, 0, weight=1)  ########NEW
+            Grid.columnconfigure(self.Frame_ID, 1, weight=1)  ########NEW
+            Grid.columnconfigure(self.Frame_ID, 2, weight=1)  ########NEW
+            Grid.rowconfigure(self.Frame_ID, 0, weight=1)  ########NEW
+            Grid.rowconfigure(self.Frame_ID, 1, weight=1)  ########NEW
+
+            self.Frame_options=Frame(self.Top_lvl, **Color_settings.My_colors.Frame_Base)
+            self.Frame_options.grid(row=1, column=0,sticky="nsew")
+            Grid.columnconfigure(self.Frame_options, 0, weight=1)  ########NEW
+            Grid.columnconfigure(self.Frame_options, 1, weight=1)  ########NEW
+
+            Grid.rowconfigure(self.Frame_options, 0, weight=1)  ########NEW
+
+            self.Frame_coos=Frame(self.Top_lvl, **Color_settings.My_colors.Frame_Base)
+            self.Frame_coos.grid(row=2, column=0,sticky="nsew")
+
+            Grid.columnconfigure(self.Frame_coos, 0, weight=100)  ########NEW
+            Grid.columnconfigure(self.Frame_coos, 1, weight=1)  ########NEW
+            Grid.rowconfigure(self.Frame_coos, 0, weight=1)  ########NEW
+            Grid.rowconfigure(self.Frame_coos, 1, weight=1)  ########NEW
+            Grid.rowconfigure(self.Frame_coos, 2, weight=100)  ########NEW
+
+            self.Frame_options2=Frame(self.Top_lvl, **Color_settings.My_colors.Frame_Base)
+            self.Frame_options2.grid(row=3, column=0,sticky="nsew")
+            Grid.columnconfigure(self.Frame_options2, 0, weight=1)  ########NEW
+            Grid.columnconfigure(self.Frame_options2, 1, weight=1)  ########NEW
+            Grid.columnconfigure(self.Frame_options2, 2, weight=1)  ########NEW
+            Grid.columnconfigure(self.Frame_options2, 3, weight=1)  ########NEW
+
+            self.windowed=True
+            self.create_container()
+            self.create_options()
+            self.afficher_table(redo=True)
+        else:
+            self.Coos_old_window()
+
+    def Coos_old_window(self):
+        self.table_heigh=14
+        self.windowed=False
+        self.Top_lvl.destroy()
+        self.create_container()
+        self.create_options()
+        self.afficher_table(redo=True)
+
+    def create_container(self):
+        if not self.windowed:
+            table=self.User_params_cont
+        else:
+            table=self.Frame_coos
+
+        self.container_table = Canvas(table, heigh=300, width=300, bd=2, highlightthickness=1, relief='ridge' ,scrollregion=(0,0,500,500), **Color_settings.My_colors.Frame_Base)
+        self.container_table.grid(row=2, column=0, columnspan=2, sticky="nsew")
+        self.container_table.grid_propagate(False)
+        self.resize_timer=None
+        self.container_table.bind("<Configure>", self.resize_table)
+        Grid.columnconfigure(self.container_table, 0, weight=1)
+
+    def create_options(self):
+        try:
+            self.vsb.destroy()
+            self.B_look_NA.destroy()
+            self.vsbx.destroy()
+            self.bouton_inter.destroy()
+            self.bouton_redo_track.destroy()
+            self.bouton_add_new.destroy()
+            self.bouton_del_ind.destroy()
+            self.B_change_for_NA.destroy()
+            self.separate_coos.destroy()
+            self.Arena_Lab0.destroy()
+            self.Arena_Lab.destroy()
+            self.ID_Entry.destroy()
+            self.Val_button.destroy()
+            self.Can_Col.destroy()
+
+        except:
+            pass
+
+        if not self.windowed:
+            table=self.User_params_cont
+            options1=self.F_NAs
+            options2=self.Frame_last_row
+            naming = self.Frame_ind_ID
+        else:
+            table=self.Frame_coos
+            options1=self.Frame_options
+            options2=self.Frame_options2
+            naming=self.Frame_ID
 
 
+        #We create a frame that will contain all the widgets allowing to re-name a target and change its color of representation
+        self.Arena_Lab0 = Label(naming, text=self.Messages["Arena_short"], **Color_settings.My_colors.Label_Base)
+        self.Arena_Lab0.grid(row=0, column=0, sticky="nsew")
+        self.Arena_Lab0.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Control15"]))
+        self.Arena_Lab0.bind("<Leave>", lambda a: self.HW.remove_tmp_message())
+        self.Arena_Lab=Label(naming, text=str(self.Vid.Identities[self.selected_ind][0])+" ", **Color_settings.My_colors.Label_Base)
+        self.Arena_Lab.grid(row=0, column=1, sticky="nsew")
+        self.Arena_Lab.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Control15"]))
+        self.Arena_Lab.bind("<Leave>", lambda a: self.HW.remove_tmp_message())
+        #Target name
+        self.ID_Entry=Entry(naming, **Color_settings.My_colors.Entry_Base)
+        self.ID_Entry.grid(row=0, column=2, sticky="nsew")
+        self.ID_Entry.insert(0,self.Vid.Identities[self.selected_ind][1])
+        self.ID_Entry.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Control16"]))
+        self.ID_Entry.bind("<Leave>", lambda a: self.HW.remove_tmp_message())
+        self.Val_button=Button(naming, text=self.Messages["Validate"], command=self.change_ID_name, **Color_settings.My_colors.Button_Base)
+        self.Val_button.grid(row=1, column=2, sticky="nsew")
+        self.Val_button.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Control16"]))
+        self.Val_button.bind("<Leave>", lambda a: self.HW.remove_tmp_message())
 
-    def afficher_table(self, actual_pos=None, redo=False, *args):
+        #Target color
+        self.Can_Col=Canvas(naming, **Color_settings.My_colors.Frame_Base, height=15, width=20)
+        self.Can_Col.config(background="#%02x%02x%02x" % self.Vid.Identities[self.selected_ind][2])
+        self.Can_Col.grid(row=0, column=3, sticky="nsew")
+        self.Can_Col.bind("<Button-1>", self.change_color)
+        self.Can_Col.bind("<Enter>", lambda a:self.HW.change_tmp_message(self.Messages["Control1"]))
+        self.Can_Col.bind("<Leave>", lambda a: self.HW.remove_tmp_message())
+
+        #Button to get the coordinates table in another window
+        self.separate_coos=Button(table, text="⧉", command=self.Coos_new_windows, **Color_settings.My_colors.Button_Base)
+        self.separate_coos.grid(row=3,column=2, sticky="se")
+
+        #vertical scroll bar
+        self.vsb = Scale(table, from_=self.to_sub, to=self.to_sub + len(self.Coos[0]) - 1, orient="vertical",
+                         **Color_settings.My_colors.Scale_Base)
+        self.vsb.grid(row=2, column=2, sticky="ns")
+        self.vsb.bind("<ButtonRelease-1>", self.move_tree)
+
+        self.vsbx = Scale(table, orient="horizontal",
+                          command=partial(self.afficher_table, None, True), variable=self.Xpos, from_=1,
+                          to=len(self.Vid.Identities), **Color_settings.My_colors.Scale_Base)
+        self.vsbx.config()
+        self.vsbx.grid(row=3, column=0, columnspan=2, sticky="ew")
+
+        #NA button
+        self.B_look_NA = Button(options1, text=self.Messages["Control17"], command=self.next_NA,
+                                **Color_settings.My_colors.Button_Base)
+        self.B_look_NA.config(background=Color_settings.My_colors.list_colors["NA_present"],
+                              fg=Color_settings.My_colors.list_colors["Fg_NA_present"])
+        self.B_look_NA.grid(row=0, column=0, sticky="ew")
+        self.B_look_NA.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Control19"]))
+        self.B_look_NA.bind("<Leave>", self.HW.remove_tmp_message)
+        self.calculate_NA()
+
+
+        #Button to change values for NA
+        self.B_change_for_NA=Button(options1, text=self.Messages["Control20"], command=self.change_for_NA, **Color_settings.My_colors.Button_Base)
+        self.B_change_for_NA.grid(row=0,column=1,sticky="ew")
+        self.B_change_for_NA.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Control21"]))
+        self.B_change_for_NA.bind("<Leave>", self.HW.remove_tmp_message)
+
+        # Once the user selected a bunch of frames and a target, this button will create an interpolation of the target's coordinates over the selected frames.
+        self.bouton_inter = Button(options2, text=self.Messages["Control5"], command=self.interpolate,
+                                   **Color_settings.My_colors.Button_Base)
+        self.bouton_inter.grid(row=0, column=0, sticky="we")
+        self.bouton_inter.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Control12"]))
+        self.bouton_inter.bind("<Leave>", self.HW.remove_tmp_message)
+
+        # After selecting a bunch of frames, this button will open a new window in which the user will be able to re-run part of the tracking with different parameters
+        self.bouton_redo_track = Button(options2, text=self.Messages["Control6"], command=self.redo_tracking,
+                                        **Color_settings.My_colors.Button_Base)
+        self.bouton_redo_track.grid(row=0, column=1, sticky="we")
+        self.bouton_redo_track.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Control13"]))
+        self.bouton_redo_track.bind("<Leave>", self.HW.remove_tmp_message)
+
+        # If the user wants to do a manual tracking, we allow the possibility to add new individuals
+        self.bouton_add_new = Button(options2, text=self.Messages["Control22"], command=self.add_ind,
+                                     **Color_settings.My_colors.Button_Base)
+        self.bouton_add_new.grid(row=0, column=2, sticky="we")
+        self.bouton_add_new.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Control23"]))
+        self.bouton_add_new.bind("<Leave>", self.HW.remove_tmp_message)
+
+        self.bouton_del_ind = Button(options2, text=self.Messages["Control24"],
+                                     command=lambda: self.del_ind(ind=self.selected_ind),
+                                     **Color_settings.My_colors.Button_Base)
+        self.bouton_del_ind.grid(row=0, column=3, sticky="we")
+        self.bouton_del_ind.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Control25"]))
+        self.bouton_del_ind.bind("<Leave>", self.HW.remove_tmp_message)
+
+        #
+
+    def resize_table(self, event):
+        # Cancel any existing timer
+        if self.resize_timer is not None:
+            self.after_cancel(self.resize_timer)
+
+        # Set a new timer to call the resize_done method after 500 ms
+
+        self.resize_timer = self.after(500, lambda: self.afficher_table(redo=True))
+
+
+    def afficher_table(self, actual_pos=None, redo=False, windowing=False, *args):
         #Display the interactive table with all the coordinates of the targets.
         #Headings
         try:
@@ -810,6 +972,7 @@ class Lecteur(Frame):
             self.update_idletasks()
         except:
             pass
+
 
         if actual_pos==None:
             actual_pos=self.Scrollbar.active_pos #What are the row to show
@@ -833,6 +996,7 @@ class Lecteur(Frame):
 
             inds_to_show=list(range(self.Xpos.get()-1,min(self.Xpos.get()+10, len(self.Vid.Identities))))
 
+
             Present_now=np.concatenate(self.who_is_here[deb + actual_pos - self.to_sub : end + actual_pos - self.to_sub])
             Present_now=list(np.unique(Present_now))
 
@@ -851,6 +1015,9 @@ class Lecteur(Frame):
 
 
             if redo:
+                self.table_heigh = round(self.container_table.winfo_height() / 20)
+
+                self.resize=False
                 try:#If the tree is not created yet
                     self.tree.destroy()
                     self.tree.unbind_all("<Control-c>")
@@ -860,12 +1027,18 @@ class Lecteur(Frame):
 
                # Fill the table
                 self.tree=ttk.Treeview(self.container_table, heigh=self.table_heigh)
+
+
+                if windowing==1:
+                    self.create_options()
+
+
                 self.tree["columns"]=tuple(["Frame"]+["Ar_" +str(self.Vid.Identities[ind][0])+ " " + str(self.Vid.Identities[ind][1]) for ind in inds_to_show])
                 self.tree.heading('#0', text='', anchor=CENTER)
                 self.tree.column('#0', width=0, stretch=NO)
                 self.tree.column("Frame", anchor=CENTER, width=int(self.container_table.winfo_width()/(len(self.Coos)+1)), minwidth=80, stretch=True)
                 self.tree.heading("Frame", text=self.Messages["Frame"], anchor=CENTER)
-                self.container_table.update()
+
 
 
             for ind in inds_to_show:
@@ -940,7 +1113,8 @@ class Lecteur(Frame):
             self.tree.tag_configure('Normal', background=Color_settings.My_colors.list_colors["Table1"], foreground=Color_settings.My_colors.list_colors["Fg_T1"])
             self.tree.tag_configure('Current', font=('Arial', 10, 'bold'))
             self.tree.tag_configure('Not_Current', font=('Arial', 10))
-            self.tree.grid(sticky="nsew")
+            self.tree.grid(row=0, column=0, sticky="nsew")
+
 
             #Allow interactions with the table
             self.tree.bind("<ButtonRelease>", self.selectItem)
@@ -970,8 +1144,6 @@ class Lecteur(Frame):
             except:
                 pass
 
-
-
     def hide_col(self, column):
         if column in self.columns_to_hide_tmp:
             try:
@@ -997,10 +1169,6 @@ class Lecteur(Frame):
         self.Scrollbar.active_pos=self.vsb.get()
         self.Scrollbar.refresh()
         self.Vid_Lecteur.update_image(self.Scrollbar.active_pos)
-
-    def onFrameConfigure(self, event):
-        #Adapt the size of the table to available space
-        self.container_table.configure(scrollregion=self.container_table.bbox("all"), width=300, height=300)
 
     def interpolate(self, *event):
         #The coordinates of the selected target are changed by a straight line between the first and last frames from the selection.
@@ -1029,9 +1197,9 @@ class Lecteur(Frame):
                 self.modif_image()
 
         else:
-            question = Message_simple_question.Messagebox(parent=self.main_frame.master,
+            question = MsgBox.Messagebox(parent=self.main_frame.master,
                                                           message=self.Messages["Control29"],
-                                                          Possibilities=[self.Messages["Control29A"],self.Messages["Control29B"],self.Messages["Control29B"]])
+                                                          Possibilities=[self.Messages["Control29A"],self.Messages["Control29B"],self.Messages["Control29C"]])
             self.wait_window(question)
             response=question.result
             if response==0:
@@ -1045,16 +1213,15 @@ class Lecteur(Frame):
                 self.wait_window(question)
                 answer = question.result
 
-                if answer:
+                if answer==0:
                     for Vid in self.main_frame.liste_of_videos:
-                        Interpolate_all.interpolate_all(Vid)
-                        self.Coos, self.who_is_here = CoosLS.load_coos(self.Vid, location=self)
-                        self.redo_who_is_here()
-                        self.selected_ind = 0
-                        self.afficher_table(redo=True)
-                        self.modif_image()
-
-
+                        if Vid.Tracked:
+                            Interpolate_all.interpolate_all(Vid)
+                            self.Coos, self.who_is_here = CoosLS.load_coos(self.Vid, location=self)
+                            self.redo_who_is_here()
+                            self.selected_ind = 0
+                            self.afficher_table(redo=True)
+                            self.modif_image()
 
     def redo_who_is_here(self):
         if self.Vid.Track[1][8]:
@@ -1062,7 +1229,6 @@ class Lecteur(Frame):
         else:
             for row in range(len(self.Coos[0])):
                 self.who_is_here[row]=list(np.where(self.Coos[:,row,0]!=-1000)[0])
-
 
     def next_NA(self):
         # If the user want to jump toward the next NA value, move_to =True
@@ -1108,6 +1274,33 @@ class Lecteur(Frame):
             self.Xpos.set(self.selected_ind + 1)
             self.modif_image(img=self.last_empty, redo=True)
 
+    def center_on_target(self):
+        Zwidth = abs(self.Vid_Lecteur.zoom_sq[0] - self.Vid_Lecteur.zoom_sq[2])
+        Zheight = abs(self.Vid_Lecteur.zoom_sq[1] - self.Vid_Lecteur.zoom_sq[3])
+        non_na_indices = np.where(self.Coos[self.selected_ind,0:self.Scrollbar.active_pos - self.to_sub ,0] > -100)[0]
+
+        if len(non_na_indices)>0:
+            center = self.Coos[self.selected_ind, non_na_indices[-1]]
+            #if (abs(center[0] -  round((self.Vid_Lecteur.zoom_sq[0] + self.Vid_Lecteur.zoom_sq[2]) / 2))> (Zwidth/4) )or (abs(center[1] -  round((self.Vid_Lecteur.zoom_sq[1] + self.Vid_Lecteur.zoom_sq[3]) / 2))> (Zheight/4)):
+            if center[0] + round(Zwidth / 2) > self.Vid.shape[1]:
+                self.Vid_Lecteur.zoom_sq[2] = self.Vid.shape[1]
+                self.Vid_Lecteur.zoom_sq[0] = self.Vid.shape[1] - Zwidth
+            elif center[0] - round(Zwidth / 2) < 0:
+                self.Vid_Lecteur.zoom_sq[2] = Zwidth
+                self.Vid_Lecteur.zoom_sq[0] = 0
+            else:
+                self.Vid_Lecteur.zoom_sq[0] = int(center[0] - round(Zwidth / 2))
+                self.Vid_Lecteur.zoom_sq[2] = int(center[0] + round(Zwidth / 2))
+
+            if center[1] + round(Zheight / 2) > self.Vid.shape[0]:
+                self.Vid_Lecteur.zoom_sq[3] = self.Vid.shape[0]
+                self.Vid_Lecteur.zoom_sq[1] = self.Vid.shape[0] - Zheight
+            elif center[1] - round(Zheight / 2) < 0:
+                self.Vid_Lecteur.zoom_sq[3] = Zheight
+                self.Vid_Lecteur.zoom_sq[1] = 0
+            else:
+                self.Vid_Lecteur.zoom_sq[1] = int(center[1] - round(Zheight / 2))
+                self.Vid_Lecteur.zoom_sq[3] = int(center[1] + round(Zheight / 2))
 
     def calculate_NA(self):
         # If the user want to jump toward the next NA value
@@ -1115,7 +1308,7 @@ class Lecteur(Frame):
         lines = Pos[1]
 
         if len(lines) == 0:
-            self.B_look_NA.config(state="disable",fg=Color_settings.My_colors.list_colors["Fg_NA_absent"], activebackground=Color_settings.My_colors.list_colors["NA_absent"], background=Color_settings.My_colors.list_colors["NA_absent"], text=self.Messages["Control18"])
+            self.B_look_NA.config(state="disable",fg=Color_settings.My_colors.list_colors["Fg_NA_absent"], activebackground=Color_settings.My_colors.list_colors["NA_absent"], background=Color_settings.My_colors.list_colors["NA_absent"], text=self.Messages["Control18"], disabledforeground=Color_settings.My_colors.list_colors["Fg_NA_absent"])
         else:
             self.B_look_NA.config(state="normal", fg=Color_settings.My_colors.list_colors["Fg_NA_present"], activebackground=Color_settings.My_colors.list_colors["NA_present"], background=Color_settings.My_colors.list_colors["NA_present"], text=self.Messages["Control17"].format(int(len(lines)/2),len(self.Coos[0])*len(self.Coos)))
 
@@ -1150,11 +1343,12 @@ class Lecteur(Frame):
         Grid.rowconfigure(self, 0, weight=1)  ########NEW
         Grid.rowconfigure(self, 1, weight=100)  ########NEW
 
-        self.Vid_Lecteur = Class_Lecteur.Lecteur(self, self.Vid, ecart=10)
+        self.Vid_Lecteur = Class_Lecteur.Lecteur(self, self.Vid, ecart=0)
         self.Vid_Lecteur.grid(row=1, column=0, sticky="nsew")
         self.Vid_Lecteur.speed.set(self.speed)
         self.Vid_Lecteur.change_speed()
         self.Scrollbar=self.Vid_Lecteur.Scrollbar
+        self.last_empty = self.Vid_Lecteur.last_img.copy()
 
         if self.Vid.Stab[0]:
             self.prev_pts = self.Vid.Stab[1]
@@ -1169,12 +1363,8 @@ class Lecteur(Frame):
         self.Coos, self.who_is_here = CoosLS.load_coos(self.Vid, location=self)
         self.redo_who_is_here()
         self.selected_ind=0
-        self.afficher_table(redo=True)
 
-        # Associate the vertical scrollbar with the table
-        self.vsb = Scale(self.User_params_cont, from_=self.to_sub, to=self.to_sub + len(self.Coos[0]) -1,orient="vertical", **Color_settings.My_colors.Scale_Base)
-        self.vsb.grid(row=2, column=2, sticky="ns")
-        self.vsb.bind("<ButtonRelease-1>", self.move_tree)
+        self.afficher_table(redo=True)
 
         #Representation of the tail
         if new_Vid!=None:
@@ -1190,17 +1380,7 @@ class Lecteur(Frame):
 
         #Display new image when we change the size of the tail
         self.Scale_tail.config(to=self.max_tail.get(), command=self.modif_image)
-
-        #The redo-tracking option is not available for unknown number of targets:
-        if self.Vid.Track[1][8] and self.Vid.Track[0]:#If the user choose manual tracking or variable number of target no possibility to add/remove inds
-            self.bouton_redo_track.grid(row=0, column=1, sticky="we")
-        else:
-            self.bouton_redo_track.grid_forget()
-
-
         self.Check_Bs=[]
-        self.calculate_NA()
-
 
     def add_ind(self, pos=-1, old_dat=[], old_ID=None, add_save=True):#If the user wants to add a new individual (only available for manual tracking)
         if old_ID==None:
@@ -1257,7 +1437,6 @@ class Lecteur(Frame):
         if add_save:
             self.add_change("add_ind",pos,None,None)
 
-
     def del_ind(self, ind, add_save=True, fus=False):
         self.column_to_hide=[col if (col<ind) else col-1 for col in self.column_to_hide if col != ind]
         self.column_to_show=[col if (col<ind) else col-1 for col in self.column_to_show if col != ind]
@@ -1295,7 +1474,6 @@ class Lecteur(Frame):
             self.afficher_table(redo=True)
 
             self.modif_image()
-
 
     def do_Blancs(self, to_do):
         try:  # Old versions of AnimalTA did not had the possibility to have a variable number of targets, this is to avoid compatibility problems
@@ -1336,9 +1514,6 @@ class Lecteur(Frame):
                         self.Blancs[pos].pop(-1)
             pos += 1
 
-
-
-
     def correct_NA(self, ind=None):
         if ind == None:
             to_do = range(len(self.Coos))
@@ -1373,10 +1548,11 @@ class Lecteur(Frame):
         self.save_changes=[]
         self.copied_cells = []
 
-
     def modif_image(self, img=[], actual_pos=None, redo=False, **args):
         #Draw trajectories on teh top of the frame to be displayed
         self.afficher_table(actual_pos=actual_pos, redo=redo)
+        if self.locked_view:
+            self.center_on_target()
 
         self.Vid_Lecteur.update_ratio()
         if len(img) <= 10:
@@ -1460,7 +1636,7 @@ class Lecteur(Frame):
                                                  max(int(2 * self.Vid_Lecteur.ratio), 1))
 
 
-        self.Vid_Lecteur.afficher_img(new_img)
+        self.Vid_Lecteur.afficher_img(new_img, locked=self.locked_view)
 
     def show_column_ID(self, event):
         #This function allow to show the name of the column on top of which the user has the mouse
@@ -1484,7 +1660,6 @@ class Lecteur(Frame):
             self.info.destroy()
         except:
             pass
-
 
     def selectItem(self, event, Right=False, *args):
         #Triggered when the user click inside the table
@@ -1529,7 +1704,6 @@ class Lecteur(Frame):
                     self.Can_Col.config(background="#%02x%02x%02x" % self.Vid.Identities[self.selected_ind][2])
                     self.modif_image()
                     self.afficher_table()
-
 
 class Canvas_colors(Canvas):
     #This is a small canvas displaying a color chart for the user to select a color.

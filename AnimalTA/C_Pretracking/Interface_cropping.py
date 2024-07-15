@@ -9,7 +9,7 @@ class Cropping(Frame):
     """This is a frame in which the user will be able to crop the video. User will indicate what frame will be the first and the last one."""
     def __init__(self, parent, boss,main_frame, proj_pos, Video_file, speed=0, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
-        self.config(**Color_settings.My_colors.Frame_Base)
+        self.config(**Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.parent=parent
         self.proj_pos=proj_pos
         self.main_frame=main_frame
@@ -52,7 +52,7 @@ class Cropping(Frame):
         self.Begin_Title.grid(row=0,column=1,columnspan=2, sticky="ew")
         self.Duration_Title=Label(self.canvas_entrie,text=self.Messages["Crop7"], **Color_settings.My_colors.Label_Base)
         self.Duration_Title.grid(row=0,column=4,columnspan=2, sticky="ew")
-        self.End_Title=Label(self.canvas_entrie,text=self.Messages["Crop6"], **Color_settings.My_colors.Frame_Base)
+        self.End_Title=Label(self.canvas_entrie,text=self.Messages["Crop6"], **Color_settings.My_colors.Label_Base)
         self.End_Title.grid(row=0,column=7,columnspan=2, sticky="ew")
 
         # Begin:
@@ -147,7 +147,7 @@ class Cropping(Frame):
 
 
     def create_Lecteur(self, speed):
-        self.Vid_Lecteur = Class_Lecteur.Lecteur(self, self.Vid, show_whole_frame=True)
+        self.Vid_Lecteur = Class_Lecteur.Lecteur(self, self.Vid, show_whole_frame=True, show_cropped=False)
         self.Vid_Lecteur.grid(row=1, column=0, sticky="nsew")
         self.Vid_Lecteur.speed.set(speed)
         self.Vid_Lecteur.change_speed()
@@ -384,7 +384,7 @@ class Cropping(Frame):
 
 
     #If the user try to interact with the frame:
-    def pressed_can(self, Pt, *args):
+    def pressed_can(self, Pt, event=None, *args):
         #We check if the user was pressing on one of the cropping lines, the moving variable indicates which line is pressed
         if abs(Pt[0]-self.CSp[1])<self.Vid_Lecteur.ratio*7:#If we press on the cropping line:
             self.moving=1

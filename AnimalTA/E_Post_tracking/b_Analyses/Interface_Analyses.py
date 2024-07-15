@@ -453,7 +453,7 @@ class Analyse_track(Frame):
         except:
             pass
 
-        self.Vid_Lecteur = Class_Lecteur.Lecteur(self, self.Vid, ecart=10)
+        self.Vid_Lecteur = Class_Lecteur.Lecteur(self, self.Vid, ecart=0)
         self.Vid_Lecteur.grid(row=1, column=0, sticky="nsew")
         self.Vid_Lecteur.speed.set(self.speed)
         self.Vid_Lecteur.change_speed()
@@ -493,7 +493,7 @@ class Analyse_track(Frame):
         self.one_every = self.Vid_Lecteur.one_every
 
     def redo_reader(self):
-        self.Vid_Lecteur = Class_Lecteur.Lecteur(self, self.Vid, ecart=10)
+        self.Vid_Lecteur = Class_Lecteur.Lecteur(self, self.Vid, ecart=0)
         self.Vid_Lecteur.grid(row=1, column=0, sticky="nsew")
         self.Vid_Lecteur.speed.set(self.speed)
         self.Vid_Lecteur.change_speed()

@@ -5,7 +5,7 @@ class Pers_Scroll(Canvas):
     '''
     This Class is a personalized scrollbar/timeline. It is part of the Video Reader and allow to view a specific frame of the video, to move between frames etc.
     '''
-    def __init__(self, parent, container, width=800, ecart=0, show_cropped=False, **kw):
+    def __init__(self, parent, container, width=800, ecart=0, show_cropped=True, **kw):
             Canvas.__init__(self, parent, kw)
             self.list_colors = Color_settings.My_colors.list_colors
             self.Top=container #Here the Video reader
@@ -13,7 +13,7 @@ class Pers_Scroll(Canvas):
             self.parent=parent#The frame widget of the Video reader within which this scrollbar will appear
             self.decalage=25#Esthetical point
             self.size_hide=40#Esthetical point
-            self.config(width=width, height=50, borderwidth=0,**Color_settings.My_colors.Frame_Base)
+            self.config(width=width, height=50, borderwidth=0,**Color_settings.My_colors.Frame_Base, highlightthickness=0)
 
             self.hide_crop=False
 
@@ -94,8 +94,8 @@ class Pers_Scroll(Canvas):
         if event.x>self.decalage and event.x<largscroll+self.decalage and event.y>0 and event.y<20:
             self.refresh()
             self.create_rectangle(event.x-self.size_hide,20,event.x+self.size_hide,50, fill=self.list_colors["Timeline_back"],outline=self.list_colors["Timeline_back"])
-            self.create_text(event.x,27, fill=self.list_colors["Fg_Timeline"], font="Times 10 bold", text=(round((event.x-self.decalage) * self.video_length / largscroll)+self.debut))
-            self.create_text(event.x,40, fill=self.list_colors["Fg_Timeline"], font="Times 10 bold", text=str(round((self.debut+((event.x-self.decalage) * self.video_length / largscroll))/self.fr_rate,2))+" s")
+            self.create_text(event.x,27, fill=self.list_colors["Fg_Timeline"], font="Times 10 bold", text=(int((event.x-self.decalage) * self.video_length / largscroll)+ self.debut - self.to_show_sub))
+            self.create_text(event.x,40, fill=self.list_colors["Fg_Timeline"], font="Times 10 bold", text=str(round(int(self.debut- self.to_show_sub+((event.x-self.decalage) * self.video_length / largscroll))/self.fr_rate,2))+" s")
 
     def activate_position(self,event):
         '''
@@ -105,7 +105,7 @@ class Pers_Scroll(Canvas):
         width=self.parent.winfo_width()
         largscroll = width - 60
         if event.x>self.decalage and event.x<largscroll+self.decalage and event.y>0 and event.y<20:
-            self.active_pos=int(self.debut + round((event.x-self.decalage) * self.video_length / largscroll))
+            self.active_pos=int(self.debut + int((event.x-self.decalage) * self.video_length / largscroll))
             self.refresh()
             self.Top.update_image(self.active_pos)
 

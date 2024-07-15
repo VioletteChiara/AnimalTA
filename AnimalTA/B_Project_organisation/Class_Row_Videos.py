@@ -23,7 +23,10 @@ class Row_Can(Canvas):
             self.main_frame=main_boss
             self.parent=parent
             self.proj_pos=proj_pos #The position of the row in the table
-            self.config(width=500,**Color_settings.My_colors.Frame_Base, pady=2)
+            self.config(width=500, height=150,**Color_settings.My_colors.Frame_Base, pady=2, bd=0, highlightthickness=0)
+            self.grid_propagate(0)
+
+            Grid.rowconfigure(self, 0, weight=1)
 
             self.list_colors = Color_settings.My_colors.list_colors
 
@@ -51,7 +54,10 @@ class Row_Can(Canvas):
             self.oeuil = cv2.cvtColor(self.oeuil, cv2.COLOR_BGR2RGB)
             self.Size_oe = self.oeuil.shape
             self.oeuil = cv2.resize(self.oeuil, (int(self.Size_oe[1] / 4), int(self.Size_oe[0] / 4)))
-            self.oeuil2 = PIL.ImageTk.PhotoImage(image=PIL.Image.fromarray(self.oeuil))
+
+            self.oeuil2 = PIL.Image.open(UserMessages.resource_path(os.path.join("AnimalTA", "Files", "Oeuil.png")))
+            self.oeuil2=self.oeuil2.resize((self.oeuil.shape[1],self.oeuil.shape[0]))
+            self.oeuil2 = PIL.ImageTk.PhotoImage(self.oeuil2)
 
             self.Supr_im = PIL.Image.open(UserMessages.resource_path(os.path.join("AnimalTA","Files","cross.png")))
             self.Supr_im = PIL.ImageTk.PhotoImage(self.Supr_im)
@@ -73,7 +79,7 @@ class Row_Can(Canvas):
             Grid.rowconfigure(self.subcanvas_First, 1, weight=1)
 
             #If the video is selected, this appears green
-            self.isselected=Canvas(self.subcanvas_First,heigh=75, width=15, bg=self.list_colors["Not_selected_main"],**Color_settings.My_colors.Frame_Base)
+            self.isselected=Canvas(self.subcanvas_First,heigh=75, width=15, bg=self.list_colors["Not_selected_main"],**Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
             self.isselected.grid(row=0,column=0, sticky="nsw")
             self.isselected.bind("<Enter>", partial(self.main_frame.HW.change_tmp_message, self.Messages["Row9"]))
             self.isselected.bind("<Leave>", self.main_frame.HW.remove_tmp_message)
@@ -99,7 +105,7 @@ class Row_Can(Canvas):
 
 
             #Add three buttons:
-            Three_buttons=Frame(self.subcanvas_First,**Color_settings.My_colors.Frame_Base)
+            Three_buttons=Frame(self.subcanvas_First,**Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
             Three_buttons.grid(row=1,column=0,columnspan=2)
 
             #Suppress the video
@@ -123,10 +129,10 @@ class Row_Can(Canvas):
             Bconcat.bind("<Leave>", self.main_frame.HW.remove_tmp_message)
             Bconcat.config(**Color_settings.My_colors.Button_Base)
 
-            self.view_and_rot=Frame(self.subcanvas_First,**Color_settings.My_colors.Frame_Base)
+            self.view_and_rot=Frame(self.subcanvas_First,**Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
             self.view_and_rot.grid(row=1, column=2)
 
-            self.view_first = Canvas(self.view_and_rot, **Color_settings.My_colors.Frame_Base)
+            self.view_first = Canvas(self.view_and_rot, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
 
 
             #we allow to roatet the video
@@ -141,9 +147,9 @@ class Row_Can(Canvas):
             self.Rotate_clockanti.grid(row=0, column=2, sticky="w")
 
             #Options of pretracking:
-            self.Wrapper=Canvas(self, heigh = 125, relief='ridge',**Color_settings.My_colors.Frame_Base)
+            self.Wrapper=Canvas(self, heigh = 125, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
             self.Wrapper.grid(row=0, column=1, sticky="ew")
-            self.canvas_main = Frame(self.Wrapper, heigh = 125, relief='ridge',**Color_settings.My_colors.Frame_Base)
+            self.canvas_main = Frame(self.Wrapper, heigh = 125, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
             self.canvas_main.grid(row=0, column=0, sticky="ew")
 
             Pos_col=1
@@ -324,8 +330,8 @@ class Row_Can(Canvas):
 
             #Aerate a little !
             self.grid_columnconfigure(0,minsize=200)
-            for row in range(Pos_col):
-                self.canvas_main.grid_columnconfigure(row, minsize=20)
+            for col in range(Pos_col):
+                self.canvas_main.grid_columnconfigure(col, minsize=20)
 
 
             #we show the eye to see the first image of the video
@@ -343,8 +349,6 @@ class Row_Can(Canvas):
             for child in self.canvas_main.winfo_children():
                 child.bind("<Button-1>", self.select_vid)
             self.isselected.bind("<Button-1>", self.select_vid)
-
-
 
             if self.Video!=None:
                 self.update_mask()
@@ -771,7 +775,7 @@ class Row_Can(Canvas):
 
         if self.Video.Tracked:
             self.back_button.config(**Color_settings.My_colors.Button_Base)
-            self.back_supress_button.config(bg='SystemButtonFace')
+            self.back_supress_button.config(bg=Color_settings.My_colors.list_colors["Base_ina"])
 
     def supress_back(self):
         # Remove existing background
@@ -818,8 +822,23 @@ class Row_Can(Canvas):
 
     def extend_back(self):
         # Open a new window to extend the automatique background at several videos
-        newWindow = Toplevel(self.parent.master)
-        interface = Interface_extend.Extend(parent=newWindow, value=None, boss=self.main_frame, Video_file=self.Video, do_self=True, type="back")
+        if self.Video.Back[0]==1:
+            question = MsgBox.Messagebox(parent=self.main_frame.master,
+                                                          message="What to you want to apply to multiple videos?",
+                                                          Possibilities=["Do auto background","Copy this video's background"])
+            self.wait_window(question)
+            answer = question.result
+        else:
+            answer=0
+
+
+        if answer != None:
+            if answer==0:
+                newWindow = Toplevel(self.parent.master)
+                interface = Interface_extend.Extend(parent=newWindow, value=None, boss=self.main_frame, Video_file=self.Video, do_self=True, type="back")
+            else:
+                newWindow = Toplevel(self.parent.master)
+                interface = Interface_extend.Extend(parent=newWindow, value=self.Video.Back, boss=self.main_frame, Video_file=self.Video, do_self=False, type="back_copy")
 
     def update_mask(self):
         # Update the color/info of the arenas cell

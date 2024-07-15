@@ -181,7 +181,7 @@ def Do_tracking(parent, Vid, folder, type, portion=False, prev_row=None, arena_i
         security_settings_track.stop_threads = True
         question = MsgBox.Messagebox(parent=parent, title=Messages["TError_memory"],
                                      message=Messages["Error_memory"],
-                                     Possibilities=Messages["Continue"])
+                                     Possibilities=[Messages["Continue"]])
         parent.wait_window(question)
 
         del security_settings_track.capture

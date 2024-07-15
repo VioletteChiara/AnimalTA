@@ -89,7 +89,7 @@ class Settings_panel(Frame):
         Grid.rowconfigure(Frame_view, pos, weight=1)
         pos += 1
 
-        #Radiobutton(Frame_view, text=self.Messages["Settings10A"], variable=self.Color_GUI, value="Dark", wraplength=300, justify=LEFT, selectcolor=row_colors[pos%2+6], activeforeground=row_colors[pos%2+4], fg=row_colors[pos%2+4], bg=row_colors[pos%2], activebackground=row_colors[pos%2], anchor="w").grid(row=pos, column=0, sticky="new")
+        Radiobutton(Frame_view, text=self.Messages["Settings10A"], variable=self.Color_GUI, value="Dark", wraplength=300, justify=LEFT, selectcolor=row_colors[pos%2+6], activeforeground=row_colors[pos%2+4], fg=row_colors[pos%2+4], bg=row_colors[pos%2], activebackground=row_colors[pos%2], anchor="w").grid(row=pos, column=0, sticky="new")
         Radiobutton(Frame_view, text=self.Messages["Settings10B"], variable=self.Color_GUI, value="Light", wraplength=300, justify=LEFT, selectcolor=row_colors[pos%2+6], activeforeground=row_colors[pos%2+4], fg=row_colors[pos%2+4],bg=row_colors[pos % 2], activebackground=row_colors[pos%2], anchor="w").grid(row=pos, column=1, sticky="new")
         Grid.rowconfigure(Frame_view, pos, weight=1)
         pos+=1

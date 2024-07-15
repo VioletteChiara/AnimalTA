@@ -7,7 +7,7 @@ class Information_panel(Frame):
         Frame.__init__(self, parent, bd=5, **kwargs)
         self.parent=parent
         self.grid(sticky="nsew")
-        self.config(**Color_settings.My_colors.Frame_Base)
+        self.config(**Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
 
         Grid.columnconfigure(parent, 0, weight=1)
         Grid.rowconfigure(parent, 0, weight=1)

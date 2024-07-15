@@ -12,7 +12,7 @@ class Deformation(Frame):
 
     def __init__(self, parent, Video_file, main_frame, speed=0, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
-        self.config(**Color_settings.My_colors.Frame_Base)
+        self.config(**Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.main_frame = main_frame
         self.parent = parent
         self.grid(rowspan=2, sticky="nsew")
@@ -66,7 +66,7 @@ class Deformation(Frame):
 
 
         # Video reader
-        self.Vid_Lecteur = Class_Lecteur.Lecteur(self, self.Vid, ecart=10)
+        self.Vid_Lecteur = Class_Lecteur.Lecteur(self, self.Vid, ecart=0)
         self.Vid_Lecteur.grid(row=1, column=0, rowspan=2, sticky="nsew")
         self.Vid_Lecteur.speed.set(speed)
         self.Vid_Lecteur.change_speed()

@@ -11,7 +11,7 @@ class Help_win(Frame):
         The text is changing according to which step of the program the user is doing."""
         Frame.__init__(self, parent, bd=5, **kwargs)
         self.list_colors = Color_settings.My_colors.list_colors
-        self.config(height=100, highlightthickness=4, relief='flat', highlightbackground=self.list_colors["Title1"], background=self.list_colors["Base"])
+        self.config(height=100, highlightthickness=4, relief='flat', highlightcolor=self.list_colors["Title1"], highlightbackground=self.list_colors["Title1"], background=self.list_colors["Base"])
 
         #Messages importation
         self.Language = StringVar()
@@ -35,26 +35,26 @@ class Help_win(Frame):
         Grid.rowconfigure(self, 1, weight=1000)
 
 
-        Container=Frame(self, **Color_settings.My_colors.Frame_Base)
+        Container=Frame(self, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         Container.grid(row=1, sticky="nsew")
         Grid.columnconfigure(Container, 0, weight=100)
         Grid.columnconfigure(Container, 1, weight=1)
         Grid.rowconfigure(Container, 0, weight=1)
 
-        self.Canvas_txt=Canvas(Container, width=width, **Color_settings.My_colors.Frame_Base)
+        self.Canvas_txt=Canvas(Container, width=width, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         Scrollbar_txt=ttk.Scrollbar(Container, orient="vertical", command=self.Canvas_txt.yview)
         Grid.columnconfigure(self.Canvas_txt, 0, weight=1)
         Grid.rowconfigure(self.Canvas_txt, 0, weight=1)
 
         #Text
-        self.Frame_txt=Frame(self.Canvas_txt, **Color_settings.My_colors.Frame_Base)
+        self.Frame_txt=Frame(self.Canvas_txt, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.Frame_txt.bind("<Configure>", self.redo_scrollable)
         self.Frame_txt.grid(row=0, column=0, sticky="nsew")
         self.Canvas_txt.create_window((0, 0), window=self.Frame_txt, anchor="nw")
         self.Canvas_txt.configure(yscrollcommand=Scrollbar_txt.set)
         self.user_message=StringVar()
         self.user_message.set(self.default_message)
-        self.User_help=Label(self.Frame_txt, textvariable=self.user_message, justify=LEFT, **Color_settings.My_colors.Frame_Base, fg=self.list_colors["Fg_Base"])
+        self.User_help=Label(self.Frame_txt, textvariable=self.user_message, justify=LEFT, **Color_settings.My_colors.Label_Base, bd=0, highlightthickness=0)
         self.User_help.grid(row=0, column=0, sticky="new")
         self.Canvas_txt.bind("<Configure>", self.set_label_wrap)
         self.Canvas_txt.grid(row=0, column=0, sticky="nsew")
@@ -67,13 +67,13 @@ class Help_win(Frame):
         Grid.rowconfigure(self.Frame_txt, 3, minsize=1)
         Grid.rowconfigure(self.Frame_txt, 4, weight=1000)
 
-        self.view_logo = Canvas(self.Frame_txt, **Color_settings.My_colors.Frame_Base)
+        self.view_logo = Canvas(self.Frame_txt, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.view_logo.config(width=0, height=0)
         self.view_logo.grid(row=1, columnspan=2, sticky="ns")
 
         if len(legend)>0:
             cur_col=0
-            Fr_legend=Frame(self.Frame_txt, **Color_settings.My_colors.Frame_Base)
+            Fr_legend=Frame(self.Frame_txt, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
             Fr_legend.grid(row=2,sticky="nsew")
             Grid.rowconfigure(Fr_legend, 0, weight=1)
 
@@ -84,11 +84,11 @@ class Help_win(Frame):
 
         #Shortcuts infos:
         if len(shortcuts)>0:
-            Short_title=Label(self.Frame_txt, text="\n"+self.Messages["Shortcuts"]+":", **Color_settings.My_colors.Frame_Base, fg=self.list_colors["Fg_Base"],  justify=CENTER, font=("Helvetica", 10, "bold"))
+            Short_title=Label(self.Frame_txt, text="\n"+self.Messages["Shortcuts"]+":", **Color_settings.My_colors.Label_Base, bd=0, highlightthickness=0,  justify=CENTER, font=("Helvetica", 10, "bold"))
             Short_title.grid(row=3, sticky="w")
 
             #Text
-            Frame_short=Frame(self.Frame_txt, **Color_settings.My_colors.Frame_Base)
+            Frame_short=Frame(self.Frame_txt, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
             Frame_short.grid(row=4, column=0, sticky="nw")
             Grid.columnconfigure(Frame_short, 0, weight=100, minsize=100)
             Grid.columnconfigure(Frame_short, 1, weight=1)

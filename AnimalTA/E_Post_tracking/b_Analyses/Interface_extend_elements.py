@@ -13,7 +13,7 @@ class Lists(Frame):
     The user can select some arenas to copy-paste there the elements of interest from the current arena"""
     def __init__(self, parent, boss, liste_videos, Current_Vid, Current_Area, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
-        self.config(**Color_settings.My_colors.Frame_Base)
+        self.config(**Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.parent=parent
         self.boss=boss
         self.grid()

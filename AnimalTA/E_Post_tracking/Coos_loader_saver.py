@@ -101,6 +101,7 @@ def load_variable(Vid, path):
                 time=time-round(Vid.Cropped[1][0]/one_every)
                 T_Coos = subset[:, 4:6]
                 Coos[count, time, :] = T_Coos
+
                 for im in time:
                     who_is_here[im] = who_is_here[im] + [count]
             count += 1

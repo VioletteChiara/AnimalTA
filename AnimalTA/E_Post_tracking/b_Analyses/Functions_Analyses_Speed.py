@@ -165,6 +165,8 @@ def calculate_exploration(method, Vid, Coos, deb, end, Arena, show=False, image=
                                           color=(0, 0, 0),
                                           thickness=2)
 
+                image = cv2.copyMakeBorder(image, 0, 0, 0, 75, cv2.BORDER_CONSTANT, value=[255, 255, 255])
+
                 image[(50): (image.shape[0] - 50), (image.shape[1] - 75):(image.shape[1])] = (
                 150, 150, 150)
 
@@ -292,6 +294,8 @@ def calculate_exploration(method, Vid, Coos, deb, end, Arena, show=False, image=
                                int(cY + math.sin(math.pi + cur_angle) * list_rads[circle]))
                         image = cv2.line(image, pt1, pt2, (0, 0, 0), 2)  # We draw the limits
             image = cv2.circle(image, (cX, cY), int(last_rad), (0, 0, 0), 2)
+
+            image = cv2.copyMakeBorder(image, 0, 0, 0, 75, cv2.BORDER_CONSTANT, value=[255,255,255])
 
             image[(50): (image.shape[0] - 50), (image.shape[1] - 75):(image.shape[1])] = (150, 150, 150)
 

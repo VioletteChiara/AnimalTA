@@ -13,7 +13,7 @@ class Lists(Frame):
     The user can select some arenas to copy-paste there the elements of interest from the current arena"""
     def __init__(self, parent, boss, liste_videos, Current_Vid, Current_Area, Current_Ind, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
-        self.config(**Color_settings.My_colors.Frame_Base)
+        self.config(**Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.parent=parent
         self.boss=boss
         self.grid()
@@ -118,7 +118,7 @@ class Lists(Frame):
         self.max_can_width = self.parent.winfo_screenwidth()-self.parent.winfo_width()-200
 
         #In this canves, we will show the video and position of arenas
-        self.Canvas_shaow_Ar=Canvas(self, **Color_settings.My_colors.Frame_Base)
+        self.Canvas_shaow_Ar=Canvas(self, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.Canvas_shaow_Ar.grid(row=0, column=5, rowspan=4, sticky="nsew")
 
         self.stay_on_top()

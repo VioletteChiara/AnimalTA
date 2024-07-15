@@ -5,7 +5,7 @@ from AnimalTA.E_Post_tracking import Coos_loader_saver as CoosLS
 from AnimalTA.E_Post_tracking.b_Analyses import Interface_extend_seqs, Functions_Analyses_Speed, Functions_deformation
 import numpy as np
 from functools import partial
-import math
+import pandas as pd
 import cv2
 
 
@@ -34,11 +34,22 @@ def find_limits(Sequence, Vid, Ind, relative_explo, Coos=[], boundaries=[]):
     elif Sequence[1][0] == "Spatial":
         for shape in Vid.Analyses[1][Vid.Identities[Ind][0]]:
             if ("First_in_"+str(shape[3]))==Sequence[1][3] or ("Last_in_"+str(shape[3]))==Sequence[1][3]:
-                entry,out=find_shape_relation(shape,Vid,Coos,Ind)
+                entries,outs=find_shape_relation(shape,Vid,Coos,Ind)
+                try:
+                    val5 = int(Sequence[1][5])
+                except:
+                    val5 = -1
+
                 if ("First_in_" + str(shape[3])) == Sequence[1][3]:
-                    new_pos=entry
-                else :
-                    new_pos=out
+                    if val5 > 0 and val5 <= len(entries):
+                        new_pos = entries[int(Sequence[1][5])-1]
+                    else:
+                        new_pos = "NA"
+                else:
+                    if val5 > 0 and val5 <= len(outs):
+                        new_pos = outs[int(Sequence[1][5])-1]
+                    else:
+                        new_pos = "NA"
             else:
                 pass
 
@@ -72,11 +83,23 @@ def find_limits(Sequence, Vid, Ind, relative_explo, Coos=[], boundaries=[]):
     elif Sequence[2][0] == "Spatial":
         for shape in Vid.Analyses[1][Vid.Identities[Ind][0]]:
             if ("First_in_"+str(shape[3]))==Sequence[2][3] or ("Last_in_"+str(shape[3]))==Sequence[2][3]:
-                entry,out=find_shape_relation(shape,Vid,Coos,Ind)
+                entries,outs=find_shape_relation(shape,Vid,Coos,Ind)
+
+                try:
+                    val5=int(Sequence[2][5])
+                except:
+                    val5=-1
+
                 if ("First_in_" + str(shape[3])) == Sequence[2][3]:
-                    new_pos=entry
+                    if val5>0 and val5<=len(entries):
+                        new_pos=entries[int(Sequence[2][5])-1]
+                    else:
+                        new_pos="NA"
                 else :
-                    new_pos=out
+                    if val5>0 and val5<=len(outs):
+                        new_pos=outs[int(Sequence[2][5])-1]
+                    else:
+                        new_pos="NA"
             else:
                 pass
         try:
@@ -95,6 +118,7 @@ def find_limits(Sequence, Vid, Ind, relative_explo, Coos=[], boundaries=[]):
         deb=0
     if end>max_len:
         end=max_len
+
 
     if end<=deb:
         return(False, [])
@@ -127,9 +151,13 @@ def find_shape_relation(Shape, Vid, Coos, ID):
         Dist_to, Inside = Calc_speed.details_shape(Copy_Coos[:, 0], Copy_Coos[:, 1], Shape_tmp, float(Vid.Scale[0]), Vid, Arenas[Area])
 
     if len(np.where(Inside > 0)[0]) > 0:
-        entry = np.argmax(Inside > 0)
-        out = len(Inside) - np.argmax(Inside[::-1] > 0) - 1
-        return([entry,out])
+        filled_Inside = pd.Series(Inside).ffill().to_numpy()
+        diff=np.diff(filled_Inside)
+        entries=np.where(diff>0.5)[0]+1
+        if Inside[np.argmax(~np.isnan(Inside))]>0:
+            entries = np.insert(entries, 0, 0, 0)
+        outs = np.where(diff< -0.5)[0]
+        return([list(entries),list(outs)])
     else:
         return(["NA","NA"])
 
@@ -390,10 +418,10 @@ class Add_sequences(Frame):
         to_save = [seq.Seq_name.get(),
                    [self.find_general_name(seq.type_start.get()), self.find_general_name(seq.value_start.get()),
                     self.find_general_name(seq.value_start2.get()), Value3_deb,
-                    self.find_general_name(seq.value_start_explo.get())],
+                    self.find_general_name(seq.value_start_explo.get()), seq.value_start5.get()],
                    [self.find_general_name(seq.type_end.get()), self.find_general_name(seq.value_end.get()),
                     self.find_general_name(seq.value_end2.get()), Value3_end,
-                    self.find_general_name(seq.value_end_explo.get())]]
+                    self.find_general_name(seq.value_end_explo.get()), seq.value_end5.get()]]
 
         return(to_save)
 
@@ -512,10 +540,10 @@ class Add_sequences(Frame):
                 Shape_tmp[2] = float(Shape_tmp[2].get())
 
                 load_frame.show_load(0.3 + (pos/len(self.main.Calc_speed.Areas[self.Area]))*0.3)
-                entry, out = find_shape_relation(Shape_tmp, self.Vid, Copy_Coos, ID)
+                entries, outs = find_shape_relation(Shape_tmp, self.Vid, Copy_Coos, ID)
 
-                self.Shapes_data[pos][0] = entry
-                self.Shapes_data[pos][1] = out
+                self.Shapes_data[pos][0] = entries
+                self.Shapes_data[pos][1] = outs
 
                 pos+=1
 
@@ -622,18 +650,28 @@ class Sequence(Frame):
         self.value_start_explo=StringVar()
         self.value_end_explo = StringVar()
 
+        self.value_start5=StringVar()#Which entrance in the shape?
+        self.value_end5=StringVar()
+
         if len(Start_vals)>0:
             self.value_start.set(Start_vals[1])
             self.value_start2.set(Start_vals[2])
             self.value_start3.set(Start_vals[3])
             self.value_start_explo.set(Start_vals[4])
+            try:
+                self.value_start5.set(Start_vals[5])
+            except:
+                self.value_start5.set(1)
 
         if len(End_vals) > 0:
             self.value_end.set(End_vals[1])
             self.value_end2.set(End_vals[2])
             self.value_end3.set(End_vals[3])
             self.value_end_explo.set(End_vals[4])
-
+            try:
+                self.value_end5.set(End_vals[5])
+            except:
+                self.value_end5.set(-1)
 
 
         #The sequence name
@@ -648,7 +686,7 @@ class Sequence(Frame):
 
         #Beginning of the sequence
         if len(self.main.list_events.values()) > 0:
-            list_possibilities_beg=dict(Limits=self.Messages["Sequences_Begin"], Time=self.Messages["Sequences_Time"], Exploration=self.Messages["Sequences_Explo"], Spatial_event=self.Messages["Sequences_Spatial_event"])#, Movement="Movement"
+            list_possibilities_beg = dict(Limits=self.Messages["Sequences_Begin"], Time=self.Messages["Sequences_Time"], Exploration=self.Messages["Sequences_Explo"], Spatial_event=self.Messages["Sequences_Spatial_event"])#, Movement="Movement"
             list_possibilities_end = dict(Limits=self.Messages["Sequences_End"], Time=self.Messages["Sequences_Time"], Exploration=self.Messages["Sequences_Explo"], Spatial_event=self.Messages["Sequences_Spatial_event"])#, Movement="Movement"
         else:
             list_possibilities_beg = dict(Limits=self.Messages["Sequences_Begin"], Time=self.Messages["Sequences_Time"],Exploration=self.Messages["Sequences_Explo"])#, Movement="Movement"
@@ -728,9 +766,11 @@ class Sequence(Frame):
             self.value_start.trace_vdelete("W",self.trace_start1)
             self.value_start2.trace_vdelete("W", self.trace_start2)
             self.value_start3.trace_vdelete("W", self.trace_start3)
+            self.value_start5.trace_vdelete("W", self.trace_start5)
             self.value_end.trace_vdelete("W", self.trace_end1)
             self.value_end2.trace_vdelete("W", self.trace_end2)
             self.value_end3.trace_vdelete("W", self.trace_end3)
+            self.value_end5.trace_vdelete("W", self.trace_end5)
             self.value_start_explo.trace_vdelete("W", self.trace_start_explo)
             self.value_end_explo.trace_vdelete("W", self.trace_end_explo)
         except:
@@ -777,6 +817,7 @@ class Sequence(Frame):
                 self.value_start.set(0)
                 self.value_start2.set(self.Messages["Sequences_before"])
                 self.value_start3.set(list(self.main.list_events.values())[0])
+                self.value_start5.set(0)
 
             #if self.type_start.get() == self.Messages["Sequences_Spatial_event"]:
             #    self.value_end3.set(list(self.main.list_events.values())[0])
@@ -784,7 +825,7 @@ class Sequence(Frame):
             Lab1=Label(self.TxtFrame_deb, text=self.Messages["Sequences3"]+" ", **Color_settings.My_colors.Label_Base)
             Lab1.grid(row=0,column=0, sticky="nsew")
 
-            Ent1=Entry(self.TxtFrame_deb, textvariable=self.value_start, width=10, validate='all', validatecommand=(check_num, '%P'), **Color_settings.My_colors.Entry_Base)
+            Ent1=Entry(self.TxtFrame_deb, textvariable=self.value_start, width=6, validate='all', validatecommand=(check_num, '%P'), **Color_settings.My_colors.Entry_Base)
             Ent1.grid(row=0, column=1, sticky="nsew")
 
             Lab2=Label(self.TxtFrame_deb, text="sec", **Color_settings.My_colors.Label_Base)
@@ -795,17 +836,19 @@ class Sequence(Frame):
             Opt1.config(**Color_settings.My_colors.Button_Base)
             Opt1.grid(row=0, column=3, sticky="nsew")
 
-            if self.type_start.get()==self.Messages["Sequences_Spatial_event"]:
-                Opt2=OptionMenu(self.TxtFrame_deb, self.value_start3, *self.main.list_events.values())
-                Opt2["menu"].config(**Color_settings.My_colors.OptnMenu_Base)
-                Opt2.config(**Color_settings.My_colors.Button_Base)
-                Opt2.grid(row=0, column=4, sticky="nsew")
 
-            # elif self.type_start.get()=="Movement":
-            #     Opt2=OptionMenu(self.TxtFrame_deb, self.value_start3, *self.main.list_events_movements.values())
-            #     Opt2["menu"].config(**Color_settings.My_colors.OptnMenu_Base)
-            #     Opt2.config(**Color_settings.My_colors.Button_Base)
-            #     Opt2.grid(row=0, column=4, sticky="nsew")
+            Opt2=OptionMenu(self.TxtFrame_deb, self.value_start3, *self.main.list_events.values())
+            Opt2["menu"].config(**Color_settings.My_colors.OptnMenu_Base)
+            Opt2.config(**Color_settings.My_colors.Button_Base)
+            Opt2.grid(row=0, column=4, sticky="nsew")
+
+            Lab3=Label(self.TxtFrame_deb, text="nº", **Color_settings.My_colors.Label_Base)
+            Lab3.grid(row=0,column=5, sticky="nsew")
+
+            Ent2=Entry(self.TxtFrame_deb, textvariable=self.value_start5, width=3, validate='all', validatecommand=(check_num, '%P'), **Color_settings.My_colors.Entry_Base)
+            Ent2.grid(row=0, column=6, sticky="nsew")
+
+
 
         elif self.type_start.get() == self.Messages["Sequences_Explo"]:
             if type_pos != None and type_pos <= 0:
@@ -842,6 +885,7 @@ class Sequence(Frame):
                 self.value_end.set(0)
                 self.value_end2.set(self.Messages["Sequences_before"])
                 self.value_end3.set(list(self.main.list_events.values())[0])
+                self.value_end5.set(1)
 
                 #if self.type_end.get() == self.Messages["Sequences_Spatial_event"]:
                 #    self.value_end3.set(list(self.main.list_events.values())[0])
@@ -852,8 +896,8 @@ class Sequence(Frame):
             Lab3=Label(self.TxtFrame_end, text=self.Messages["Sequences5"]+" ", **Color_settings.My_colors.Label_Base)
             Lab3.grid(row=0,column=0, sticky="nsew")
 
-            Ent2=Entry(self.TxtFrame_end, textvariable=self.value_end, width=10, validate='all', validatecommand=(check_num, '%P'), **Color_settings.My_colors.Entry_Base)
-            Ent2.grid(row=0, column=1, sticky="nsew")
+            Ent3=Entry(self.TxtFrame_end, textvariable=self.value_end, width=6, validate='all', validatecommand=(check_num, '%P'), **Color_settings.My_colors.Entry_Base)
+            Ent3.grid(row=0, column=1, sticky="nsew")
 
             Lab4=Label(self.TxtFrame_end, text="sec", **Color_settings.My_colors.Label_Base)
             Lab4.grid(row=0,column=2, sticky="nsew")
@@ -863,19 +907,17 @@ class Sequence(Frame):
             Opt3.config(**Color_settings.My_colors.Button_Base)
             Opt3.grid(row=0, column=3, sticky="nsew")
 
-            if self.type_end.get() == self.Messages["Sequences_Spatial_event"]:
-                Opt4 = OptionMenu(self.TxtFrame_end, self.value_end3, *self.main.list_events.values())
-                Opt4["menu"].config(**Color_settings.My_colors.OptnMenu_Base)
-                Opt4.config(**Color_settings.My_colors.Button_Base)
-                Opt4.grid(row=0, column=4, sticky="nsew")
+            Opt4 = OptionMenu(self.TxtFrame_end, self.value_end3, *self.main.list_events.values())
+            Opt4["menu"].config(**Color_settings.My_colors.OptnMenu_Base)
+            Opt4.config(**Color_settings.My_colors.Button_Base)
+            Opt4.grid(row=0, column=4, sticky="nsew")
 
-            '''
-            elif self.type_end.get() == "Movement":
-                Opt4 = OptionMenu(self.TxtFrame_end, self.value_end3, *self.main.list_events_movements.values())
-                Opt4["menu"].config(**Color_settings.My_colors.OptnMenu_Base)
-                Opt4.config(**Color_settings.My_colors.Button_Base)
-                Opt4.grid(row=0, column=4, sticky="nsew")
-            '''
+            Lab5=Label(self.TxtFrame_end, text="nº", **Color_settings.My_colors.Label_Base)
+            Lab5.grid(row=0,column=5, sticky="nsew")
+
+            Ent4=Entry(self.TxtFrame_end, textvariable=self.value_end5, width=3, validate='all', validatecommand=(check_num, '%P'), **Color_settings.My_colors.Entry_Base)
+            Ent4.grid(row=0, column=6, sticky="nsew")
+
 
         elif self.type_end.get() == self.Messages["Sequences_Explo"]:
             if type_pos!=None and type_pos>=0:
@@ -893,9 +935,11 @@ class Sequence(Frame):
         self.trace_start1=self.value_start.trace("w", self.change_val)
         self.trace_start2=self.value_start2.trace("w", self.change_val)
         self.trace_start3=self.value_start3.trace("w", self.change_val)
+        self.trace_start5=self.value_start5.trace("w", self.change_val)
         self.trace_end1=self.value_end.trace("w", self.change_val)
         self.trace_end2=self.value_end2.trace("w", self.change_val)
         self.trace_end3=self.value_end3.trace("w", self.change_val)
+        self.trace_end5=self.value_end5.trace("w", self.change_val)
         self.trace_start_explo=self.value_start_explo.trace("w", self.change_val)
         self.trace_end_explo = self.value_end_explo.trace("w", self.change_val)
 
@@ -917,19 +961,21 @@ class Sequence(Frame):
         new_pos=None
         warn = False
         #Time="Time", Event="Event", Time_B_Event="Time before event", Time_A_Event="Time after event", Social_Event="Social event", Exploration="Exploration percentage"
-        if str(var)==str(self.value_start) or str(var)==str(self.value_start2)or str(var)==str(self.value_start3) or str(var)==str(self.value_start_explo):
+        if str(var)==str(self.value_start) or str(var)==str(self.value_start2)or str(var)==str(self.value_start3) or str(var)==str(self.value_start5) or str(var)==str(self.value_start_explo):
             cur_type="start"
             val1=self.value_start.get()
             val2=self.value_start2.get()
             val3 = self.value_start3.get()
+            val5 = self.value_start5.get()
             val_explo=self.value_start_explo.get()
             type=self.type_start.get()
 
-        elif str(var)==str(self.value_end) or str(var)==str(self.value_end2) or str(var)==str(self.value_end3) or str(var)==str(self.value_end_explo):
+        elif str(var)==str(self.value_end) or str(var)==str(self.value_end2) or str(var)==str(self.value_end3) or str(var)==str(self.value_end5) or str(var)==str(self.value_end_explo):
             cur_type = "end"
             val1=self.value_end.get()
             val2=self.value_end2.get()
             val3 = self.value_end3.get()
+            val5 = self.value_end5.get()
             val_explo = self.value_end_explo.get()
             type = self.type_end.get()
 
@@ -944,16 +990,25 @@ class Sequence(Frame):
 
                 shape_pos=(list(self.main.list_events.values()).index(val3))//2
                 in_or_out=(list(self.main.list_events.values()).index(val3))%2
-                if self.main.Shapes_data[shape_pos][in_or_out]!="NA":
-                    new_pos = int((float(self.main.Shapes_data[shape_pos][in_or_out]) + self.main.main.Vid_Lecteur.to_sub))
+
+                try:
+                    val5=int(val5)
+                except:
+                    val5=-1
+
+                if val5>0 and val5<=len(self.main.Shapes_data[shape_pos][in_or_out]) and self.main.Shapes_data[shape_pos][in_or_out][val5-1]!="NA":
+                    new_pos = int((float(self.main.Shapes_data[shape_pos][in_or_out][val5-1]) + self.main.main.Vid_Lecteur.to_sub))
                 else:
                     new_pos ="NA"
+
+
 
             if new_pos!=None and new_pos!="NA":
                 if val2==self.Messages["Sequences_after"]:
                     new_pos += int((float(val1) * self.main.main.Vid.Frame_rate[1]))
                 else:
                      new_pos-= int((float(val1) *self.main.main.Vid.Frame_rate[1]))
+
 
         # elif type=="Movement" and val1!="":
         #     if val3=="First move":
@@ -995,14 +1050,14 @@ class Sequence(Frame):
             if cur_type == "start":
                 self.main.Scrollbar.crop_beg = new_pos
                 if warn:
-                    self.warn_deb.grid(row=0, column=6)
+                    self.warn_deb.grid(row=0, column=7)
                 else:
                     self.warn_deb.grid_forget()
 
             elif cur_type == "end":
                 self.main.Scrollbar.crop_end = new_pos
                 if warn:
-                    self.warn_end.grid(row=0, column=6)
+                    self.warn_end.grid(row=0, column=7)
                 else:
                     self.warn_end.grid_forget()
 

@@ -11,7 +11,7 @@ class Assign(Frame):
         self.parent=parent
         self.boss=boss
         self.grid(sticky="nsew")
-        self.config(**Color_settings.My_colors.Frame_Base)
+        self.config(**Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.grab_set()
 
         Grid.columnconfigure(self.parent,0,weight=1)
@@ -36,11 +36,11 @@ class Assign(Frame):
         Grid.columnconfigure(self,0,weight=1)
         Grid.rowconfigure(self, 0, weight=1)
 
-        self.canvas_video=Canvas(self, **Color_settings.My_colors.Frame_Base)
+        self.canvas_video=Canvas(self, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.canvas_video.grid(row=0, column=0, sticky="nsew")
 
         #We create one slider for each arena
-        self.Opn_Fr = Frame(self, **Color_settings.My_colors.Frame_Base)
+        self.Opn_Fr = Frame(self, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.Opn_Fr.grid(row=0, column=1, sticky="nsew")
         self.all_vals_var=[IntVar(self,x) for x in self.boss.liste_ind_per_ar]
         for row in range(len(self.Arenas)):

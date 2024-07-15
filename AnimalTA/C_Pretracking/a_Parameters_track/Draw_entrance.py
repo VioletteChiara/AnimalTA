@@ -13,7 +13,7 @@ class Draw_ent(Frame):
     """In this Frame, the user will have the possibility to indicate the arenas in which the targets can be found. It will later work as a mask and facilitate target's identification."""
     def __init__(self, parent, Img, Entrances, Arenas, boss, scale, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
-        self.config(**Color_settings.My_colors.Frame_Base)
+        self.config(**Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.img=Img
         self.scale=scale
         self.boss=boss#Who is the class calling this one
@@ -84,7 +84,7 @@ class Draw_ent(Frame):
         self.Choose_borders_B=Button(User_Fr,text=self.Messages["Analyses_details_sp_Menu3_1"], command=self.active_selection,**Color_settings.My_colors.Button_Base)
         self.Choose_borders_B.grid(row=1, column=1, sticky="nsew")
 
-        validate=Button(User_Fr,text=self.Messages["Validate"], command=self.validate,**Color_settings.My_colors.Frame_Base)
+        validate=Button(User_Fr,text=self.Messages["Validate"], command=self.validate,**Color_settings.My_colors.Button_Base)
         validate.config(background=Color_settings.My_colors.list_colors["Validate"],fg=Color_settings.My_colors.list_colors["Fg_Validate"])
         validate.grid(row=2, column=0, columnspan=2, sticky="nsew")
 
@@ -227,7 +227,6 @@ class Draw_ent(Frame):
     def validate(self):
         self.boss.cnts_entrance=self.ents
         self.boss.bind_children(self.boss)
-        self.bind_children(self.boss.canvas_options)
         self.boss.modif_image()
         self.parent.destroy()
 

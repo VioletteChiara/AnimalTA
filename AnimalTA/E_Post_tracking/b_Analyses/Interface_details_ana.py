@@ -27,7 +27,7 @@ class Details_basics(Frame):
     #It allows the user to change the movement thershold of the targets (under this threshold, targets are considered stopped).
     def __init__(self, parent, main, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
-        self.config(**Color_settings.My_colors.Frame_Base)
+        self.config(**Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.parent=parent
         self.parent.geometry("1050x620")
         self.main=main
@@ -66,7 +66,7 @@ class Details_basics(Frame):
 
         #A graph is shown that represent the movement speed of the taregt as a function of time.
         #In this graph, the user can also see and modify the target's movement threshold.
-        Frame_for_Graph=Frame(self, **Color_settings.My_colors.Frame_Base)
+        Frame_for_Graph=Frame(self, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         Frame_for_Graph.grid(row=1, column=0, stick="nsew")
         Grid.columnconfigure(Frame_for_Graph, 0, weight=1)  ########NEW
         Grid.columnconfigure(Frame_for_Graph, 1, weight=1)  ########NEW
@@ -76,19 +76,19 @@ class Details_basics(Frame):
         Grid.rowconfigure(Frame_for_Graph, 1, weight=1)  ########NEW
         Grid.rowconfigure(Frame_for_Graph, 2, weight=1)  ########NEW
 
-        self.Ylab_can = Canvas(Frame_for_Graph, width=20, height=300, **Color_settings.My_colors.Frame_Base)
+        self.Ylab_can = Canvas(Frame_for_Graph, width=20, height=300, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.Ylab_can.grid(row=0,column=0, sticky="nsew")
 
-        self.Yaxe_can = Canvas(Frame_for_Graph, width=50, height=300, **Color_settings.My_colors.Frame_Base)
+        self.Yaxe_can = Canvas(Frame_for_Graph, width=50, height=300, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.Yaxe_can.grid(row=0,column=1, sticky="nsew")
 
-        self.Graph=Canvas(Frame_for_Graph, width=300, height=300, scrollregion=(0,0,0,0), **Color_settings.My_colors.Frame_Base)
+        self.Graph=Canvas(Frame_for_Graph, width=300, height=300, scrollregion=(0,0,0,0), **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.Graph.grid(row=0,column=2,sticky="nsew")
         self.Graph.bind("<Configure>", self.show_graph)
         self.Graph.bind("<Button-1>", self.callback)
         self.Graph.bind("<B1-Motion>", self.move_seuil)
 
-        self.Xaxe_can = Canvas(Frame_for_Graph, height=15, **Color_settings.My_colors.Frame_Base)
+        self.Xaxe_can = Canvas(Frame_for_Graph, height=15, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.Xaxe_can.grid(row=1,column=2, sticky="nsew")
         self.Xaxe_can.create_text(210, 7, text=self.Messages["Analyses_details_graph_X"])
 
@@ -97,7 +97,7 @@ class Details_basics(Frame):
         self.Graph.config(xscrollcommand=hsb.set)
         self.stay_on_top()
 
-        User_Frame=Frame(self, **Color_settings.My_colors.Frame_Base)
+        User_Frame=Frame(self, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         User_Frame.grid(row=1, column=1, sticky="nsew")
         Grid.rowconfigure(User_Frame, 0, weight=100)
         Grid.rowconfigure(User_Frame, 1, weight=1)
@@ -109,7 +109,7 @@ class Details_basics(Frame):
         self.HW.grid_propagate(False)
 
         #The results related to the current target will appear in this Frame, they are updated each time that the movement threshold is changed.
-        Frame_for_results=Frame(User_Frame, **Color_settings.My_colors.Frame_Base)
+        Frame_for_results=Frame(User_Frame, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         Frame_for_results.grid(row=1, column=0)
 
         ##Different results
@@ -410,7 +410,7 @@ class Details_spatial(Frame):
     """
     def __init__(self, parent, main, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
-        self.config(**Color_settings.My_colors.Frame_Base)
+        self.config(**Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.parent=parent
         self.parent.geometry("1050x620")
         self.main=main
@@ -1268,6 +1268,11 @@ class Details_explo(Frame):
                     self.draw_squares()
                 elif self.shape_mesh.get() == 2:
                     self.draw_circles()
+
+            self.Size = self.image.shape
+            self.ratio = self.Size[1] / self.final_width
+            self.zoom_sq = [0, 0, self.image.shape[1], self.image.shape[0]]
+
             self.show_img()
 
 
@@ -1534,7 +1539,6 @@ class Details_explo(Frame):
                                                                              end=len(self.main.Coos[self.Ind]) - 1,
                                                                              Arena=self.Arena_pts, image=self.image,
                                                                              show=True)
-
         self.Prop_explored.set(round(new_val[1],3))
 
     def close(self):

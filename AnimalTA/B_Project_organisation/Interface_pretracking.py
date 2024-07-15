@@ -36,7 +36,7 @@ class Interface(Frame):
     def __init__(self, parent, current_version, new_update, liste_of_videos=[], **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
         self.list_colors = Color_settings.My_colors.list_colors
-        self.config(**Color_settings.My_colors.Frame_Base)
+        self.config(background=Color_settings.My_colors.list_colors["Main_cnt"], bd=3, highlightthickness=0)
         self.parent = parent
         self.current_version=current_version
         self.posX=0#At the beginning, horizontal scrollbar is at location 0
@@ -104,7 +104,11 @@ class Interface(Frame):
         Grid.columnconfigure(self, 0, weight=1)
 
         # User help:
-        self.HW = User_help.Help_win(self.canvas_main, default_message=self.Messages["Welcome"], legend={self.Messages["General23"]:self.list_colors["Button_ready"],self.Messages["General24"]:self.list_colors["Button_half"],self.Messages["General25"]:self.list_colors["Button_done"]}, shortcuts={self.Messages["Short_Mousewheel"]:self.Messages["Short_Mousewheel_G"], self.Messages["Short_arrows"]:self.Messages["Short_arrows_G"], self.Messages["Short_del"]:self.Messages["Short_del_G"]}, width=250)
+        self.HW = User_help.Help_win(self.canvas_main, default_message=self.Messages["Welcome"], legend={self.Messages["General23"]:self.list_colors["Button_ready"],self.Messages["General24"]:self.list_colors["Button_half"],self.Messages["General25"]:self.list_colors["Button_done"]},
+                                     shortcuts={self.Messages["Short_Mousewheel"]:self.Messages["Short_Mousewheel_G"],
+                                                self.Messages["Short_arrows"]:self.Messages["Short_arrows_G"],
+                                                self.Messages["Short_del"]:self.Messages["Short_del_G"],
+                                                self.Messages["Short_shift_del"]: self.Messages["Short_multi_del"], }, width=250)
         self.HW.grid(row=0, column=1, sticky="nsew")
 
         self.canvas_show = Frame(self.canvas_main, bd=0, highlightthickness=0, relief='ridge', **Color_settings.My_colors.Frame_Base)
@@ -156,7 +160,7 @@ class Interface(Frame):
         Grid.rowconfigure(self.canvas_main, 1, weight=1)
 
         # Options to interact with the project:
-        self.Optns_Lab = Entry(self.rows_optns, textvar=self.project_name, bg=self.list_colors["Entry_dark"], relief="ridge", font=("Arial", 14))
+        self.Optns_Lab = Entry(self.rows_optns, textvar=self.project_name, relief="ridge", font=("Arial", 14), **Color_settings.My_colors.Entry_Base)
         self.Optns_Lab.grid(row=0, column=0, sticky="w")
         #Add a video
         self.bouton_Add = Button(self.rows_optns, text=self.Messages["GButton7"], command=self.add_video,**Color_settings.My_colors.Button_Base)
@@ -175,14 +179,11 @@ class Interface(Frame):
 
         #For a future update
         #Import data from other trackings
-        '''
         self.bouton_import_dat = Button(self.rows_optns, text=self.Messages["Import_data0"], command=self.import_dat,**Color_settings.My_colors.Button_Base)
-        self.bouton_import_dat.grid(row=0, column=7, sticky="nse")
+        #self.bouton_import_dat.grid(row=0, column=7, sticky="nse")
         self.bouton_import_dat.config(state="disable")
         self.bouton_import_dat.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["General26"]))
         self.bouton_import_dat.bind("<Leave>", self.HW.remove_tmp_message)
-        '''
-
 
         #Export selected video
         self.bouton_save_TVid = Button(self.rows_optns, text=self.Messages["GButton18"], command=self.export_vid,**Color_settings.My_colors.Button_Base)
@@ -212,14 +213,7 @@ class Interface(Frame):
         Grid.rowconfigure(self.canvas_show, 1, weight=1)
 
         self.canvas_rows.bind("<Configure>", self.onFrameConfigure)
-        self.bind_all("<Up>", self.Up)
-        self.bind_all("<KeyRelease-Up>", self.Rel_UpBot)
-        self.bind_all("<Down>", self.Bot)
-        self.bind_all("<KeyRelease-Down>", self.Rel_UpBot)
-        self.bind_all("<MouseWheel>", self.on_mousewheel)
-        self.parent.bind_all("<Button-1>", self.remove_Fus)
-        self.bind_all("<Button-1>", self.remove_Fus)
-        self.bind_all("<Delete>", partial(self.supr_video, None, True))
+        self.bind_everything()
 
         # Widgets:
         # Title bar
@@ -276,7 +270,7 @@ class Interface(Frame):
         self.Beginn_track.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["General11"]))
         self.Beginn_track.bind("<Leave>", self.HW.remove_tmp_message)
         #Show the defined options
-        self.Show_T_infos = Label(self.canvas_next_step, textvariable=self.Infos_track, wraplength=250, **Color_settings.My_colors.Frame_Base)
+        self.Show_T_infos = Label(self.canvas_next_step, textvariable=self.Infos_track, wraplength=250, **Color_settings.My_colors.Label_Base, bd=0, highlightthickness=0)
         #Apply the tracking parameters to other videos
         self.BExtend_track = Button(self.canvas_next_step, text=self.Messages["GButton5"], command=self.extend_track,**Color_settings.My_colors.Button_Base)
         self.BExtend_track.config(state="disable")
@@ -557,6 +551,7 @@ class Interface(Frame):
         self.parent.unbind_all("<Button-1>")
         self.unbind_all("<Button-1>")
         self.unbind_all("<Delete>")
+        self.unbind_all("<Shift-Delete>")
 
     def bind_everything(self):
         self.bind_all("<Up>", self.Up)
@@ -567,6 +562,8 @@ class Interface(Frame):
         self.parent.bind_all("<Button-1>", self.remove_Fus)
         self.bind_all("<Button-1>", self.remove_Fus)
         self.bind_all("<Delete>", partial(self.supr_video, None, True))
+        self.bind_all("<Shift-Delete>", self.supr_multi_video)
+
 
 
     def return_main(self):
@@ -633,7 +630,7 @@ class Interface(Frame):
                 os.rename(self.file_to_save+"old",self.file_to_save)
 
             question = MsgBox.Messagebox(parent=self, title=self.Messages["GWarnT3"],
-                                       message=self.Messages["GWarn3"], Possibilities=self.Messages["Continue"])
+                                       message=self.Messages["GWarn3"], Possibilities=[self.Messages["Continue"]])
             self.wait_window(question)
 
     def close_file(self, ask=True):
@@ -756,7 +753,6 @@ class Interface(Frame):
                     for V in self.liste_of_videos:
                         V.Folder=self.folder
 
-
             if len(self.list_projects)==0:
                 for row in range(20):
                     self.list_projects.append(Class_Row_Videos.Row_Can(parent=self.canvas_rows, main_boss=self,
@@ -766,8 +762,8 @@ class Interface(Frame):
                     self.list_projects[row].Wrapper.create_window((4, 4), window=self.list_projects[row].canvas_main)
                 self.list_projects[0].Wrapper.configure(xscrollcommand=self.vsh.set)
 
-
             to_suppr = []
+
             # Check that videos are still available
             for V in range(len(self.liste_of_videos)):
                 # Look for all points of interest
@@ -853,7 +849,6 @@ class Interface(Frame):
                                     string=seq[2][3]
                                     seq[2][3] = string.replace("Last time in ", "Last_in_")
 
-
                     except:  # Old versions of AnimalTA did not had the "Entrance" attribute, this handled exception is to avoid compatibility problems
                         self.liste_of_videos[V].Sequences = []
                         for Ar in range(len(self.liste_of_videos[V].Track[1][6])):
@@ -876,22 +871,21 @@ class Interface(Frame):
                             for i in range(self.liste_of_videos[V].Track[1][6][Ar]):
                                 self.liste_of_videos[V].Morphometrics.append([])
                 '''
-
                 if len(self.liste_of_videos[V].Track[1])<8:#Old versions of AnimalTA did not allow for lightning corrections or variable number of targets
                     self.liste_of_videos[V].Track[1].append(False)#No lightning correction
                     self.liste_of_videos[V].Track[1].append(True)#Fixed number of tragets
-
                 if len(self.liste_of_videos[V].Track[1])<9:
                     self.liste_of_videos[V].Track[1].append(True)#Fixed number of tragets
-
                 if len(self.liste_of_videos[V].Track[1])<10:
                     self.liste_of_videos[V].Track[1].append(False)#Flicker correction
-
                 if len(self.liste_of_videos[V].Track[1])<11:
                     self.liste_of_videos[V].Track[1].append([0,0,0])#black/colored background
 
-                if len(self.liste_of_videos[V].Track[1][10])<3:
-                    self.liste_of_videos[V].Track[1][10].append(0)# background
+                try:
+                    if len(self.liste_of_videos[V].Track[1][10])<3:
+                        self.liste_of_videos[V].Track[1][10].append(0)# background
+                except:
+                    self.liste_of_videos[V].Track[1][10]=[0,0,0]
 
                 if len(self.liste_of_videos[V].Analyses)<5:
                     self.liste_of_videos[V].Analyses.append([[],[],[]])#Deformation of images
@@ -909,16 +903,18 @@ class Interface(Frame):
                 '''
 
 
-                everything_ok=False
+                everything_ok=True
                 while not everything_ok:
-                    if not os.path.isfile(self.liste_of_videos[V].File_name):
+                    if not Interface_Change_Folder.check_vid(self.liste_of_videos[V]):
                         file_name=ntpath.basename(self.liste_of_videos[V].File_name)
                         if os.path.isfile(self.folder+"/converted_vids/"+file_name):
                             self.liste_of_videos[V].File_name=self.folder+"/converted_vids/"+file_name
                             for F in range(len(self.liste_of_videos[V].Fusion)):
                                 if os.path.isfile(self.folder + "/converted_vids/" + ntpath.basename(self.liste_of_videos[V].Fusion[F][1])):
                                     self.liste_of_videos[V].Fusion[F][1] = self.folder+"/converted_vids/"+ ntpath.basename(self.liste_of_videos[V].Fusion[F][1])
-                            everything_ok = True
+
+                            if Interface_Change_Folder.check_vid(self.liste_of_videos[V]):
+                                everything_ok = True
 
                         else:
                             question = MsgBox.Messagebox(parent=self, title=self.Messages["GWarnT5"],
@@ -939,6 +935,7 @@ class Interface(Frame):
                                 return
                     else:
                         everything_ok=True
+
 
             if len(to_suppr) > 0:
                 for elem in sorted(to_suppr, reverse=True):
@@ -965,6 +962,7 @@ class Interface(Frame):
             self.Sub_table.grid(row=2, column=0, sticky="nsew")
 
         except Exception as e:
+            print(e)
             pass
             '''
             CustomDialog(self.master, text="An exception occurred:"+ str(type(e).__name__) + " – " + str(e), title="Debugging")
@@ -978,6 +976,7 @@ class Interface(Frame):
     def update_row_display(self):
         for row in self.list_projects:
             row.Wrapper.configure(scrollregion=row.Wrapper.bbox("all"))
+        self.vsv.config(to=len(self.liste_of_videos) - 1)
 
     def first_action(self, *arg):
         #At least one action has been done
@@ -1088,34 +1087,30 @@ class Interface(Frame):
         # Show the row of the table according to the scrollbar position.
         # We cannot create all the rows to avoid to consume too much memory in the case of m¡numerous videos projects
         self.posX = self.vsh.get()[0]  # Save the Xscrollbar position
-        try:
-            for label in self.canvas_rows.grid_slaves():
-                label.grid_forget()
 
-        except Exception as e:
-            CustomDialog(self.master, text="An exception occurred:"+ str(type(e).__name__) + " – " + str(e), title="Debugging")
 
         try:
-            if len(self.liste_of_videos) > 0:
-                central = int(self.vsv.get())
-                nb_visibles = self.canvas_show.winfo_height() / (130)
-                self.vsv.config(to=len(self.liste_of_videos) - 1)
+            central = int(self.vsv.get())
+            nb_visibles = self.canvas_show.winfo_height() / (130)
+            if central>=(len(self.liste_of_videos)-1):
+                central=len(self.liste_of_videos)-1
 
-                for P in self.list_projects:
-                    P.grid_forget()
+            for P in range(len(self.list_projects)):
+                if self.list_projects[P].winfo_ismapped():
+                    self.list_projects[P].grid_forget()
 
+            if len(self.liste_of_videos)>0:
                 Pos=0
                 for who in range(central, min(len(self.liste_of_videos), int(central + round(nb_visibles)) + 1)):
                     self.list_projects[Pos].change_vid(self.liste_of_videos[who],Pos - 1)
-                    self.list_projects[Pos].grid(row=Pos, column=0, sticky="we")
-                    self.list_projects[Pos].update_selection()
+                    if not self.list_projects[Pos].winfo_ismapped():
+                        self.list_projects[Pos].grid(row=Pos, column=0, sticky="we")
                     Pos+=1
 
-                self.canvas_show.update()
+
 
         except Exception as e:
             CustomDialog(self.master, text="An exception occurred:"+ str(type(e).__name__) + " – " + str(e), title="Debugging")
-
         self.moveX()  # Keep the Xscrollbar position
 
     def update_projects(self):
@@ -1221,9 +1216,9 @@ class Interface(Frame):
                                                   Vid=self.selected_vid, Video_liste=self.liste_of_videos, speed=speed))
 
     def extend_track(self):
-        #Open a window to allow the user to apply the tracking parameters of selected vidoe to other videos
+        #Open a window to allow the user to apply the tracking parameters of selected video to other videos
         newWindow = Toplevel(self.parent)
-        interface = Interface_extend.Extend(parent=newWindow, value=self.selected_vid.Track[1], boss=self,
+        interface = Interface_extend.Extend(parent=newWindow, value=[self.selected_vid.Track[1], self.selected_vid.Back], boss=self,
                                             Video_file=self.selected_vid, type="track")
 
     def Beg_track(self, speed=0):
@@ -1301,26 +1296,32 @@ class Interface(Frame):
         self.update_selections()
         self.update_row_display()
 
-    def supr_video(self, Vid=None, warn=True, *args):
-        if Vid==None and self.selected_vid != None:
-            Vid=self.selected_vid
-        #Delete a video from the project.
-        if Vid != None:
-            if warn:
-                question = MsgBox.Messagebox(parent=self, title=self.Messages["GWarnT2"],
-                                             message=self.Messages["GWarn2"],
-                                             Possibilities=[self.Messages["Yes"], self.Messages["No"]])
-                self.wait_window(question)
-                answer = question.result
+    def supr_multi_video(self, *args):
+        newWindow = Toplevel(self.parent)
+        interface = Interface_extend.Extend(parent=newWindow, value="NA", boss=self,
+                                            Video_file=self.selected_vid, type="supr",do_self=True)
 
-            if (not warn or answer==0) and Vid.clear_files():
-                # Supress associated files
-                pos_R = [index for index, Vid_L in enumerate(self.liste_of_videos) if Vid_L == Vid]
-                self.liste_of_videos.pop(pos_R[0])
-                self.afficher_projects()
-                self.selected_vid = None
-                self.update_selections()
-                self.save()
+    def supr_video(self, Vid=None, warn=True, event=None, *args):
+        if event==None or (event!=None and event.widget.winfo_class()!="Entry"):
+            if Vid==None and self.selected_vid != None:
+                Vid=self.selected_vid
+            #Delete a video from the project.
+            if Vid != None:
+                if warn:
+                    question = MsgBox.Messagebox(parent=self, title=self.Messages["GWarnT2"],
+                                                 message=self.Messages["GWarn2"],
+                                                 Possibilities=[self.Messages["Yes"], self.Messages["No"]])
+                    self.wait_window(question)
+                    answer = question.result
+
+                if (not warn or answer==0) and Vid.clear_files():
+                    # Supress associated files
+                    pos_R = [index for index, Vid_L in enumerate(self.liste_of_videos) if Vid_L == Vid]
+                    self.liste_of_videos.pop(pos_R[0])
+                    self.afficher_projects()
+                    self.selected_vid = None
+                    self.update_selections()
+                    self.save()
 
     def dupli_video(self, Vid):
         #Duplicate an existing video:
@@ -1335,7 +1336,13 @@ class Interface(Frame):
             count+=1
             Indx+=1
 
-        new_Vid.User_Name=new_Vid.Name
+        count=1
+        while new_Vid.User_Name==Vid.User_Name:
+            new_name=Vid.User_Name + "(" + str(count) +")"
+            if new_name not in [V.User_Name for V in self.liste_of_videos]:
+                new_Vid.User_Name = new_name
+            count+=1
+
 
         if Vid.User_Name == Vid.Name:
             old_file_name = Vid.Name
@@ -1377,6 +1384,7 @@ class Interface(Frame):
 
     def remove_Fus(self, event):
         #If the user clicks on anything else than a video or the concatenate button, we cancel the concatenation
+        event.widget.focus_set()
         if self.wait_for_vid:
             self.fus_video()
         self.update_selections()
@@ -1387,7 +1395,6 @@ class Interface(Frame):
             load_frame= Class_loading_Frame.Loading(self)#Progression bar
             load_frame.grid()
             load_frame.show_load(0 / 2)
-
 
             if self.selected_vid.or_shape == second_Vid.or_shape and abs(self.selected_vid.Frame_rate[0] - second_Vid.Frame_rate[0])<0.05:#And that they share the same characteristics
                 if self.selected_vid.Frame_rate[0] != second_Vid.Frame_rate[0]:
@@ -1464,13 +1471,13 @@ class Interface(Frame):
             self.bouton_analyse_track.config(state="disable", **Color_settings.My_colors.Frame_Base)
             #self.bouton_add_event.config(state="disable", activebackground="#f0f0f0", bg="#f0f0f0")
             self.bouton_save_TVid.config(state="disable")
-            #self.bouton_import_dat.config(state="disable")
+            self.bouton_import_dat.config(state="disable")
             self.move_up_button.config(state="disable", **Color_settings.My_colors.Frame_Base)
             self.move_down_button.config(state="disable", **Color_settings.My_colors.Frame_Base)
 
         else:
             self.bouton_save_TVid.config(state="normal")
-            #self.bouton_import_dat.config(state="normal")
+            self.bouton_import_dat.config(state="normal")
             self.move_up_button.config(state="normal", bg=self.list_colors["Moving_arrows"])
             self.move_down_button.config(state="normal", bg=self.list_colors["Moving_arrows"])
 
@@ -1513,6 +1520,7 @@ class Interface(Frame):
                                          self.Messages["Names6"] + ": " + str(
                         round(float(self.selected_vid.Track[1][5]), 2)) + "\n" +
                                          self.Messages["Names9"] + ": " + NB_tar)
+
                 else:
                     if self.selected_vid.Track[1][8]:#If there is a known number of targets
                         NB_tar=str(self.selected_vid.Track[1][6])
@@ -1530,9 +1538,8 @@ class Interface(Frame):
                     #self.bouton_add_event.config(state="disable", activebackground="#f0f0f0",bg="#f0f0f0")
 
 
-
                 elif os.path.isfile(file_tracked) or os.path.isfile(file_trackedP):
-                    self.Beginn_track.config(state="normal", **Color_settings.My_colors.Frame_Base)
+                    self.Beginn_track.config(state="normal", **Color_settings.My_colors.Button_Base)
                     self.bouton_check_track.config(state="normal")
                     self.bouton_analyse_track.config(state="normal", activebackground=self.list_colors["Button_ready"], activeforeground=self.list_colors["Fg_Button_ready"], fg=self.list_colors["Fg_Button_ready"], bg=self.list_colors["Button_ready"])
                     #self.bouton_add_event.config(state="normal", activebackground="#ff8a33", bg="#ff8a33")
@@ -1551,7 +1558,8 @@ class Interface(Frame):
         try:#If the Rows are not created yet
             for Row in self.list_projects:
                 Row.update_selection()
-        except:
+        except Exception as e:
+            print(e)
             pass
 
     def stab_all(self):

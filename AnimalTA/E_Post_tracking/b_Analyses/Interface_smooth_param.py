@@ -6,7 +6,7 @@ class Modify(Frame):
     """This little frame allows the user to modify the parameters of the smoothing filter."""
     def __init__(self, parent, boss, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
-        self.config(**Color_settings.My_colors.Frame_Base)
+        self.config(**Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.parent=parent
         self.boss=boss
         self.grid()

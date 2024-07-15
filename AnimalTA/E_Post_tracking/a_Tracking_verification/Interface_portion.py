@@ -13,7 +13,7 @@ class Show(Frame):
     To this aim, the user can define temporary tracking parameters that will be used for this portion only."""
     def __init__(self, parent, boss, Vid, Video_liste, prev_row=None, Arena=None, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
-        self.config(**Color_settings.My_colors.Frame_Base)
+        self.config(**Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.parent = parent
         self.boss = boss
         self.grid(sticky="nsew")
@@ -46,15 +46,15 @@ class Show(Frame):
         self.winfo_toplevel().title(self.Messages["Portion0"])
 
         #Where the options are displayed
-        Right_part=Frame(self, **Color_settings.My_colors.Frame_Base)
+        Right_part=Frame(self, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         Right_part.grid(row=0, column=1)
 
-        self.User_help = Frame(Right_part, **Color_settings.My_colors.Frame_Base)
+        self.User_help = Frame(Right_part, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.User_help.grid(row=0, column=0, sticky="new")
         self.Lab_help=Label(self.User_help, text=self.Messages["Portion11"], wraplength=300, **Color_settings.My_colors.Label_Base)
         self.Lab_help.grid()
 
-        self.User_buttons = Frame(Right_part, **Color_settings.My_colors.Frame_Base)
+        self.User_buttons = Frame(Right_part, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.User_buttons.grid(row=1, rowspan=3, column=0, sticky="sew")
 
         self.text_stab=StringVar()
@@ -87,7 +87,7 @@ class Show(Frame):
         #Show the progression of the tracking
         self.loading_lab = Label(self.User_buttons, text="", height=10, **Color_settings.My_colors.Label_Base)
         self.loading_lab.grid(row=6,column=0)
-        self.loading_bar = Canvas(self.User_buttons, height=10, **Color_settings.My_colors.Frame_Base)
+        self.loading_bar = Canvas(self.User_buttons, height=10, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.loading_bar.grid(row=6,column=0, columnspan=3, sticky="ew")
 
         self.B_validate_track = Button(self.User_buttons, text=self.Messages["Portion8"], command=self.validate_correction, **Color_settings.My_colors.Button_Base)

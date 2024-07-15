@@ -11,7 +11,7 @@ class Scale(Frame):
     """This Frame allows the user  to define a scale by selecting two points in the video and indicating the distance between them IRL"""
     def __init__(self, parent, boss, main_frame, Video_file, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
-        self.config(**Color_settings.My_colors.Frame_Base)
+        self.config(**Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.parent=parent
         self.boss=boss
         self.main_frame=main_frame

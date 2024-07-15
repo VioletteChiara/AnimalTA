@@ -17,7 +17,11 @@ class small_info(Frame):
     def show_hint(self, event):
         self.info = Toplevel(self.parent)
         self.info.wm_overrideredirect(1)
-        self.info.wm_geometry("+%d+%d" % pyautogui.position())
+
+        pos = pyautogui.position()
+        new_pos = (pos[0]+10, pos[1])
+        self.info.wm_geometry("+%d+%d" % new_pos)
+
         label = Label(self.info, text=self.message,justify=LEFT,
                       background="#ffffe0", relief=SOLID, borderwidth=1,
                       font=("tahoma", "8", "normal"), wraplength=200)

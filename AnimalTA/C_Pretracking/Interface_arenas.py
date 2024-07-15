@@ -14,7 +14,7 @@ class Mask(Frame):
     """In this Frame, the user will have the possibility to indicate the arenas in which the targets can be found. It will later work as a mask and facilitate target's identification."""
     def __init__(self, parent, boss, main_frame, proj_pos, Video_file,portion=False, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
-        self.config(**Color_settings.My_colors.Frame_Base)
+        self.config(**Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.parent=parent
         self.proj_pos=proj_pos
         self.main_frame=main_frame
@@ -382,7 +382,7 @@ class Mask(Frame):
             pts_norm[:, 1] = Ptys
 
         if self.Shiftpressed:
-            pts_norm=pts_norm*((dist+50)/30)
+            pts_norm=pts_norm*((((dist/self.ratio))/100)+1)
 
         if self.Fpressed:
             pts_norm[:, 0] =  pts_norm[:, 0] * -1
@@ -464,7 +464,7 @@ class Mask(Frame):
             for i in range(len(self.liste_points[j][0])):
                 if self.liste_points[j][4]:  # If this is filled shape
                     self.image_to_show = cv2.circle(self.image_to_show, (
-                    int(self.liste_points[j][0][i]), int(self.liste_points[j][1][i])), round(4 * self.ratio),
+                    int(self.liste_points[j][0][i]), int(self.liste_points[j][1][i])), max(2,round(5 * self.ratio)),
                                                     self.liste_points[j][2], -1)
                 else:  # If this is empty shape
                     self.image_to_show = cv2.line(self.image_to_show,
@@ -478,17 +478,17 @@ class Mask(Frame):
 
         if len(self.Pt_select) > 0:#Selected point is highlighted
             if self.liste_points[self.Pt_select[0]][4]:  # If this is filled shape
-                self.image_to_show = cv2.circle(self.image_to_show,(int(self.liste_points[self.Pt_select[0]][0][self.Pt_select[1]]), int(self.liste_points[self.Pt_select[0]][1][self.Pt_select[1]])), round(4*self.ratio),(0,0,0), round(2*self.ratio))
+                self.image_to_show = cv2.circle(self.image_to_show,(int(self.liste_points[self.Pt_select[0]][0][self.Pt_select[1]]), int(self.liste_points[self.Pt_select[0]][1][self.Pt_select[1]])), max(3,round(4*self.ratio)),(0,0,0), round(2*self.ratio))
 
 
             else:
                 self.image_to_show = cv2.circle(self.image_to_show, (
                 int(self.liste_points[self.Pt_select[0]][0][self.Pt_select[1]]),
-                int(self.liste_points[self.Pt_select[0]][1][self.Pt_select[1]])), round(7 * self.ratio), (255,255,255), -1)
+                int(self.liste_points[self.Pt_select[0]][1][self.Pt_select[1]])), max(3,round(7 * self.ratio)), (255,255,255), -1)
 
                 self.image_to_show = cv2.circle(self.image_to_show, (
                 int(self.liste_points[self.Pt_select[0]][0][self.Pt_select[1]]),
-                int(self.liste_points[self.Pt_select[0]][1][self.Pt_select[1]])), round(7 * self.ratio), (0, 0, 0),
+                int(self.liste_points[self.Pt_select[0]][1][self.Pt_select[1]])), max(2,round(6 * self.ratio)), (0, 0, 0),
                                                 round(2 * self.ratio))
 
                 self.image_to_show = cv2.line(self.image_to_show,

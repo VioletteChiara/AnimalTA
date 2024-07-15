@@ -4,6 +4,8 @@ import numpy as np
 from AnimalTA.C_Pretracking.a_Parameters_track import Interface_nb_per_Ar, Draw_entrance, Interface_supp_back_params
 from AnimalTA.A_General_tools import Class_change_vid_menu, Class_Lecteur, Function_draw_mask as Dr, UserMessages, \
     User_help, Class_stabilise, Color_settings
+from AnimalTA.G_Specials import Test_specific_parts_track
+
 from functools import partial
 import math
 import cv2
@@ -20,7 +22,7 @@ class Param_definer(Frame):
         self.grid(row=0,column=0,rowspan=2,sticky="nsew")
         self.Vid = Video_file
         self.portion = portion
-        self.config(**Color_settings.My_colors.Frame_Base)
+        self.config(**Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.cnts_entrance=self.Vid.Entrance#By defaults, there is no entrance area (known number of individuals)
 
         if self.portion:
@@ -242,24 +244,38 @@ class Param_definer(Frame):
         on_value+=1
 
         # Subtracked background greyscale
-        if self.Vid.Back[0] ==1:
-            F_Sub = Frame(self.canvas_options, **Frame_cols[row_pos%2])
-            F_Sub.grid(sticky="nsew",row=row_pos)
-            Subtract_vis = Checkbutton(F_Sub, text=self.Messages["Names7"], variable=self.CheckVar,
-                                       onvalue=on_value, offvalue=0, width=width_labels, command=self.modif_image, anchor="w", **Check_cols[row_pos%2])
-            F_Sub.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Param2"]))
-            F_Sub.bind("<Leave>", self.HW.remove_tmp_message)
+        F_Sub = Frame(self.canvas_options, **Frame_cols[row_pos % 2])
+        F_Sub.grid(sticky="nsew", row=row_pos)
+        Grid.columnconfigure(F_Sub, 0, weight=100)
+        Grid.columnconfigure(F_Sub, 1, weight=1)
 
-            Button_supp_back=Button(F_Sub, text="P", command=self.supp_back_param, **Button_cols[row_pos%2])
-            Button_supp_back.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Param25_ex"]))
-            Button_supp_back.bind("<Leave>", self.HW.remove_tmp_message)
-            Grid.columnconfigure(F_Sub, 0, weight=100)
-            Grid.columnconfigure(F_Sub, 1, weight=1)
 
-            Subtract_vis.grid(row=0,column=0,sticky="w")
-            Button_supp_back.grid(row=0,column=1,sticky="e")
+        Subtract_vis = Checkbutton(F_Sub, text=self.Messages["Names7"], variable=self.CheckVar,
+                                   onvalue=on_value, offvalue=0, width=width_labels, command=self.modif_image, anchor="w", **Check_cols[row_pos%2])
+        F_Sub.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Param2"]))
+        F_Sub.bind("<Leave>", self.HW.remove_tmp_message)
+        Subtract_vis.grid(row=0,column=0,sticky="w", columnspan=2)
 
-            row_pos+=1
+
+        if self.Vid.Back[0] != 1:
+            self.Button_dynamical = Radiobutton(F_Sub, text=self.Messages["Param22"], variable=self.Dynamical_back, value=1, command=partial(self.modif_image,change_track=on_value),**Check_cols[row_pos%2])
+            self.Button_dynamical.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Param22_ex"]))
+            self.Button_dynamical.bind("<Leave>", self.HW.remove_tmp_message)
+
+            self.Button_adaptive = Radiobutton(F_Sub, text=self.Messages["Param23"], variable=self.Dynamical_back, value=0, command=partial(self.modif_image,change_track=on_value), **Check_cols[row_pos%2])
+            self.Button_adaptive.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Param23_ex"]))
+            self.Button_adaptive.bind("<Leave>", self.HW.remove_tmp_message)
+
+            self.Button_dynamical.grid(row=0, column=1,sticky="w")
+            self.Button_adaptive.grid(row=0, column=2,sticky="w")
+
+        Button_supp_back = Button(F_Sub, text="P", command=self.supp_back_param, **Button_cols[row_pos % 2])
+        Button_supp_back.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Param25_ex"]))
+        Button_supp_back.bind("<Leave>", self.HW.remove_tmp_message)
+        Button_supp_back.grid(row=0, column=3, sticky="e")
+
+
+        row_pos+=1
         on_value+=1
 
         # Thresholded image
@@ -269,19 +285,6 @@ class Param_definer(Frame):
         self.F_Thresh.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Param3"]))
         self.F_Thresh.bind("<Leave>", self.HW.remove_tmp_message)
         Threshol_vis.grid(sticky="w", rowspan=2)
-
-        if self.Vid.Back[0]!=1:
-            self.Button_dynamical = Radiobutton(self.F_Thresh, text=self.Messages["Param22"], variable=self.Dynamical_back, value=1, command=partial(self.modif_image,change_track=on_value),**Check_cols[row_pos%2])
-            self.Button_dynamical.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Param22_ex"]))
-            self.Button_dynamical.bind("<Leave>", self.HW.remove_tmp_message)
-
-            self.Button_adaptive = Radiobutton(self.F_Thresh, text=self.Messages["Param23"], variable=self.Dynamical_back, value=0, command=partial(self.modif_image,change_track=on_value), **Check_cols[row_pos%2])
-            self.Button_adaptive.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Param23_ex"]))
-            self.Button_adaptive.bind("<Leave>", self.HW.remove_tmp_message)
-
-            self.Button_dynamical.grid(row=0, column=1)
-            self.Button_adaptive.grid(row=0, column=2)
-
 
         if self.Vid.Back[0] or self.Dynamical_back.get():
             Thresh_scroll = Scale(self.F_Thresh, from_=0, to=255, variable=self.thresh_value, orient=HORIZONTAL,**Scale_cols[row_pos%2])
@@ -479,7 +482,10 @@ class Param_definer(Frame):
 
         row_pos += 1
 
+        #test_sil = Button(self.Sub_F_Nb, text="Test_sil", command=self.Test_specific, **Button_cols[row_pos % 2])
+        #test_sil.grid(row=row_pos, column=2)
 
+        row_pos += 1
 
         if not len(self.Vid.Track[1][6]) == len(self.Arenas):
             self.Vid.Track[1][6] = [self.Vid.Track[1][6][0] for n in self.Arenas]
@@ -508,7 +514,7 @@ class Param_definer(Frame):
         self.B_Validate_NContinue.grid(row=14,column=0, sticky="ews")
 
         # Show video and time-bar
-        self.Vid_Lecteur = Class_Lecteur.Lecteur(self, self.Vid, ecart=10)
+        self.Vid_Lecteur = Class_Lecteur.Lecteur(self, self.Vid, ecart=0)
         self.Vid_Lecteur.grid(row=1, column=0, sticky="nsew")
         self.Vid_Lecteur.speed.set(speed)
         self.Vid_Lecteur.change_speed()
@@ -533,17 +539,23 @@ class Param_definer(Frame):
         self.bind_children(self.canvas_options)
         self.Vid_Lecteur.update_image(self.Vid_Lecteur.to_sub)
 
+    def Test_specific(self):
+        Test_specific_parts_track.collect_silhouettes(self.Vid)
+
+
     def bind_children(self, widget):
         # Recursively bind the event to all children of the given widget
         for child in widget.winfo_children():
-            child.bind("<Button-1>", self.give_focus)
-            self.bind_children(child)
+            if child!=self.Vid_Lecteur:
+                child.bind("<Button-1>", self.give_focus)
+                self.bind_children(child)
 
     def unbind_children(self, widget):
         # Recursively bind the event to all children of the given widget
         for child in widget.winfo_children():
-            child.unbind("<Button-1>")
-            self.unbind_children(child)
+            if child!=self.Vid_Lecteur:
+                child.unbind("<Button-1>")
+                self.unbind_children(child)
 
     def redo_ent(self):
         self.Draw_Ent = Toplevel()
@@ -711,28 +723,11 @@ class Param_definer(Frame):
                 if self.CheckVar.get() > pos:
                     pos+=1
                     #Show background subtraction
-                    if self.Vid.Back[0]==1:
-                        if self.target_type.get()==0:
-                            TMP_image_to_show2 = cv2.absdiff(self.TMP_back, TMP_image_to_show2)
-                        elif self.target_type.get()==1:
-                            TMP_image_to_show2 = cv2.subtract(self.TMP_back, TMP_image_to_show2)
-                        elif self.target_type.get()==2:
-                            TMP_image_to_show2 = cv2.subtract(TMP_image_to_show2, self.TMP_back)
-
-
-                        if self.rel_back.get()==1:
-                            TMP_image_to_show2 = TMP_image_to_show2.astype(np.uint16)
-                            TMP_image_to_show2=(TMP_image_to_show2*255) // self.TMP_back
-                            TMP_image_to_show2 = TMP_image_to_show2.astype(np.uint8)
-
-                        if self.var_color_mode.get()==1:
-                            TMP_image_to_show2 = cv2.cvtColor(TMP_image_to_show2, cv2.COLOR_BGR2GRAY)
-
-                    elif self.Dynamical_back.get():
+                    if self.Dynamical_back.get() and not self.Vid.Back[0]==1:
                         prog_back = cv2.createBackgroundSubtractorMOG2(history=1000,
                                                                        varThreshold=int(self.thresh_value.get()),
                                                                        detectShadows=False)
-                        # Create a background based on 3 frames:
+                        # Create a background based on 10 frames:
                         frames = []
                         nb_passed = min(self.Scrollbar.active_pos, 1000)
                         for imgID in range(nb_passed, 1, min([-1, -int(nb_passed / 5)])):
@@ -749,9 +744,9 @@ class Param_definer(Frame):
                             if self.var_color_mode.get() == 0:
                                 batch_img = cv2.cvtColor(batch_img, cv2.COLOR_BGR2GRAY)
 
-
                             # Correct flicker
-                            if self.correct_flicker and self.Scrollbar.active_pos + imgID > round(self.Vid.Cropped[1][0] / self.one_every):
+                            if self.correct_flicker and self.Scrollbar.active_pos + imgID > round(
+                                    self.Vid.Cropped[1][0] / self.one_every):
                                 diff = int(
                                     self.Scrollbar.active_pos + imgID - round(self.Vid.Cropped[1][0] / self.one_every))
                                 for elem in range(self.Scrollbar.active_pos + imgID - min(2, diff),
@@ -775,7 +770,25 @@ class Param_definer(Frame):
 
                             prog_back.apply(batch_img)
 
-                        TMP_image_to_show2 = prog_back.apply(TMP_image_to_show2)
+                        self.TMP_back = prog_back.getBackgroundImage()
+                        if self.TMP_back is None:
+                            self.TMP_back=TMP_image_to_show2.copy()
+
+                    if self.Vid.Back[0]==1 or self.Dynamical_back.get():
+                        if self.target_type.get()==0:
+                            TMP_image_to_show2 = cv2.absdiff(self.TMP_back, TMP_image_to_show2)
+                        elif self.target_type.get()==1:
+                            TMP_image_to_show2 = cv2.subtract(self.TMP_back, TMP_image_to_show2)
+                        elif self.target_type.get()==2:
+                            TMP_image_to_show2 = cv2.subtract(TMP_image_to_show2, self.TMP_back)
+
+                        if self.rel_back.get()==1:
+                            TMP_image_to_show2 = TMP_image_to_show2.astype(np.uint16)
+                            TMP_image_to_show2=(TMP_image_to_show2*255) // self.TMP_back
+                            TMP_image_to_show2 = TMP_image_to_show2.astype(np.uint8)
+
+                        if self.var_color_mode.get()==1:
+                            TMP_image_to_show2 = cv2.cvtColor(TMP_image_to_show2, cv2.COLOR_BGR2GRAY)
 
                     elif not self.Dynamical_back.get() and self.var_color_mode.get()==1:
                         TMP_image_to_show2=cv2.cvtColor(TMP_image_to_show2, cv2.COLOR_BGR2GRAY)
@@ -784,14 +797,13 @@ class Param_definer(Frame):
                     if self.CheckVar.get()>pos:
                         pos+=1
                         #Show thersholding and masking (remove outside of arenas)
-                        if self.Vid.Back[0]==1:
+                        if self.Vid.Back[0]==1 or self.Dynamical_back.get():
                             _, TMP_image_to_show2=cv2.threshold(TMP_image_to_show2, int(self.thresh_value.get()), 255, cv2.THRESH_BINARY)
 
                         elif not self.Dynamical_back.get():
+                            if self.target_type.get()==2:
+                                TMP_image_to_show2=cv2.bitwise_not(TMP_image_to_show2)
                             TMP_image_to_show2 = cv2.adaptiveThreshold(TMP_image_to_show2, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, int(self.thresh_value.get())+1,10)
-
-                        else:
-                            _, TMP_image_to_show2 = cv2.threshold(TMP_image_to_show2, 10, 255, cv2.THRESH_BINARY)
 
                         if self.Vid.Mask[0]:
                             TMP_image_to_show2 = cv2.bitwise_and(TMP_image_to_show2, TMP_image_to_show2, mask=self.mask)

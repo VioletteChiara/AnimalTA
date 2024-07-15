@@ -12,7 +12,7 @@ class Background(Frame):
     """
     def __init__(self, parent, boss, main_frame, Video_file, portion=False, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
-        self.config(**Color_settings.My_colors.Frame_Base)
+        self.config(**Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.parent=parent
         self.main_frame=main_frame
         self.boss=boss
@@ -46,7 +46,7 @@ class Background(Frame):
         self.zoom_sq=[0,0,self.Vid.shape[1],self.Vid.shape[0]]
 
         #Creation of the canvas image
-        self.canvas_img = Canvas(self, width=10, height=10, bd=0, **Color_settings.My_colors.Frame_Base)
+        self.canvas_img = Canvas(self, width=10, height=10, bd=0, highlightthickness=0, **Color_settings.My_colors.Frame_Base)
         self.canvas_img.update()
         self.canvas_img.grid(row=0,column=0, sticky="nsew")
         Grid.columnconfigure(self, 0, weight=1)

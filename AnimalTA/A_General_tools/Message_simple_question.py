@@ -11,7 +11,7 @@ class Messagebox(Toplevel):
         self.iconbitmap(UserMessages.resource_path(os.path.join("AnimalTA", "Files", "Logo.ico")))
         self.title(title)
         self.update_idletasks()
-        self.config(**Color_settings.My_colors.Frame_Base)
+        self.config(**Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.parent=parent
         self.result=None
         self.grab_set()

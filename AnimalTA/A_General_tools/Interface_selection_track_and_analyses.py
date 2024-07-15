@@ -22,7 +22,7 @@ class Extend(Frame):
     """This frame is a list of all the videos. The user can select the ones to be tracked or analysed"""
     def __init__(self, parent, boss, type, any_tracked=False):
         Frame.__init__(self, parent, bd=5)
-        self.config(**Color_settings.My_colors.Frame_Base)
+        self.config(**Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.parent=parent
         self.boss=boss
         self.boss.unbind_all("<MouseWheel>")#We don't want the mouse wheel to move the project behind
@@ -102,12 +102,12 @@ class Extend(Frame):
 
         self.Liste.grid(row=3,column=0)
 
-        self.loading_canvas=Frame(self, **Color_settings.My_colors.Frame_Base)
+        self.loading_canvas=Frame(self, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.loading_canvas.grid(row=5,columnspan=2)
         self.loading_state=Label(self.loading_canvas, text="", **Color_settings.My_colors.Label_Base)
         self.loading_state.grid(row=0, column=0)
 
-        self.loading_bar=Canvas(self.loading_canvas, height=10, **Color_settings.My_colors.Frame_Base)
+        self.loading_bar=Canvas(self.loading_canvas, height=10, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.loading_bar.create_rectangle(0, 0, 400, self.loading_bar.cget("height"), fill=Color_settings.My_colors.list_colors["Loading_before"])
         self.loading_bar.grid(row=0, column=1)
 
@@ -237,7 +237,7 @@ class Extend(Frame):
                             except Exception as e:
                                 question = MsgBox.Messagebox(parent=self, title=self.Messages["Do_trackWarnT1"],
                                                              message=self.Messages["Do_trackWarn1"].format(self.list_vid_minus[V].User_Name,e),
-                                                             Possibilities=self.Messages["Continue"])
+                                                             Possibilities=[self.Messages["Continue"]])
                                 self.wait_window(question)
 
                         else:
@@ -278,7 +278,7 @@ class Extend(Frame):
                             except Exception as e:
                                 question = MsgBox.Messagebox(parent=self, title=self.Messages["Do_trackWarnT1"],
                                                              message=self.Messages["Do_trackWarn1"].format(self.list_vid_minus[V].User_Name,e),
-                                                             Possibilities=self.Messages["Continue"])
+                                                             Possibilities=[self.Messages["Continue"]])
                                 self.wait_window(question)
 
                 if self.urgent_close:
@@ -354,7 +354,7 @@ class Extend(Frame):
 
                 with open(os.path.join(self.list_vid_minus[0].Folder,"Results","Results_by_ind.csv"), 'w', newline='', encoding="utf-8") as file:
                     writer = csv.writer(file, delimiter=";")
-                    writer.writerow(["Video", "Arena", "Sequence", "Individual", "Prop_time_lost", "Smoothing_filter_window","Smoothing_Polyorder",
+                    writer.writerow(["Video", "Arena", "Sequence", "Individual","Beginning_seq","End_seq", "Prop_time_lost", "Smoothing_filter_window","Smoothing_Polyorder",
                                      "Moving_threshold", "Prop_time_moving", "Average_Speed", "Average_Speed_Moving", "Traveled_Dist", "Meander",
                                      "Traveled_Dist_Moving", "Meander_moving","Exploration_absolute_value","Exploration_relative_value","Exploration_method","Exploration_area","Exploration_aspect_param",
                                      "Mean_nb_neighbours", "Prop_time_with_at_least_one_neighbour", "Mean_shortest_interind_distance", "Mean_sum_interind_distances"])
@@ -512,8 +512,6 @@ class Extend(Frame):
                                 self.timer = (0.1)
                                 self.show_load()
 
-                                print((self.Vid.Identities))
-
                                 for I in range(len(list_inds)):#Individual's caracteristics
                                     self.timer = ((I / len(list_inds)) * (7 / 10) + (0.1))
                                     self.show_load()
@@ -620,8 +618,13 @@ class Extend(Frame):
                                         if res:
                                             deb, end = limits
 
+                                            if not self.Vid.Track[1][8]:
+                                                new_row.append(round((deb+first) / self.Vid.Frame_rate[1],2))
+                                                new_row.append(round((end+first) / self.Vid.Frame_rate[1],2))
+                                            else:
+                                                new_row.append(round(deb / self.Vid.Frame_rate[1],2))
+                                                new_row.append(round(end / self.Vid.Frame_rate[1],2))
 
-                                        if res:
                                             #Time lost
                                             new_row.append(len(np.where(np.isnan(Copy_Coos[deb:end+1,0]))[0])/ len(Copy_Coos[deb:end+1,0]))
 

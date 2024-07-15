@@ -1,8 +1,8 @@
 from tkinter import *
 from tkinter import ttk
+from tkinter import filedialog
 import os
-from AnimalTA.A_General_tools import Function_draw_mask, UserMessages, Class_stabilise, Color_settings, Class_loading_Frame, Message_simple_question as MsgBox
-import math
+from AnimalTA.A_General_tools import Function_draw_mask, UserMessages, Class_stabilise, Color_settings, Class_loading_Frame, Message_simple_question as MsgBox, Interface_Save_Vids
 import cv2
 from copy import deepcopy
 
@@ -10,7 +10,7 @@ from copy import deepcopy
 class Extend(Frame):
     """ This Frame display a list of the videos from the project.
     The user can select some of them to extend some parameters defined for the previously selected video"""
-    def __init__(self, parent, boss, value, Video_file, type=None, do_self=False, **kwargs):
+    def __init__(self, parent, boss, value, Video_file, type=None, do_self=False, to_close=None, **kwargs):
         #value=the value of the parameter
         #type= the type of parameter (arenas, fps, tracking preparation, etc)
         #if do_self = True, the selected video will also be modified
@@ -25,7 +25,8 @@ class Extend(Frame):
         self.do_self=do_self
         self.value=value
         self.all_sel=False
-        self.config(**Color_settings.My_colors.Frame_Base)
+        self.config(**Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
+        self.to_close=to_close
 
         #Import messages
         self.Language = StringVar()
@@ -55,7 +56,7 @@ class Extend(Frame):
         self.Liste=Listbox(self, selectmode = EXTENDED, width=100, yscrollcommand=self.yscrollbar.set,**Color_settings.My_colors.ListBox)
 
         #To validate and share the parameters
-        Frame_val_can=Frame(self)
+        Frame_val_can=Frame(self, **Color_settings.My_colors.Frame_Base)
         Frame_val_can.grid(row=3, sticky="nsew")
         Grid.columnconfigure(Frame_val_can,0, weight=1)
         Grid.columnconfigure(Frame_val_can,1, weight=1)
@@ -84,10 +85,20 @@ class Extend(Frame):
         self.list_vid_minus=[]
         for i in range(len(self.list_vid)):
             if self.list_vid[i]!=self.Vid or self.do_self:
-                if type=="IDs":
-                    if self.list_vid[i].Track[1][6] == self.Vid.Track[1][6] and self.list_vid[i].Tracked:
-                        self.list_vid_minus.append(self.list_vid[i])
-                        self.Liste.insert(i, self.list_vid[i].User_Name)
+                if type == "supr" or type=="export":
+                    self.list_vid_minus.append(self.list_vid[i])
+                    self.Liste.insert(i, self.list_vid[i].User_Name)
+                    if self.list_vid[i].Tracked:
+                        self.Liste.itemconfig(self.Liste.size() - 1, {'fg': Color_settings.My_colors.list_colors["Fg_not_valide"]})
+
+                elif type=="IDs" and self.list_vid[i].Track[1][6] == self.Vid.Track[1][6] and self.list_vid[i].Tracked:
+                    self.list_vid_minus.append(self.list_vid[i])
+                    self.Liste.insert(i, self.list_vid[i].User_Name)
+                elif type=="back_copy" and self.list_vid[i].shape == self.Vid.shape:
+                    self.list_vid_minus.append(self.list_vid[i])
+                    self.Liste.insert(i, self.list_vid[i].User_Name)
+                    if self.list_vid[i].Tracked:
+                        self.Liste.itemconfig(self.Liste.size() - 1, {'fg': Color_settings.My_colors.list_colors["Fg_not_valide"]})
 
                 #The untracked videos will not be displayed if we want to share analyses parameters
                 elif not (type=="analyses_smooth" or type=="analyses_thresh" or type=="analyses_explo" or type=="analyses_inter" or type=="analyses_deform") or (self.list_vid[i].Tracked):
@@ -97,6 +108,7 @@ class Extend(Frame):
                         self.Liste.itemconfig(self.Liste.size()-1, {'fg': Color_settings.My_colors.list_colors["Fg_not_valide"]})
                         #The tracked videos will appear in red if they were already tracked (except for changes in analyses parameters).
                         #Indeed, changing a parameter of these videos will remove the trackings.
+
 
         self.Liste.grid(row=2,column=0, sticky="nsew")
 
@@ -121,8 +133,14 @@ class Extend(Frame):
             self.all_sel=False
 
     def validate(self):
+        if self.to_close!=None:
+            self.to_close.End_of_window()
+
+        if self.type=="export":
+            dir_to_save = filedialog.askdirectory()
+
         #Apply the parameters to the selected videos and close the window
-        if self.type=="back" or self.type=="stab" or self.type=="IDs": #There is only in the case of background that the process is slow (we don't show loading bar for other kind of parameters).
+        if self.type=="back" or self.type=="back_copy" or self.type=="stab" or self.type=="IDs": #There is only in the case of background that the process is slow (we don't show loading bar for other kind of parameters).
             self.loading_canvas.grid(row=3, column=0, columnspan=2)
 
         list_item = self.Liste.curselection()
@@ -132,7 +150,7 @@ class Extend(Frame):
         for V in list_item:
             #If the tracking parameters were changed we remove the existing trackings
             cleared=True
-            if self.list_vid_minus[V].Tracked and self.type!="analyses_smooth" and self.type!="analyses_thresh" and self.type!="analyses_explo" and self.type!="analyses_inter" and self.type!="analyses_deform" and self.type!="IDs":
+            if self.list_vid_minus[V].Tracked and self.type!="analyses_smooth" and self.type!="analyses_thresh" and self.type!="analyses_explo" and self.type!="analyses_inter" and self.type!="analyses_deform" and self.type!="IDs" and self.type!="export":
                 cleared=self.list_vid_minus[V].clear_files()
                 self.list_vid_minus[V].Tracked = False
             if cleared:
@@ -150,15 +168,15 @@ class Extend(Frame):
                         self.list_vid_minus[V].Track[1][6]=self.list_vid_minus[V].Track[1][6] + ([self.list_vid_minus[V].Track[1][6][0]] * (nb_ar-len(self.list_vid_minus[V].Track[1][6])))
                     elif len(self.list_vid_minus[V].Track[1][6])>nb_ar:
                         self.list_vid_minus[V].Track[1][6] = self.list_vid_minus[V].Track[1][6][0:nb_ar]
-
                 elif self.type == "track":
                     self.list_vid_minus[V].Track[0] = 1
                     mask = Function_draw_mask.draw_mask(self.list_vid_minus[V])
                     Arenas, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                     nb_ar = len(Arenas)
                     nb_ar = max([1,nb_ar])
-                    self.list_vid_minus[V].Track[1] = deepcopy(self.value)
-                    self.list_vid_minus[V].Track[1][6] = deepcopy(self.value)[6][0:nb_ar]
+                    self.list_vid_minus[V].Track[1] = deepcopy(self.value[0])
+                    self.list_vid_minus[V].Track[1][6] = deepcopy(self.value[0])[6][0:nb_ar]
+                    self.list_vid_minus[V].Back=deepcopy(self.value[1])
 
                     if len(self.list_vid_minus[V].Track[1][6])<nb_ar:#If the number of arenas from the video to copy does not fit the real number of arenas, we add some
                         self.list_vid_minus[V].Track[1][6]=self.list_vid_minus[V].Track[1][6] + ([self.list_vid_minus[V].Track[1][6][0]] * (nb_ar-len(self.list_vid_minus[V].Track[1][6])))
@@ -267,6 +285,12 @@ class Extend(Frame):
                     self.loading_state.config(text=self.Messages["Video"] + ": {act}/{tot}".format(act=item + 1, tot=nb_items))
                     self.list_vid_minus[V].make_back()
 
+                elif self.type == "back_copy":
+                    self.bouton.config(state="disable")
+                    self.load_frame.show_load((item + 1) / nb_items)
+                    self.loading_state.config(text=self.Messages["Video"] + ": {act}/{tot}".format(act=item + 1, tot=nb_items))
+                    self.list_vid_minus[V].Back=deepcopy(self.value)
+
                 elif self.type == "analyses_smooth":
                     if self.list_vid_minus[V].Tracked:
                         self.list_vid_minus[V].Smoothed = deepcopy(self.value)
@@ -294,6 +318,16 @@ class Extend(Frame):
                     if self.list_vid_minus[V].Tracked:
                         self.list_vid_minus[V].Identities = deepcopy(self.value)
 
+                elif self.type == "supr":
+                    self.boss.supr_video(Vid=self.list_vid_minus[V], warn=False)
+
+                elif self.type == "export":
+                    if dir_to_save!=None:
+                        self.value["dir"] = dir_to_save
+                        newWindow = Toplevel(self.parent)
+                        Tmp_expo_widg=Interface_Save_Vids.Lecteur(parent=newWindow,main_frame=self,boss=newWindow, Vid=self.list_vid_minus[V], Video_liste=self.list_vid, params_export=self.value, auto=True)
+
+
 
             item+=1
         if len(problems)>0:
@@ -318,7 +352,7 @@ class Extend(Frame):
 
 
             question = MsgBox.Messagebox(parent=self, title=self.Messages["Extend_TError"],
-                                       message=Message, Possibilities=self.Messages["Continue"])
+                                       message=Message, Possibilities=[self.Messages["Continue"]])
             self.wait_window(question)
 
 

@@ -41,6 +41,14 @@ class Int_import(Frame):
         Validate_Entry=Label(Frame_info, text='Separator:')
         Validate_Entry.grid(row=0, column=0)
 
+        #Messages importation
+        self.Language = StringVar()
+        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
+        self.Language.set(f.read())
+        self.LanguageO = self.Language.get()
+        self.Messages = UserMessages.Mess[self.Language.get()]
+        f.close()
+
 
         #Indicate if the header is present or no
         Check_H = Checkbutton(Frame_info, text='Header', variable=self.header, onvalue=2, offvalue=1, command=self.create_new, **Color_settings.My_colors.Checkbutton_Base)
@@ -64,7 +72,7 @@ class Int_import(Frame):
         self.Time_pos.set(self.boss.import_values["Time_col"])
         self.Entry_Time_pos=Entry(Frame_info, textvariable=self.Time_pos, **Color_settings.My_colors.Entry_Base)
         self.Entry_Time_pos.grid(row=1, column=6, sticky="w")
-        Label(Frame_info, text=self.Messages["Import_data2"]+":").grid(row=1, column=5, sticky="w", **Color_settings.My_colors.Frame_Base, fg=self.list_colors["Fg_Base"])
+        Label(Frame_info, text=self.Messages["Import_data2"]+":", **Color_settings.My_colors.Label_Base).grid(row=1, column=5, sticky="w")
         ttk.Separator(Frame_info, orient=VERTICAL).grid(row=0, column=7, rowspan=3, sticky="ns")
 
 
@@ -297,7 +305,7 @@ class Int_import(Frame):
                             if passed >= int(sum(self.Vid.Track[1][6][0:(arena+1)])):
                                 arena += 1
                     else:
-                        arenas = []
+                        arenas = [1 for a in range(len(columnsX))]
 
                     ind=0
                     for col in range(len(columnsX)):

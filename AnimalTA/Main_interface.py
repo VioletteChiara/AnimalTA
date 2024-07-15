@@ -17,7 +17,7 @@ class Mainframe(Tk):
         Tk.__init__(self)
 
         #Change here the last version
-        current_version="v3.1.1"
+        current_version="v3.1.2"
 
         try:
             # We look for new updates:
@@ -131,10 +131,13 @@ style.configure(
     "Vertical.TScrollbar",
     arrowsize=15,
     arrowcolor=Color_settings.My_colors.list_colors["Arrow_N_Relief_scroll"],
-    bordercolor=Color_settings.My_colors.list_colors["Arrow_N_Relief_scroll"],
+    borderwidth=0,  # Set border width to 0 to remove the default border
+    highlightthickness=0,  # Remove highlight
     gripcount=0,
-    relief="flat",
-    padding=0
+    relief="flat",  # Ensure relief is flat to remove any 3D effects
+    padding=0,
+    background=Color_settings.My_colors.list_colors["Base"],  # Set the background color
+    troughcolor=Color_settings.My_colors.list_colors["Glider_Base"]  # Set the trough color
 )
 
 def fixed_map(option):
