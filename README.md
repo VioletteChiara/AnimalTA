@@ -1,4 +1,4 @@
-# AnimalTA (3.1.2)
+# AnimalTA (3.2.2)
 
 This is the latest version of AnimalTA, an easy-to-use video tracking program.
 AnimalTA is associated with an installer under the Windows operating system (see releases section), but can be used with Linux or Mac OS via virtualization programs.
