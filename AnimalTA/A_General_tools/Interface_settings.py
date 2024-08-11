@@ -4,6 +4,20 @@ import os
 import pickle
 
 
+
+
+def change_params(Param,new_val):
+    Param_file = UserMessages.resource_path(os.path.join("AnimalTA", "Files", "Settings"))
+    with open(Param_file, 'rb') as fp:
+        Params = pickle.load(fp)
+
+    Params[Param]=new_val
+
+    with open(Param_file, 'wb') as fp:
+        data_to_save = Params
+        pickle.dump(data_to_save, fp)
+
+
 class Settings_panel(Frame):
     def __init__(self, parent, main, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
@@ -36,6 +50,9 @@ class Settings_panel(Frame):
 
         self.Color_GUI=StringVar()
         self.Color_GUI.set(self.Params["Color_GUI"])
+
+        self.Auto_update=BooleanVar()
+        self.Auto_update.set(self.Params["Auto_update"])
 
         self.Sound_track=BooleanVar()
         self.Sound_track.set(self.Params["Sound_alert_track"])
@@ -86,6 +103,10 @@ class Settings_panel(Frame):
         pos +=1
 
         Checkbutton(Frame_view, text=self.Messages["Settings5"], variable=self.Low_prio, wraplength=300, justify=LEFT, selectcolor=row_colors[pos%2+6], activeforeground=row_colors[pos%2+4], fg=row_colors[pos%2+4], activebackground=row_colors[pos%2], bg=row_colors[pos%2], anchor="w").grid(row=pos, columnspan=2, sticky="new")
+        Grid.rowconfigure(Frame_view, pos, weight=1)
+        pos += 1
+
+        Checkbutton(Frame_view, text="Allow automatic update", variable=self.Auto_update, wraplength=300, justify=LEFT, selectcolor=row_colors[pos%2+6], activeforeground=row_colors[pos%2+4], fg=row_colors[pos%2+4], activebackground=row_colors[pos%2], bg=row_colors[pos%2], anchor="w").grid(row=pos, columnspan=2, sticky="new")
         Grid.rowconfigure(Frame_view, pos, weight=1)
         pos += 1
 
@@ -196,7 +217,7 @@ class Settings_panel(Frame):
                 save = False
 
         with open(self.Param_file, 'wb') as fp:
-            data_to_save = dict(Sound_alert_track=self.Sound_track.get(), Pop_alert_track=self.Pop_track.get(), Size_img_display=self.Size_img_display.get(), Back_tool=self.Back_tool.get(), Low_priority=self.Low_prio.get(), Use_Kalman=self.Kalmna_filter.get(), Check_hide_missing=self.Hide_columns.get(), Relative_background=self.Relative_back.get(), Keep_entrance=self.Keep_entrance.get(), Color_GUI=self.Color_GUI.get())
+            data_to_save = dict(Sound_alert_track=self.Sound_track.get(), Pop_alert_track=self.Pop_track.get(), Size_img_display=self.Size_img_display.get(), Back_tool=self.Back_tool.get(), Low_priority=self.Low_prio.get(), Use_Kalman=self.Kalmna_filter.get(), Check_hide_missing=self.Hide_columns.get(), Relative_background=self.Relative_back.get(), Keep_entrance=self.Keep_entrance.get(), Color_GUI=self.Color_GUI.get(), Auto_update=self.Auto_update.get())
             pickle.dump(data_to_save, fp)
 
         Diverse_functions.low_priority(self.Low_prio.get())

@@ -14,6 +14,7 @@ def Treat_cnts_fixed(Vid, Arenas, start, end, prev_row, Extracted_cnts, Too_much
     all_NA = [False] * len(Arenas)  # Value = True if there is only "NA" in the first frame
     # We write the first frame:
     all_rows = [["Frame", "Time"]]
+
     #Individual_measurements=[]
     Measured = []
     for ID_AR in range(len(Arenas)):
@@ -95,14 +96,12 @@ def Treat_cnts_fixed(Vid, Arenas, start, end, prev_row, Extracted_cnts, Too_much
                         table_dists = []  # We make a table that will cross all distances between last known position and current targets' positions
                         for ind in range(Vid.Track[1][6][Are]):
                             row = []
-                            passed_inds = sum(Vid.Track[1][6][
-                                              0:Are])  # We find the column position of the first individual within this arena
+                            passed_inds = sum(Vid.Track[1][6][0:Are])  # We find the column position of the first individual within this arena
                             OldCoos = last_row[(2 + 2 * passed_inds + ind * 2):(4 + 2 * passed_inds + ind * 2)]
                             for new_pt in range(len(Ar_cnts)):  # We loop through the contours that were kept
                                 if OldCoos[0] != "NA":
                                     dist = math.sqrt((float(OldCoos[0]) - float(Ar_cnts[new_pt][1][0])) ** 2 + (float(OldCoos[1]) - float(Ar_cnts[new_pt][1][1])) ** 2) / float(Vid.Scale[0])
-
-                                    if dist < Vid.Track[1][5]:
+                                    if dist < (Vid.Track[1][5]):
                                         row.append(dist)
                                     else:
                                         row.append((Vid.shape[0] * Vid.shape[1]) / float(Vid.Scale[0]))  # We add an impossibly high value if the point is outside of the threshold limit
@@ -188,6 +187,7 @@ def Treat_cnts_fixed(Vid, Arenas, start, end, prev_row, Extracted_cnts, Too_much
                                 if final_cnts[cnid]==["Waiting_sep"]:
                                     final_cnts[cnid]=["NA","NA"]
 
+
                     final_positions = final_cnts.copy()
 
                 new_row = new_row + [coo for sublist in final_positions for coo in sublist]  # We keep the positions here
@@ -220,8 +220,8 @@ def Treat_cnts_fixed(Vid, Arenas, start, end, prev_row, Extracted_cnts, Too_much
                 for val in range(len(last_row_WNA)):
                     if last_row_WNA[val] == "NA":
                         last_row_WNA[val] = last_row[val]
-
             last_row = last_row_WNA
+
 
 
             if len(all_rows) >= 300:  # Every 1000 lines, we save the data in a csv file

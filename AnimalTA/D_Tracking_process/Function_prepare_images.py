@@ -9,7 +9,7 @@ import os
 import pickle
 
 
-def Image_modif(Vid, start, end, one_every, Which_part, Prem_image_to_show, mask, or_bright, Extracted_cnts, Too_much_frame, AD, silhouette=False):
+def Image_modif(Security_break, Vid, start, end, one_every, Which_part, Prem_image_to_show, mask, or_bright, Extracted_cnts, Too_much_frame, AD, silhouette=False):
     if Vid.Stab[0]:
         prev_pts = Vid.Stab[1]
     last_grey=None#We keep here the last grey image for flicker correction
@@ -42,7 +42,14 @@ def Image_modif(Vid, start, end, one_every, Which_part, Prem_image_to_show, mask
             Too_much_frame.wait()
 
         if security_settings_track.stop_threads:
+            del security_settings_track.capture
             break
+
+        if security_settings_track.activate_super_protection:
+            del security_settings_track.capture
+            Security_break.wait()
+            security_settings_track.capture = decord.VideoReader(Vid.Fusion[Which_part][1])
+            security_settings_track.activate_super_protection = False
 
         if len(Vid.Fusion) > 1 and Which_part < (len(Vid.Fusion) - 1) and frame >= (Vid.Fusion[Which_part + 1][0]):
             Which_part += 1
@@ -140,10 +147,6 @@ def Image_modif(Vid, start, end, one_every, Which_part, Prem_image_to_show, mask
             if Vid.Track[1][10][1] == 2:
                 img = cv2.bitwise_not(img)
             img = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV,  Vid.Track[1][0] + 1 , 10)
-
-
-
-
 
         # Mask
         if Vid.Mask[0]:

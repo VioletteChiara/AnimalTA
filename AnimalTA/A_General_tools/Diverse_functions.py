@@ -4,6 +4,37 @@ from scipy.signal import savgol_filter
 import psutil
 import sys
 import os
+from AnimalTA.A_General_tools import UserMessages
+import urllib.request
+
+def download_new_version(last_version, parent=None):
+    try:
+        print("downloading")
+        Update_file = UserMessages.resource_path(os.path.join("AnimalTA", "Files", "last_update.crdownload"))
+        print("http://vchiara.eu/AnimalTA_installer_"+last_version+".exe")
+        urllib.request.urlretrieve("http://vchiara.eu/AnimalTA_installer_"+last_version+".exe", Update_file)
+        Update_file_exe = UserMessages.resource_path(os.path.join("AnimalTA", "Files", "last_update.exe"))
+        try:
+            os.remove(Update_file_exe)
+        except:
+            pass
+        os.rename(Update_file,Update_file_exe)
+
+        f = open(UserMessages.resource_path(os.path.join("AnimalTA", "Files", "Last_downloaded")), "w", encoding="utf-8")
+        f.write(last_version)
+        print("finished download")
+        f.close()
+
+        if parent!=None:
+            parent.download_done=True
+            parent.update_successful = True
+
+    except Exception as e:
+        print(e)
+        if parent!=None:
+            parent.download_done=True
+            parent.update_successful=False
+        return(False, e)
 
 
 def low_priority(Low):

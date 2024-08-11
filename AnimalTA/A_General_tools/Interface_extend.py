@@ -176,7 +176,9 @@ class Extend(Frame):
                     nb_ar = max([1,nb_ar])
                     self.list_vid_minus[V].Track[1] = deepcopy(self.value[0])
                     self.list_vid_minus[V].Track[1][6] = deepcopy(self.value[0])[6][0:nb_ar]
-                    self.list_vid_minus[V].Back=deepcopy(self.value[1])
+
+                    if self.list_vid_minus[V].Back[0]!=1:
+                        self.list_vid_minus[V].Back[0]=deepcopy(self.value[1])
 
                     if len(self.list_vid_minus[V].Track[1][6])<nb_ar:#If the number of arenas from the video to copy does not fit the real number of arenas, we add some
                         self.list_vid_minus[V].Track[1][6]=self.list_vid_minus[V].Track[1][6] + ([self.list_vid_minus[V].Track[1][6][0]] * (nb_ar-len(self.list_vid_minus[V].Track[1][6])))

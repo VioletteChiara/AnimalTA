@@ -25,6 +25,8 @@ from copy import deepcopy
 from ctypes import windll
 from django.utils.crypto import get_random_string
 import copy
+import sys
+import cv2
 
 
 
@@ -33,7 +35,7 @@ class Interface(Frame):
     1. A homemade menu option to allow to add, remove video, change the language, save projectes, open projects...
     2. A table with one row per video (see Class_Row_Videos
     3. A set of options to set tracking parameters, correct the trajectories or analyses them."""
-    def __init__(self, parent, current_version, new_update, liste_of_videos=[], **kwargs):
+    def __init__(self, parent, current_version, new_update, liste_of_videos=[], file_path=None, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
         self.list_colors = Color_settings.My_colors.list_colors
         self.config(background=Color_settings.My_colors.list_colors["Main_cnt"], bd=3, highlightthickness=0)
@@ -302,6 +304,9 @@ class Interface(Frame):
         self.HW.get_attention(0)
 
         self.autosave()
+        print(file_path)
+        if file_path!=None:
+            self.open_file2(new_file=file_path)
 
     def set_appwindow(self, root):
 
@@ -321,7 +326,7 @@ class Interface(Frame):
     def show_infos(self, new_update=None):
         info_win=Toplevel(self.parent)
         info_win.title("Information")
-        interface = Interface_info.Information_panel(parent=info_win, current_version=self.current_version, new_update=new_update)
+        interface = Interface_info.Information_panel(parent=info_win, current_version=self.current_version, new_update=new_update, master=self.parent)
 
     def show_settings(self):
         info_win=Toplevel(self.parent)
@@ -466,7 +471,7 @@ class Interface(Frame):
 
     def fermer(self):
         # Close the window
-        self.parent.destroy()
+        sys.exit()
 
     def fullscreen(self):
         # Sett fullscreen mode
@@ -725,7 +730,6 @@ class Interface(Frame):
             else:
                 with open(file, 'rb') as fp:
                     data_to_load = pickle.load(fp)
-
                     # merge the two folders and the subfolders
                     for src_dir, dirs, files in os.walk(data_to_load["Folder"]):
                         cur_dir=src_dir[len(data_to_load["Folder"])+1:]
@@ -772,6 +776,13 @@ class Interface(Frame):
                 elif self.liste_of_videos[V].Back[0]==True:
                     self.liste_of_videos[V].Back[0]=1
 
+                if self.liste_of_videos[V].Back[0] == 1:
+                    if self.liste_of_videos[V].Back[1].shape[0] != self.liste_of_videos[V].shape[0] or \
+                            self.liste_of_videos[V].Back[1].shape[1] != self.liste_of_videos[V].shape[1]:
+                        self.liste_of_videos[V].Back[1] = cv2.resize(self.liste_of_videos[V].Back[1],
+                                                                     [self.liste_of_videos[V].shape[1],
+                                                                      self.liste_of_videos[V].shape[0]])
+
                 try:
                     self.liste_of_videos[V].Stab[2]  # Old versions of animalTA did not allowed parameter changes, we check for compatibility problems
                 except:
@@ -806,8 +817,6 @@ class Interface(Frame):
                     self.liste_of_videos[V].Rotation
                 except:  # Old versions of AnimalTA did not had the "Entrance" attribute, this handled exception is to avoid compatibility problems
                     self.liste_of_videos[V].Rotation = 0
-
-
 
                 if self.liste_of_videos[V].Tracked:
                     try:
@@ -851,13 +860,20 @@ class Interface(Frame):
 
                     except:  # Old versions of AnimalTA did not had the "Entrance" attribute, this handled exception is to avoid compatibility problems
                         self.liste_of_videos[V].Sequences = []
+
+
+                    if len(self.liste_of_videos[V].Sequences)==0: #Some intermediate version created this kind of empty sequences
+                        self.liste_of_videos[V].Sequences = []
                         for Ar in range(len(self.liste_of_videos[V].Track[1][6])):
                             for i in range(self.liste_of_videos[V].Track[1][6][Ar]):
                                 self.liste_of_videos[V].Sequences.append([Interface_sequences.full_sequence])
+
                     try:
                         self.liste_of_videos[V].Sequences_saved
                     except:
                         self.liste_of_videos[V].Sequences_saved = copy.deepcopy(self.liste_of_videos[V].Sequences)
+
+
 
 
                 '''
@@ -894,16 +910,25 @@ class Interface(Frame):
                     if len(Arena)==4:
                         Arena.append(True)
 
-                '''
+
                 ####For bebugging pruposes only!
-                name=self.liste_of_videos[V].File_name[-18:]#For debugging other users problems
-                self.liste_of_videos[V].File_name="G:/"+name#For debugging
-                self.liste_of_videos[V].Fusion[0][1] = "G:/" + name#For debugging
-                self.folder="G:/Project_folder_01012023_03012023_M"#For debugging
+                '''
+                self.liste_of_videos[V].File_name="G:/TRacking_save/Exemples_development/Fake_project_folder/converted_vids/Tracked_drosos.avi"#For debugging other users problems
+                self.liste_of_videos[V].Cropped_sp[0]=False
+                for F in range(len(self.liste_of_videos[V].Fusion)):
+                    self.liste_of_videos[V].Fusion[F][1] = "G:/TRacking_save/Exemples_development/Fake_project_folder/converted_vids/Tracked_drosos.avi"
+
+               
+                if self.liste_of_videos[V].Tracked:
+                    to_copy_file="G:/TRacking_save/Exemples_development/Things_to_copy/V1_Corrected.csv"
+
+                    file_name = self.liste_of_videos[V].User_Name
+                    file_tracked_not_corr = os.path.join("G:/TRacking_save/Exemples_development/Fake_project_folder/coordinates", file_name + "_Coordinates.csv")
+                    shutil.copyfile(to_copy_file, file_tracked_not_corr)
                 '''
 
 
-                everything_ok=True
+                everything_ok=False
                 while not everything_ok:
                     if not Interface_Change_Folder.check_vid(self.liste_of_videos[V]):
                         file_name=ntpath.basename(self.liste_of_videos[V].File_name)
@@ -962,13 +987,10 @@ class Interface(Frame):
             self.Sub_table.grid(row=2, column=0, sticky="nsew")
 
         except Exception as e:
-            print(e)
-            pass
-            '''
-            CustomDialog(self.master, text="An exception occurred:"+ str(type(e).__name__) + " – " + str(e), title="Debugging")
+            CustomDialog(self.master, text="An exception occurred while opening the file:"+ str(type(e).__name__) + " – " + str(e), title="Debugging")
             self.HW.default_message = self.Messages["General10"]
             self.HW.remove_tmp_message()
-            '''
+
 
         self.update_row_display()
 
@@ -1070,7 +1092,6 @@ class Interface(Frame):
 
                 self.list_projects[0].Wrapper.configure(xscrollcommand=self.vsh.set)
 
-
                 self.afficher_projects()
 
                 self.rows_optns.grid(row=0, column=0, sticky="sewn")
@@ -1081,7 +1102,7 @@ class Interface(Frame):
                 self.bouton_Save.config(state="normal")
 
         except Exception as e:
-            CustomDialog(self.master, text="An exception occurred:"+ str(type(e).__name__) + " – " + str(e), title="Debugging")
+            CustomDialog(self.master, text="An exception occurred while creating a new project:"+ str(type(e).__name__) + " – " + str(e), title="Debugging")
 
     def afficher_projects(self, *arg):
         # Show the row of the table according to the scrollbar position.
@@ -1092,13 +1113,17 @@ class Interface(Frame):
         try:
             central = int(self.vsv.get())
             nb_visibles = self.canvas_show.winfo_height() / (130)
+
+            # Ensure central is within bounds
             if central>=(len(self.liste_of_videos)-1):
                 central=len(self.liste_of_videos)-1
 
+            # Forget currently mapped widgets
             for P in range(len(self.list_projects)):
                 if self.list_projects[P].winfo_ismapped():
                     self.list_projects[P].grid_forget()
 
+            # Display the appropriate videos
             if len(self.liste_of_videos)>0:
                 Pos=0
                 for who in range(central, min(len(self.liste_of_videos), int(central + round(nb_visibles)) + 1)):
@@ -1108,9 +1133,8 @@ class Interface(Frame):
                     Pos+=1
 
 
-
         except Exception as e:
-            CustomDialog(self.master, text="An exception occurred:"+ str(type(e).__name__) + " – " + str(e), title="Debugging")
+            CustomDialog(self.master, text="An exception occurred while loading the main table:"+ str(type(e).__name__) + " – " + str(e), title="Debugging")
         self.moveX()  # Keep the Xscrollbar position
 
     def update_projects(self):
@@ -1218,12 +1242,13 @@ class Interface(Frame):
     def extend_track(self):
         #Open a window to allow the user to apply the tracking parameters of selected video to other videos
         newWindow = Toplevel(self.parent)
-        interface = Interface_extend.Extend(parent=newWindow, value=[self.selected_vid.Track[1], self.selected_vid.Back], boss=self,
+        interface = Interface_extend.Extend(parent=newWindow, value=[self.selected_vid.Track[1], self.selected_vid.Back[0]], boss=self,
                                             Video_file=self.selected_vid, type="track")
 
     def Beg_track(self, speed=0):
         #speed alows to maintain the same speed of the video reader when changing videos
         #open a window to allow user to select the videos to be tracked and beginn the tracking process
+        do_it=False
         if self.selected_vid != None:
             if self.selected_vid.Tracked:
                 question = MsgBox.Messagebox(parent=self, title="",
@@ -1233,13 +1258,19 @@ class Interface(Frame):
                 answer = question.result
 
                 if answer==0 and self.selected_vid.clear_files():
-                    self.Change_win(Interface_parameters_track.Param_definer(parent=self.canvas_main, main_frame=self,
-                                                                             boss=self.parent,
-                                                                             Video_file=self.selected_vid, speed=speed))
+                    do_it = True
+
             else:
-                self.Change_win(
-                    Interface_parameters_track.Param_definer(parent=self.canvas_main, main_frame=self, boss=self.parent,
-                                                             Video_file=self.selected_vid, speed=speed))
+                do_it=True
+
+
+        if do_it:
+
+            self.Change_win(
+                Interface_parameters_track.Param_definer(parent=self.canvas_main, main_frame=self, boss=self.parent,
+                                                         Video_file=self.selected_vid, speed=speed))
+
+
 
     def add_video(self):
         try:
@@ -1280,7 +1311,8 @@ class Interface(Frame):
 
             load_frame.destroy()
             del load_frame
-        except:
+        except Exception as e:
+            CustomDialog(self.master, text="The video couldn't be loaded:" + str(type(e).__name__) + " – " + str(e), title="Debugging")
             load_frame.destroy()
             del load_frame
 

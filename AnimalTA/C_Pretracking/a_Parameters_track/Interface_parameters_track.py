@@ -79,6 +79,7 @@ class Param_definer(Frame):
         self.to_sub = round(((self.Vid.Cropped[1][0]) / self.one_every))
 
         self.mask = Dr.draw_mask(self.Vid)
+        self.mask = Dr.draw_mask(self.Vid)
 
         #We look for the arenas
         self.Arenas_with_holes, self.Arenas = Dr.exclude_inside(self.mask)

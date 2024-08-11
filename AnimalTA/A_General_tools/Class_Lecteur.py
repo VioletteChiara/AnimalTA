@@ -412,7 +412,6 @@ class Lecteur(Frame):
             pass
 
     def callback(self, event):
-        print("A")
         '''When we press on the frame, the info about where the frame was clicked is sent to the Video Reader container'''
         if not bool(event.state & 0x1) and bool(event.state & 0x4):
             self.Sq_Zoom_beg(event)
@@ -466,8 +465,8 @@ class Lecteur(Frame):
             self.Size = img.shape
             self.zoom_sq = [0, 0, self.Size[1], self.Size[0]]  # If not, we show the cropped frames
 
-        image_to_show2 = img[self.zoom_sq[1]:self.zoom_sq[3], self.zoom_sq[0]:self.zoom_sq[2]]
 
+        image_to_show2 = img[self.zoom_sq[1]:self.zoom_sq[3], self.zoom_sq[0]:self.zoom_sq[2]]
         width=int((self.zoom_sq[2]-self.zoom_sq[0])/self.ratio)
         height=int((self.zoom_sq[3]-self.zoom_sq[1])/self.ratio)
 

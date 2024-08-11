@@ -81,7 +81,7 @@ def Do_tracking(parent, Vid, folder, type, portion=False, prev_row=None, arena_i
 
 
     security_settings_track.activate_protection=False
-    security_settings_track.first_protection=False
+    security_settings_track.activate_super_protection=False
 
 
     security_settings_track.capture = decord.VideoReader(Vid.Fusion[Which_part][1])  # Open video
@@ -106,7 +106,7 @@ def Do_tracking(parent, Vid, folder, type, portion=False, prev_row=None, arena_i
         else:
             or_bright=None
     except Exception as e:
-        print(e)
+        or_bright=None
 
     # We identify the different arenas:
     if type=="fixed":
@@ -146,9 +146,13 @@ def Do_tracking(parent, Vid, folder, type, portion=False, prev_row=None, arena_i
 
     Extracted_cnts = queue.Queue()
     Too_much_frame=threading.Event()
+    Security_break=threading.Event()
 
     AD=DoubleVar()
-    Th_extract_cnts=threading.Thread(target=Function_prepare_images.Image_modif, args=(Vid, start, end, one_every, Which_part, Prem_image_to_show, mask, or_bright, Extracted_cnts, Too_much_frame, AD))
+
+
+    Th_extract_cnts=threading.Thread(target=Function_prepare_images.Image_modif, args=(Security_break, Vid, start, end, one_every, Which_part, Prem_image_to_show, mask, or_bright, Extracted_cnts, Too_much_frame, AD))
+
 
     if type=="fixed":
         Th_associate_cnts=threading.Thread(target=Function_assign_cnts.Treat_cnts_fixed, args=(Vid, Arenas, start, end, prev_row, Extracted_cnts, Too_much_frame, Th_extract_cnts, To_save, portion, one_every, AD, use_Kalman))
@@ -156,56 +160,46 @@ def Do_tracking(parent, Vid, folder, type, portion=False, prev_row=None, arena_i
         keep_entrance=Params["Keep_entrance"]
         Th_associate_cnts=threading.Thread(target=Function_assign_cnts.Treat_cnts_variable, args=(Vid, Arenas, Main_Arenas_image, Main_Arenas_Bimage, start, end, prev_row, Extracted_cnts, Too_much_frame, Th_extract_cnts, To_save, portion, one_every, AD, not keep_entrance, use_Kalman))
 
+
+
+
     Th_extract_cnts.start()
     Th_associate_cnts.start()
 
-    while Th_associate_cnts.is_alive():
+    while Th_extract_cnts.is_alive() or Th_associate_cnts.is_alive():
         parent.timer=(AD.get()-start)/(end + one_every - start)
         parent.show_load()
 
         overload = security_settings_track.check_memory_overload()#Avoid memory leak problems
         if overload==1:
-            break
+            security_settings_track.activate_super_protection=True
 
         elif overload==0:
             security_settings_track.activate_protection=True
 
         elif overload==-1:
             security_settings_track.activate_protection=False
+            security_settings_track.activate_super_protection = False
+            Security_break.set()
 
     parent.timer = 1
     parent.show_load()
 
-
-    if overload==1:  # To prevent the effects of memory leak.
-        security_settings_track.stop_threads = True
-        question = MsgBox.Messagebox(parent=parent, title=Messages["TError_memory"],
-                                     message=Messages["Error_memory"],
-                                     Possibilities=[Messages["Continue"]])
-        parent.wait_window(question)
-
-        del security_settings_track.capture
-        if type == "fixed":
-            return (False)
-        elif type == "variable":
-            return (False, _)
-
     Th_extract_cnts.join()
+    del security_settings_track.capture
     Th_associate_cnts.join()
 
 
-    if overload!=1:
-        del security_settings_track.capture
-        if security_settings_track.stop_threads:
-            if type=="fixed":
-                return (False)
-            elif type=="variable":
-                return (False,_)
-        else:
-            if type == "fixed":
-                return (True)
-            elif type=="variable":
-                return (True,security_settings_track.ID_kepts)
+    if security_settings_track.stop_threads:
+        if type=="fixed":
+            return (False)
+        elif type=="variable":
+            return (False,_)
+    else:
+        if type == "fixed":
+            return (True)
+        elif type=="variable":
+            return (True,security_settings_track.ID_kepts)
 
 
 def urgent_close(Vid):

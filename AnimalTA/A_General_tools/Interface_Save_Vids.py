@@ -330,7 +330,6 @@ class Lecteur(Frame):
 
 
         if len(file_to_save)>0:
-
             self.loading_bar = Class_loading_Frame.Loading(self.loading_canvas)
             self.loading_bar.grid()
             self.bouton_hide.grid(row=20, column=0, columnspan=2)#Button allowing to minimise the window
@@ -349,11 +348,11 @@ class Lecteur(Frame):
             frame_height = int(self.Vid.shape[0])
             speed=self.Vid_Lecteur.speed.get()
             if speed < 0:#We allow the user to change the frame rate of the video saved
-                frame_rate = (self.Vid.Frame_rate[1]) / (abs(speed))
+                frame_rate = (self.Vid_Lecteur.fr_rate) / (abs(speed))
             elif speed>0 :
-                frame_rate = (self.Vid.Frame_rate[1]) * abs(speed + 1)
+                frame_rate = (self.Vid_Lecteur.fr_rate) * abs(speed + 1)
             else:
-                frame_rate = self.Vid.Frame_rate[1]
+                frame_rate = self.Vid_Lecteur.fr_rate
 
             size = (frame_width, frame_height)
             result = cv2.VideoWriter(file_to_save, cv2.VideoWriter_fourcc(*'XVID'), frame_rate, size)#We save the video in teh chosen file

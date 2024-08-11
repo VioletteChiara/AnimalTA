@@ -442,7 +442,7 @@ class Mask(Frame):
 
     def dessiner_Formes(self):
         #Prepare empty image
-        if self.Vid.Back[0] and len(self.Vid.Back[1].shape)==2:
+        if self.Vid.Back[0]==1 and len(self.Vid.Back[1].shape)==2:
             self.image_to_show = cv2.cvtColor(self.background, cv2.COLOR_GRAY2RGB)
         else:
             self.image_to_show=self.background.copy()

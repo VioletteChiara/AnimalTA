@@ -213,6 +213,10 @@ class Extend(Frame):
                         self.list_vid_minus[V].Sequences_saved = copy.deepcopy(self.list_vid_minus[V].Sequences)
 
                     else:
+                        if self.list_vid_minus[V].Back[0]==1:
+                            if self.list_vid_minus[V].Back[1].shape[0] != self.list_vid_minus[V].shape[0] or self.list_vid_minus[V].Back[1].shape[1] != self.list_vid_minus[V].shape[1]:
+                                self.list_vid_minus[V].Back[1] = cv2.resize(self.list_vid_minus[V].Back[1], [self.list_vid_minus[V].shape[1], self.list_vid_minus[V].shape[0]])
+
                         if self.list_vid_minus[V].Track[1][6][0]:
                             try:
                                 self.running="Normal"
