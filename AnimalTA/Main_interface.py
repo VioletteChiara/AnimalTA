@@ -25,7 +25,6 @@ if getattr(sys, 'frozen', False):
     pyi_splash.close()
 
 
-
 # pyinstaller cli.py --noconsole
 class Mainframe(Tk):
     #Launch the rest of animalTA
