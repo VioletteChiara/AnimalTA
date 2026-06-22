@@ -7,7 +7,6 @@ import numpy as np
 import cv2
 from scipy.signal import savgol_filter
 from tkinter import filedialog
-from PIL import ImageFont, ImageDraw, Image
 import pickle
 from tkinter import ttk
 
@@ -44,8 +43,6 @@ class Lecteur(Frame):
         if self.auto:
             self.winfo_toplevel().title(self.Vid.User_Name)
 
-
-
         self.grid(row=0, column=0, columnspan=2, rowspan=2, sticky="nsew")
 
         self.Arenas = Function_draw_arenas.get_arenas(self.Vid)
@@ -67,12 +64,7 @@ class Lecteur(Frame):
 
 
         #Import messages
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path(os.path.join("AnimalTA","Files","Language")), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        self.Messages = UserMessages.Mess[self.Language.get()]
-        f.close()
+        self.Messages = UserMessages.get_dict()
 
 
         Right_Frame=Frame(self, **Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
@@ -161,7 +153,7 @@ class Lecteur(Frame):
                 self.CheckVar.set(pos)
         pos+=1
 
-        self.only_arena_B = Button(Right_Frame, text="Show only arenas", command=self.change_arenas_show, **Color_settings.My_colors.Button_Base)#CTXT
+        self.only_arena_B = Button(Right_Frame, text=self.Messages["Save_Vid6"], command=self.change_arenas_show, **Color_settings.My_colors.Button_Base)
         self.only_arena_B.grid(row=0, column=0, sticky="ew")
 
         #Display trajectories
@@ -169,7 +161,7 @@ class Lecteur(Frame):
             self.show_track_B=Button(Right_Frame, text=self.Messages["Save_Vid3"], command=self.change_track,**Color_settings.My_colors.Button_Base)
             self.show_track_B.grid(row=0, column=1, sticky="ew")
 
-            self.Coos_brutes, self.who_is_here = CoosLS.load_coos(self.Vid, location=self)
+            self.Coos_brutes = CoosLS.load_coos(self.Vid, location=self)
             self.Coos=self.Coos_brutes.copy()
             self.NB_ind=len(self.Vid.Identities)
 
@@ -197,14 +189,14 @@ class Lecteur(Frame):
             self.Scale_tail = Scale(Right_Frame, from_=0, to=self.max_tail.get(), variable=self.tail_size, resolution=0.5, orient="horizontal", label=self.Messages["Control4"], command=self.modif_image,**Color_settings.My_colors.Scale_Base)
             self.show_all = BooleanVar()
             self.show_all.set(False)
-            self.show_all_traj = Checkbutton(Right_Frame, text="Show all trajectories", command=self.modif_image, variable=self.show_all, **Color_settings.My_colors.Checkbutton_Base)#CTXT
+            self.show_all_traj = Checkbutton(Right_Frame, text=self.Messages["Control11"], command=self.modif_image, variable=self.show_all, **Color_settings.My_colors.Checkbutton_Base)
 
         #Save the video
         self.Save_Vid_Button=Button(Right_Frame, text=self.Messages["GButton18"], command=self.save_vid, **Color_settings.My_colors.Button_Base)
         self.Save_Vid_Button.config(background=Color_settings.My_colors.list_colors["Validate"],fg=Color_settings.My_colors.list_colors["Fg_Validate"])
         self.Save_Vid_Button.grid(row=12, column=0)
 
-        self.Save_multi_Vid_Button=Button(Right_Frame, text="Export multiple videos", command=self.save_multi_vid, **Color_settings.My_colors.Button_Base)#CTXT
+        self.Save_multi_Vid_Button=Button(Right_Frame, text=self.Messages["Save_Vid8"], command=self.save_multi_vid, **Color_settings.My_colors.Button_Base)
         self.Save_multi_Vid_Button.config(background=Color_settings.My_colors.list_colors["Validate"],fg=Color_settings.My_colors.list_colors["Fg_Validate"])
         self.Save_multi_Vid_Button.grid(row=12, column=1)
 
@@ -217,11 +209,11 @@ class Lecteur(Frame):
         ttk.Separator(Right_Frame, orient=HORIZONTAL).grid(row=18, column=0, columnspan=2, sticky="ew")
         ttk.Separator(Right_Frame, orient=HORIZONTAL).grid(row=19, column=0, columnspan=2, sticky="ew")
 
-        self.Save_image=Button(Right_Frame, text="Export image", command=self.export_image, **Color_settings.My_colors.Button_Base)#CTXT
+        self.Save_image=Button(Right_Frame, text=self.Messages["Save_Vid9"], command=self.export_image, **Color_settings.My_colors.Button_Base)
         self.Save_image.config(background=Color_settings.My_colors.list_colors["Validate"],fg=Color_settings.My_colors.list_colors["Fg_Validate"])
         self.Save_image.grid(row=20, column=0)
 
-        self.Save_heatmap=Button(Right_Frame, text="Export heatmap", command=self.export_heatmap, **Color_settings.My_colors.Button_Base)#CTXT
+        self.Save_heatmap=Button(Right_Frame, text=self.Messages["Heatmap8"], command=self.export_heatmap, **Color_settings.My_colors.Button_Base)
         self.Save_heatmap.config(background=Color_settings.My_colors.list_colors["Validate"],fg=Color_settings.My_colors.list_colors["Fg_Validate"])
 
 
@@ -435,9 +427,10 @@ class Lecteur(Frame):
 
             for frame in np.arange(int(start), int(end) + self.Vid_Lecteur.one_every, self.Vid_Lecteur.one_every):
                 frame=int(frame)
+
+                self.loading_bar.show_load((frame - start) / ((end+ self.Vid_Lecteur.one_every )- start - 1))
+                new_img=self.Vid_Lecteur.move1(aff=False)
                 try:
-                    self.loading_bar.show_load((frame - start) / ((end+ self.Vid_Lecteur.one_every )- start - 1))
-                    new_img=self.Vid_Lecteur.move1(aff=False)
                     if not combine_imgs:
                         new_img = cv2.cvtColor(new_img, cv2.COLOR_BGR2RGB)
                         result.write(new_img)
@@ -445,10 +438,10 @@ class Lecteur(Frame):
                         new_img=cv2.cvtColor(new_img, cv2.COLOR_BGR2GRAY)
                         new_img[new_img>0]=1
                         values_map+=new_img
-
-
                 except:
                     pass
+
+
             if not combine_imgs:
                 result.release()
                 # In the end, the Frame is destroyed and we go back to main menu
@@ -478,9 +471,9 @@ class Lecteur(Frame):
         else:
             self.boss.destroy()
 
-    def modif_image(self, img=[], aff=True, Trans=False, **kwargs):
+    def modif_image(self, img=[], affi=True, Trans=False, **kwargs):
         if self.auto:
-            aff=False
+            affi=False
 
         #Change the image according to the parameters set by user
         if len(img) <= 10:
@@ -624,8 +617,13 @@ class Lecteur(Frame):
                 if self.Vid.Track[1][10][1] == 2:
                     new_img = cv2.bitwise_not(new_img)
 
+                if self.Vid.Track[1][0] % 2 == 0:
+                    tresh = self.Vid.Track[1][0] + 1
+                else:
+                    tresh = self.Vid.Track[1][0]
+
                 new_img = cv2.adaptiveThreshold(new_img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV,
-                                                self.Vid.Track[1][0] , self.Vid.Track[1][11])
+                                                tresh , self.Vid.Track[1][11])
 
 
             # Mask
@@ -689,7 +687,7 @@ class Lecteur(Frame):
                                                                                                          ind][0]],
                                                                                                  show=True, image=new_img)
 
-        if aff:
+        if affi:
             self.Vid_Lecteur.afficher_img(new_img)
         else:
             self.draw_over(new_img,0,0,1, Trans=Trans)
@@ -717,9 +715,10 @@ class Lecteur(Frame):
 
                 window_length = min(int(self.tail_size.get() * self.Vid.Frame_rate[1]),
                                     int(self.Scrollbar.active_pos - self.to_sub))
-                all_ind_available = self.who_is_here[self.Scrollbar.active_pos - self.to_sub - window_length:int(
-                    self.Scrollbar.active_pos - self.to_sub)]
-                unique_inds = set().union(*all_ind_available)
+
+                Present_now =  np.where(self.Coos[:, self.Scrollbar.active_pos - self.to_sub - window_length:int(self.Scrollbar.active_pos - self.to_sub), 0] >= 0)[0]
+                unique_inds = list(np.unique(Present_now))
+
                 for ind in unique_inds:
                     if not Trans:
                         color = self.Vid.Identities[ind][2]

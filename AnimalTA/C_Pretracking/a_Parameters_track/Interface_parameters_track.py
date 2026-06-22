@@ -26,6 +26,7 @@ class Param_definer(Frame):
         self.config(**Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.cnts_entrance=self.Vid.Entrance#By defaults, there is no entrance area (known number of individuals)
 
+
         if ref_frame is None:
             self.First_frame = self.Vid.Cropped[1][0]
         else:
@@ -38,12 +39,7 @@ class Param_definer(Frame):
             self.parent.geometry("1200x750")
 
         #Importation of the messages
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        f.close()
-        self.Messages = UserMessages.Mess[self.Language.get()]
+        self.Messages = UserMessages.get_dict()
 
         self.fr_rate=self.Vid.Frame_rate[1]
         self.one_every=self.Vid.Frame_rate[0]/self.Vid.Frame_rate[1]
@@ -705,6 +701,7 @@ class Param_definer(Frame):
             self.Vid_Lecteur.focus_set()
 
     def modif_image(self, img=[], affi=True, change_track=None, **arg):
+        self.busy=True
         self.update_thresh_scales()
         #Change the original image accordingly to the parameters defined by user
         if change_track!=None:
@@ -943,10 +940,19 @@ class Param_definer(Frame):
 
 
 
-        if affi:#If we want to  show the positions
+        if affi and self.Vid_Lecteur.pending is None:#If we want to  show the positions
             self.Vid_Lecteur.afficher_img(TMP_image_to_show2)
-        else:# If we just wanted to get the positions of the targets but not displaying the image (look for previous frame target's positions)
+            self.busy = False
+        elif not affi:# If we just wanted to get the positions of the targets but not displaying the image (look for previous frame target's positions)
+            self.busy = False
             return(liste_positions)
+
+        if self.Vid_Lecteur.pending is not None:
+            values=self.Vid_Lecteur.pending
+            self.Vid_Lecteur.pending=None
+            self.modif_image(values[0], actual_pos=values[1], affi=values[2])
+
+
 
     def Validate(self, follow=False):
         #Save and return to main menu

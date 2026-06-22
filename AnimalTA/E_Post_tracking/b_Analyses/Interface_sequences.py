@@ -25,7 +25,8 @@ def do_auto_elem(or_seq, entries, exits, Shape, Fr_rate):
     if or_seq[1][4] == "Exits":
         exit_pos = 1
         entry_pos = 1
-        if len(entries) > 0 and entries[0] > 0:
+
+        if len(entries) > 0 and entries[0]!="NA" and entries[0] > 0:
             Seq_name = "Time_out_" + or_seq[1][3] + "_" + str(exit_pos)
             new_seq = [Seq_name, ["Time", "0", "End", "End", "End", ""],
                        ["Spatial", str(1/Fr_rate), "bef", "First_in_" + or_seq[1][3], "End", str(entry_pos)]]
@@ -339,7 +340,7 @@ class Add_sequences(Frame):
         self.liste_sequences=[]
         self.all_grid = []
 
-        self.Coos, _ = CoosLS.load_coos(self.Vid, location=self)
+        self.Coos = CoosLS.load_coos(self.Vid, location=self)
 
         if self.main.Check_Smoothed.get():
             self.Coos=Diverse_functions.smooth_coos(Coos=self.Coos, window_length=self.main.window_length,polyorder=self.main.polyorder)
@@ -350,12 +351,7 @@ class Add_sequences(Frame):
         self.NB_ind = len(self.Vid.Identities)
 
         #Import messages
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        f.close()
-        self.Messages = UserMessages.Mess[self.Language.get()]
+        self.Messages = UserMessages.get_dict()
         self.winfo_toplevel().title(self.Messages["Analyses_details_T"])
 
         #We create an optionmenu to allow the user to select the arena of interest
@@ -415,7 +411,7 @@ class Add_sequences(Frame):
         self.Copy_seq_buton=Button(self.Seq_container, text=self.Messages["Sequences2"], command=self.copy_seq, **Color_settings.My_colors.Button_Base)
         self.Copy_seq_buton.grid(row=2, column=1, sticky="nsew")
 
-        self.Delete_seqs=Button(self.Seq_container, text="Remove all sequences", command=self.delete_seqs, **Color_settings.My_colors.Button_Base)#CTXT
+        self.Delete_seqs=Button(self.Seq_container, text=self.Messages["Sequences6"], command=self.delete_seqs, **Color_settings.My_colors.Button_Base)
         self.Delete_seqs.grid(row=2, column=2, sticky="nsew")
 
         self.Seq_Canvas.create_window((0, 0), window=self.Seq_Scrollable, anchor="nw")
@@ -428,10 +424,10 @@ class Add_sequences(Frame):
 
         self.Frame_user = Frame(self, width=150, **Color_settings.My_colors.Frame_Base)
         self.Frame_user.grid(row=0, column=1, rowspan=3, sticky="nsew")
-        Grid.columnconfigure(self.Frame_user, 0, weight=1)  ########NEW
-        Grid.rowconfigure(self.Frame_user, 0, weight=1)  ########NEW
-        Grid.rowconfigure(self.Frame_user, 1, weight=1)  ########NEW
-        Grid.rowconfigure(self.Frame_user, 2, weight=100)  ########NEW
+        Grid.columnconfigure(self.Frame_user, 0, weight=1)
+        Grid.rowconfigure(self.Frame_user, 0, weight=1)
+        Grid.rowconfigure(self.Frame_user, 1, weight=1)
+        Grid.rowconfigure(self.Frame_user, 2, weight=100)
 
         # Help user and parameters
         self.HW = User_help.Help_win(self.Frame_user, default_message=self.Messages["Sequences0"])
@@ -476,9 +472,13 @@ class Add_sequences(Frame):
 
     def delete_seqs(self):
         self.ready=False
-        question = MsgBox.Messagebox(parent=self, title="Delete sequences",
-                                     message="Which sequences are to be deleted? Note that this action cannot be canceled.",
-                                     Possibilities=["This individual", "This arena", "This video", "Whole project", "Cancel"])#CTXT
+        question = MsgBox.Messagebox(parent=self, title=self.Messages["Sequences7"],
+                                     message=self.Messages["Sequences8"],
+                                     Possibilities=[self.Messages["Sequences9"],
+                                                    self.Messages["Sequences10"],
+                                                    self.Messages["Sequences11"],
+                                                    self.Messages["Sequences12"],
+                                                    self.Messages["Cancel"]])
         self.wait_window(question)
         answer = question.result
         self.ready = True
@@ -507,7 +507,7 @@ class Add_sequences(Frame):
                 Seq.destroy()
 
     def draw_all_seq(self):
-        load_frame=Class_loading_Frame.Loading(parent=self, text="Preparing widgets")#CTXT
+        load_frame=Class_loading_Frame.Loading(parent=self, text=self.Messages["Sequences13"])
         load_frame.grid()
         load_frame.show_load(0)
 
@@ -567,9 +567,9 @@ class Add_sequences(Frame):
         elif self.Messages["Sequences_Last_Time_in"] in seq.value_start3.get():
             string = seq.value_start3.get()
             Value3_deb = string.replace(self.Messages["Sequences_Last_Time_in"], "Last_in_")
-        elif "Crossing: " in seq.value_start3.get():#CTXT
+        elif self.Messages["Sequences_Crossing"] in seq.value_start3.get():
             string = seq.value_start3.get()
-            Value3_deb = string.replace("Crossing: ", "Crossing_")
+            Value3_deb = string.replace(self.Messages["Sequences_Crossing"], "Crossing_")
         else:
             Value3_deb = self.find_general_name(seq.value_start3.get())
 
@@ -579,9 +579,9 @@ class Add_sequences(Frame):
         elif self.Messages["Sequences_Last_Time_in"] in seq.value_end3.get():
             string = seq.value_end3.get()
             Value3_end = string.replace(self.Messages["Sequences_Last_Time_in"], "Last_in_")
-        elif "Crossing: " in seq.value_end3.get():#CTXT
+        elif self.Messages["Sequences_Crossing"] in seq.value_end3.get():
             string = seq.value_end3.get()
-            Value3_end = string.replace("Crossing: ", "Crossing_")
+            Value3_end = string.replace(self.Messages["Sequences_Crossing"], "Crossing_")
         else:
             Value3_end = self.find_general_name(seq.value_end3.get())
 
@@ -616,7 +616,7 @@ class Add_sequences(Frame):
         elif "First_in_" in val:
             val = val.replace("First_in_",self.Messages["Sequences_First_Time_in"])
         elif "Crossing_" in val:
-            val = val.replace("Crossing_","Crossing: ")#CTXT
+            val = val.replace("Crossing_",self.Messages["Sequences_Crossing"])
 
         return(val)
 
@@ -663,7 +663,7 @@ class Add_sequences(Frame):
 
 
     def update_sequences(self):
-        load_frame=Class_loading_Frame.Loading(parent=self, text="Preparing sequences")#CTXT
+        load_frame=Class_loading_Frame.Loading(parent=self, text=self.Messages["Sequences14"])
         load_frame.grid()
         load_frame.show_load(0)
 
@@ -756,7 +756,7 @@ class Add_sequences(Frame):
         load_frame.grid()
         load_frame.show_load(0)
 
-        Copy_Coos = np.array(self.Coos[ID])
+        Copy_Coos = self.Coos[ID]
         Copy_Coos[np.where(Copy_Coos == -1000)] = np.nan
         Dists = np.sqrt(np.diff(Copy_Coos[:, 0]) ** 2 + np.diff(Copy_Coos[:, 1]) ** 2) / float(self.Vid.Scale[0])
         Dists = np.append(np.nan, Dists)
@@ -801,7 +801,7 @@ class Add_sequences(Frame):
                 self.list_events["Shape_out_" + str(shape)] = info2
                 self.list_events_meaning=self.list_events_meaning+[[shape,0],[shape,1]]
             else:
-                info = "Crossing: " + self.main.Vid.Analyses[1][self.Area][shape][3]#CTXT
+                info = self.Messages["Sequences_Crossing"] + self.main.Vid.Analyses[1][self.Area][shape][3]
                 self.list_events["Crossing_" + str(shape)] = info
                 self.list_events_meaning=self.list_events_meaning+[[shape,0]]
 

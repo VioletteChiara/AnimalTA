@@ -30,11 +30,7 @@ class Show(Frame):
             self.First_frame=First_frame
 
         #Import language
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        f.close()
+        self.Messages = UserMessages.get_dict()
         self.tail_size=5
 
         Grid.columnconfigure(self.parent, 0, weight=1)  ########NEW
@@ -47,7 +43,6 @@ class Show(Frame):
         self.CheckVar = IntVar()
         self.ecart=10#Esthetical point, we add some frames out of the portion before and after so the user can have a context
 
-        self.Messages = UserMessages.Mess[self.Language.get()]
         self.winfo_toplevel().title(self.Messages["Portion0"])
 
         #Where the options are displayed
@@ -104,7 +99,7 @@ class Show(Frame):
         self.B_cancel.grid(row=7, column=1, sticky="nsew")
 
 
-        self.Coos, _ = CoosLS.load_coos(self.Vid, TMP=True, location=self)
+        self.Coos = CoosLS.load_coos(self.Vid, TMP=True, location=self)
         self.NB_ind = len(self.Vid.Identities)
 
         self.Vid_Lecteur = Class_Lecteur.Lecteur(self, self.Vid, ecart=5, First_frame=self.First_frame)
@@ -153,7 +148,7 @@ class Show(Frame):
         else:
             Do_the_track.Do_tracking(self, self.Vid, self.Folder, type="variable", portion=True, prev_row=self.prev_row, arena_interest=self.Arena, ref_frame=self.First_frame)
 
-        self.Coos, _ = CoosLS.load_coos(self.Vid, TMP=True, location=self)
+        self.Coos = CoosLS.load_coos(self.Vid, TMP=True, location=self)
 
         self.B_change_stab.config(state="normal")
         self.B_change_back.config(state="normal")
@@ -184,7 +179,7 @@ class Show(Frame):
         self.loading_bar.create_rectangle(0, 0, self.timer * 300, self.loading_bar.cget("height"), fill=Color_settings.My_colors.list_colors["Loading_after"])
         self.loading_bar.update()
 
-    def modif_image(self, img=[], aff=False, move=True, actual_pos=None, *args):
+    def modif_image(self, img=[], affi=False, move=True, actual_pos=None, *args):
         #draw the target's potition and trajectories on the image
         if len(img)==0:
             new_img=np.copy(self.last_empty)

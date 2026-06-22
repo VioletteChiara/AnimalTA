@@ -148,6 +148,7 @@ def prepare_details(Coos, Area, Vid, first, Arenas, loading_frame=None):
         _, Cells_data = Functions_Analyses_Speed.calculate_exploration(Vid.Analyses[2], Vid,
                                                                        Coos, 0, len(Coos),
                                                                        Arenas[Area], return_cell=True)
+        Cells_data=Cells_data[0]
 
         if Vid.Analyses[2][0] == 1:
             Cells_data = [f"X{x}-Y{y}" for x, y in Cells_data]

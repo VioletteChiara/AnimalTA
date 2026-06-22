@@ -99,6 +99,7 @@ def calculate_exploration(method, Vid, Coos, deb, end, Arena, show=False, image=
                     last_pt = pt
                     pt_done+=1
 
+
             mask_glob = Function_draw_arenas.draw_mask(Vid)
             mask = np.zeros([Vid.shape[0], Vid.shape[1], 1], np.uint8)
             mask = cv2.drawContours(mask, [Arena], -1, (255), -1)
@@ -118,8 +119,6 @@ def calculate_exploration(method, Vid, Coos, deb, end, Arena, show=False, image=
                 to_return.append(None)
 
             return(to_return)
-
-
 
         else:
             empty = np.zeros((Vid.shape[0], Vid.shape[1], 1), np.int64)
@@ -141,8 +140,6 @@ def calculate_exploration(method, Vid, Coos, deb, end, Arena, show=False, image=
                 to_return.append(None)
 
             return (to_return)
-
-
 
     elif method[0] == 1:  # Si c'est mesh carré
         No_NA_Coos = np.array(Coos[deb:end + 1])
@@ -181,7 +178,7 @@ def calculate_exploration(method, Vid, Coos, deb, end, Arena, show=False, image=
         if not show:
             to_return = [new_row]
             if return_cell:
-                to_return.append(NA_XYs)
+                to_return.append([NA_XYs,(nb_squares_v * nb_squares_h)])
 
             return(to_return)
 
@@ -235,7 +232,7 @@ def calculate_exploration(method, Vid, Coos, deb, end, Arena, show=False, image=
 
             to_return = [new_row, image]
             if return_cell:
-                to_return.append(NA_XYs)
+                to_return.append([NA_XYs,(nb_squares_v * nb_squares_h)])
             return (to_return)
 
         elif only_vals:
@@ -258,11 +255,9 @@ def calculate_exploration(method, Vid, Coos, deb, end, Arena, show=False, image=
 
             to_return = [new_row, empty, (int(round(nb_squares_v*largeur)/2),int(round(nb_squares_h*largeur)/2))]
             if return_cell:
-                to_return.append(NA_XYs)
+                to_return.append([NA_XYs,(nb_squares_v * nb_squares_h)])
 
             return (to_return)
-
-
 
     elif method[0] == 2:  # Si c'est mesh circulaire
         No_NA_Coos = np.array(Coos[deb:end + 1])
@@ -333,7 +328,7 @@ def calculate_exploration(method, Vid, Coos, deb, end, Arena, show=False, image=
         if not show:
             to_return = [new_row]
             if return_cell:
-                to_return.append(NA_Pos)
+                to_return.append([NA_Pos,(sum(list_nb))])
 
             return (to_return)
 
@@ -403,7 +398,7 @@ def calculate_exploration(method, Vid, Coos, deb, end, Arena, show=False, image=
 
             to_return = [new_row, image]
             if return_cell:
-                to_return.append(NA_Pos)
+                to_return.append([NA_Pos,(sum(list_nb))])
 
             return (to_return)
 
@@ -457,7 +452,7 @@ def calculate_exploration(method, Vid, Coos, deb, end, Arena, show=False, image=
 
             to_return = [new_row, empty, (int(cX) , int(cY))]
             if return_cell:
-                to_return.append(NA_Pos)
+                to_return.append([NA_Pos,(sum(list_nb))])
             return (to_return)
 
 def calculate_explored(method, Vid, Coos, Arena, sub_load):

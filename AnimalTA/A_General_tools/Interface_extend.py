@@ -6,6 +6,10 @@ from AnimalTA.A_General_tools import Function_draw_arenas, UserMessages, Class_s
 import cv2
 from copy import deepcopy
 
+all_types =["export","back","back_copy","stab","IDs","scale","mask","track", "fps","stab","crop","analyses_smooth",
+            "analyses_thresh","analyses_explo","analyses_inter","analyses_deform","IDs","supr","export","analyses_morpho",
+            "analyses_segments","analyses_details","analyses_sm","analyses_explored","analyses_gr"]
+all_types=["Extend_ana_"+elem for elem in all_types]
 
 class Extend(Frame):
     """ This Frame display a list of the videos from the project.
@@ -29,21 +33,15 @@ class Extend(Frame):
         self.to_close=to_close
 
         #Import messages
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path(os.path.join("AnimalTA","Files","Language")), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        f.close()
+        self.Messages = UserMessages.get_dict()
 
         Grid.columnconfigure(self.parent, 0, weight=1)  ########NEW
         Grid.rowconfigure(self.parent, 0, weight=1)  ########NEW
 
-        self.Messages = UserMessages.Mess[self.Language.get()]
+
         self.winfo_toplevel().title(self.Messages["ExtendT"])
 
-        #CTXT (add self.Messages[type])         Label(self,text=self.Messages["Extend1"] + " " + self.Messages[type], wraplength=500, **Color_settings.My_colors.Label_Base).grid(row=0, columnspan=2, sticky="nsew")
-
-        Label(self,text=self.Messages["Extend1"] + " " + str(type), wraplength=500, **Color_settings.My_colors.Label_Base).grid(row=0, columnspan=2, sticky="nsew")
+        Label(self,text=self.Messages["Extend1"] + ": " + self.Messages["Extend_ana_"+type], wraplength=500, **Color_settings.My_colors.Label_Base).grid(row=0, columnspan=2, sticky="nsew")
 
         #This button allows to directly select/unselect all the videos from the list
         self.sel_state=StringVar()
@@ -86,7 +84,7 @@ class Extend(Frame):
         self.list_vid_minus=[]
 
         #All the cases for which we only propose tracked videos and for which we don't make the tracked videos appear red
-        self.list_analyses = ["analyses_segments", "analyses_morpho", "analyses_details", "analyses_sm", "analyses_smooth", "analyses_explored",
+        self.list_analyses = ["analyses_segments", "analyses_morpho", "analyses_details", "analyses_sm", "analyses_gr", "analyses_smooth", "analyses_explored",
                          "analyses_thresh", "analyses_explo", "analyses_inter", "analyses_deform", "IDs","export"]
 
         for i in range(len(self.list_vid)):
@@ -189,6 +187,7 @@ class Extend(Frame):
 
                     if len(self.list_vid_minus[V].Track[1][6])<nb_ar:#If the number of arenas from the video to copy does not fit the real number of arenas, we add some
                         self.list_vid_minus[V].Track[1][6]=self.list_vid_minus[V].Track[1][6] + ([self.list_vid_minus[V].Track[1][6][0]] * (nb_ar-len(self.list_vid_minus[V].Track[1][6])))
+                    self.list_vid_minus[V].Track[0]=True
 
                 elif self.type == "fps":
                     if self.list_vid_minus[V].Frame_rate[1] != self.value:
@@ -349,6 +348,9 @@ class Extend(Frame):
 
                 elif self.type=="analyses_details":
                     self.list_vid_minus[V].Details_options = self.value
+
+                elif self.type=="analyses_gr":
+                    self.list_vid_minus[V].Group_data = self.value
 
                 elif self.type=="analyses_sm":
                     self.list_vid_minus[V].Stops_Moves_options = self.value

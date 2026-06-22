@@ -131,10 +131,12 @@ def Image_modif(Security_break, Vid, start, end, one_every, Which_part, Prem_ima
             if Vid.Track[1][10][1] == 2:
                 img = cv2.bitwise_not(img)
 
-            if Vid.Track[1][0]%2==0:
-                Vid.Track[1][0]+=1
+            if Vid.Track[1][0] % 2 == 0:
+                tresh = Vid.Track[1][0] + 1
+            else:
+                tresh = Vid.Track[1][0]
 
-            img = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV,  Vid.Track[1][0] , Vid.Track[1][11])
+            img = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV,  tresh , Vid.Track[1][11])
 
         # Mask
         if Vid.Mask[0]:

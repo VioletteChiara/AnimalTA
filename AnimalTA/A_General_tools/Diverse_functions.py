@@ -9,10 +9,17 @@ import urllib.request
 
 list_details_options = ["Frame", "Time", "X-Y_Coordinates", "Distance", "Speed", "Moving", "Corrected_Moving",
                 "Acceleration", "Orientation", "Angle_change", "Angular_speed", "Meander",
-                "Distances_to_elem_interest", "Inter-individual_distances", "Exploration_data_per_frame"]#CTXT ajouter small info explanations for those data
+                "Distances_to_elem_interest", "Inter-individual_distances", "Exploration_data_per_frame"]
+
 
 
 list_stops_moves_options = ["Mean_dur_stops","Events_dur_stops","Mean_dur_moves","Events_dur_moves"]
+
+list_group_options = ["Interind_data","Exploration"]
+
+def prepare_group_option(Vid):
+    Vid.Group_data = {elem: False for elem in list_group_options}
+    return(list_group_options)
 
 def prepare_stops_moves_option(Vid):
     Vid.Stops_Moves_options = [{elem: False for elem in list_stops_moves_options},0]

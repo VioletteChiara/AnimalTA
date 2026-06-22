@@ -24,30 +24,32 @@ class Stabilise(Frame):
 
 
         #Import messages
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path(os.path.join("AnimalTA","Files","Language")), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        f.close()
-        self.Messages = UserMessages.Mess[self.Language.get()]
+        self.Messages = UserMessages.get_dict()
 
         # Name of the vieo and optionmenu to jump from one video to another
         self.choice_menu = Class_change_vid_menu.Change_Vid_Menu(self, self.main_frame, self.Vid, "stab")
         self.choice_menu.grid(row=0, column=0)
 
-        Grid.columnconfigure(self, 0, weight=1)  ########NEW
-        Grid.rowconfigure(self, 0, weight=1)  ########NEW
-        Grid.rowconfigure(self, 1, weight=100)  ########NEW
+        Grid.columnconfigure(self, 0, weight=1)
+        Grid.rowconfigure(self, 0, weight=1)
+        Grid.rowconfigure(self, 1, weight=100)
 
         # Information panel for user
         self.HW= User_help.Help_win(self.parent, default_message=self.Messages["Stab1"], width=250,
-                                    shortcuts={self.Messages["Short_Mousewheel"]:self.Messages["Short_Mousewheel_T"],
-                                             self.Messages["Short_Space"]: self.Messages["Short_Space_G"],
-                                             self.Messages["Short_Ctrl_click"]: self.Messages["Short_Ctrl_click_G"],
-                                             self.Messages["Short_Ctrl_Rclick"]: self.Messages["Short_Ctrl_Rclick_G"],
-                                             self.Messages["Short_Ctrl_click_drag"]: self.Messages["Short_Ctrl_click_drag_G"],
-                                             self.Messages["Short_RArrow"]: self.Messages["Short_RArrow_G"],
-                                             self.Messages["Short_LArrow"]: self.Messages["Short_LArrow_G"]})
+                                    shortcuts={self.Messages["Short_Mousewheel"]:
+                                                   self.Messages["Short_Mousewheel_T"],
+                                             self.Messages["Short_Space"]:
+                                                 self.Messages["Short_Space_G"],
+                                             self.Messages["Short_Ctrl_click"]:
+                                                   self.Messages["Short_Ctrl_click_G"],
+                                             self.Messages["Short_Ctrl_Rclick"]:
+                                                   self.Messages["Short_Ctrl_Rclick_G"],
+                                             self.Messages["Short_Ctrl_click_drag"]:
+                                                   self.Messages["Short_Ctrl_click_drag_G"],
+                                             self.Messages["Short_RArrow"]:
+                                                   self.Messages["Short_RArrow_G"],
+                                             self.Messages["Short_LArrow"]:
+                                                   self.Messages["Short_LArrow_G"]})
 
         self.HW.grid(row=0, column=1,sticky="nsew")
 
@@ -90,7 +92,7 @@ class Stabilise(Frame):
         self.tool_size.set(20)
         Scale_Tool=Scale(self.canvas_validate, label=self.Messages["Stab14"], variable=self.tool_size, from_=0, to=500, orient=HORIZONTAL, **Color_settings.My_colors.Scale_Base)
         Scale_Tool.grid(row=5,column=0, sticky="new")
-        Scale_Tool.bind("<Enter>", partial(self.HW.change_tmp_message, "Change the diameter of the tool used to remove points."))#CTXT
+        Scale_Tool.bind("<Enter>", partial(self.HW.change_tmp_message, self.Messages["Stab14_expl"]))
         Scale_Tool.bind("<Leave>", self.HW.remove_tmp_message)
 
 

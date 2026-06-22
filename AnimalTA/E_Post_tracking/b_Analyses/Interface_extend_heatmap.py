@@ -27,11 +27,7 @@ class Lists(Frame):
         self.detail_explo_parent=detail_explo_parent
 
         #Import messages
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        f.close()
+        self.Messages = UserMessages.get_dict()
 
         Grid.columnconfigure(self.parent, 0, weight=1)  ########NEW
         Grid.rowconfigure(self.parent, 0, weight=1)  ########NEW
@@ -39,7 +35,6 @@ class Lists(Frame):
         Grid.columnconfigure(self, 0, weight=1)  ########NEW
         Grid.rowconfigure(self, 0, weight=1)  ########NEW
 
-        self.Messages = UserMessages.Mess[self.Language.get()]
         self.winfo_toplevel().title(self.Messages["Extend_Ana0"])
 
 
@@ -144,15 +139,16 @@ class Lists(Frame):
         self.boss.ready=True
 
     def validate(self):
-        question = Message_simple_question.Messagebox(parent=self, title="Warning",
-                                     message="Warning:  A mismatch in the videos frame rate, arenas shapes, arena size, or scale units will biais the results. \n \n Only for the creation if this heatmap, all the exploration parameters used will be the same than the ones selected for the current target. Do you want to proceed?",
-                                     Possibilities=["Proceed", "Cancel"])#CTXT
+        question = Message_simple_question.Messagebox(parent=self, title=self.Messages["Warning"],
+                                     message=self.Messages["Heatmap_warn"],
+                                     Possibilities=[self.Messages["Continue"],
+                                                    self.Messages["Cancel"]])
 
         self.wait_window(question)
         response = question.result
 
         if response==0:
-            Load_show=Class_loading_Frame.Loading(self, text="Creation of the heatmap")#CTXT
+            Load_show=Class_loading_Frame.Loading(self, text=self.Messages["Do_Heatmap"])
             Load_show.grid(row=6,column=0,columnspan=6)
 
 
@@ -170,7 +166,7 @@ class Lists(Frame):
             for Vid in list_of_vids:#For each of these videos, we look for the arenas
                 Load_show.show_load(nb_I/len(list_of_vids))#Show the progress
                 # Load Coos:
-                Coos, _ = CoosLS.load_coos(Vid, location=self)
+                Coos = CoosLS.load_coos(Vid, location=self)
                 if len(Vid.Analyses[4][0]) > 0:
                     Coos = Functions_deformation.deform_coos(Coos, Vid.Analyses[4][0])
 

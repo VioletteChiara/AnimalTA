@@ -28,12 +28,7 @@ class Deformation(Frame):
         self.selected=None#If tye user click on a point, the id of the point is saved here
 
         # Import messages
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path(os.path.join("AnimalTA","Files","Language")), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        f.close()
-        self.Messages = UserMessages.Mess[self.Language.get()]
+        self.Messages = UserMessages.get_dict()
 
         Grid.columnconfigure(self.parent, 0, weight=1)
         Grid.rowconfigure(self.parent, 0, weight=1)

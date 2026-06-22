@@ -41,12 +41,7 @@ class Details_basics(Frame):
         Grid.rowconfigure(self, 1, weight=100)
 
         #Import messages
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        f.close()
-        self.Messages = UserMessages.Mess[self.Language.get()]
+        self.Messages = UserMessages.get_dict()
         self.winfo_toplevel().title(self.Messages["Analyses_details_T"])
 
         self.moving =False
@@ -54,9 +49,11 @@ class Details_basics(Frame):
         # An optionmenu to select which target we want to follow
         self.List_inds_names=dict()
         for ind in range(len(self.main.Vid.Identities)):
-            self.List_inds_names[ind]=self.Messages["Arena_short"]+ "{}, ".format(self.main.Vid.Identities[ind][0])+ self.Messages["Individual_short"] +" {}".format(self.main.Vid.Identities[ind][1])
+            self.List_inds_names[ind]=self.Messages["Arena_short"]+ "{}, ".format(self.main.Vid.Identities[ind][0])+ \
+                                      self.Messages["Individual_short"] +" {}".format(self.main.Vid.Identities[ind][1])
         self.Ind_name=StringVar()
-        self.Ind_name.set(self.Messages["Arena_short"]+ "{}, ".format(self.main.Vid.Identities[0][0])+ self.Messages["Individual_short"] +" {}".format(self.main.Vid.Identities[0][1]))
+        self.Ind_name.set(self.Messages["Arena_short"]+ "{}, ".format(self.main.Vid.Identities[0][0])+
+                          self.Messages["Individual_short"] +" {}".format(self.main.Vid.Identities[0][1]))
         self.Which_ind = OptionMenu(self, self.Ind_name, *self.List_inds_names.values(), command=self.change_ind)
         self.Which_ind["menu"].config(**Color_settings.My_colors.OptnMenu_Base)
         self.Which_ind.config(**Color_settings.My_colors.Button_Base)
@@ -473,13 +470,10 @@ class Details_spatial(Frame):
         self.last_cur_pos = self.main.Scrollbar.active_pos - round(self.main.Vid.Cropped[1][0] / self.main.one_every)
         self.parent.attributes('-toolwindow', True)
 
+        self.Auto_mode=False
+
         #Import messages
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        f.close()
-        self.Messages = UserMessages.Mess[self.Language.get()]
+        self.Messages = UserMessages.get_dict()
         self.winfo_toplevel().title(self.Messages["Analyses_details_sp_T"])
 
         #A menubar in which we will be able to add new elements of interest.
@@ -616,7 +610,6 @@ class Details_spatial(Frame):
         self.stay_on_top()
         self.modif_image()
         self.show_results()
-        self.Auto_mode=False
 
         self.bind_all("<Return>", self.validate_borders)
         self.parent.protocol("WM_DELETE_WINDOW", self.close)
@@ -889,7 +882,8 @@ class Details_spatial(Frame):
                     if Function_draw_arenas.Touched_seg((Pt[0], Pt[1]), [self.list_of_pts[pt], self.list_of_pts[pt - 1]]):#If not, we check if the point is touching a contour border
                         self.ask_portion(self.list_of_pts[pt],self.list_of_pts[pt-1]) #We ask the user where on the border the point should be placed.
                         if self.add_pt[1] == 1:#If it was the first point, we save it and wiat for the second
-                            self.main.Vid.Analyses[1][self.Area].append(["Line", [(int(round(self.list_of_pts[pt-1][0]*self.ratio_border+self.list_of_pts[pt][0]*(1-self.ratio_border))),int(round(self.list_of_pts[pt-1][1]*self.ratio_border+self.list_of_pts[pt][1]*(1-self.ratio_border))))], 0, self.Messages["List_elem_Line"]+str(len(self.main.Vid.Analyses[1][self.Area]))])
+                            self.main.Vid.Analyses[1][self.Area].append(["Line", [(int(round(self.list_of_pts[pt-1][0]*self.ratio_border+self.list_of_pts[pt][0]*(1-self.ratio_border))),int(round(self.list_of_pts[pt-1][1]*self.ratio_border+self.list_of_pts[pt][1]*(1-self.ratio_border))))], 0,
+                                                                         self.Messages["List_elem_Line"]+str(len(self.main.Vid.Analyses[1][self.Area]))])
                             self.add_pt[1] -= 1
                         elif self.add_pt[1] == 0: # If it is the second point, we save the element, allow to add other element and display the results associated with the segment.
                             self.main.Vid.Analyses[1][self.Area][len(self.main.Vid.Analyses[1][self.Area]) - 1][1].append((int(round(self.list_of_pts[pt-1][0] * self.ratio_border + self.list_of_pts[pt][0] * (1 - self.ratio_border))),
@@ -952,7 +946,7 @@ class Details_spatial(Frame):
         #Draw all the elements of interest.
         if self.show_mask: #We also highlight the borders and corners if we are expecting the user to select one of them (line stick to border or borders selection)
             self.list_of_pts=[]
-            approx = cv2.approxPolyDP(self.Arena_pts, 0.025 * cv2.arcLength(self.Arena_pts, True), True)
+            approx = cv2.approxPolyDP(self.Arena_pts, 0.01 * cv2.arcLength(self.Arena_pts, True), True)
             show_approx=approx.copy()
             show_approx[:,0,0]=(show_approx[:,0,0]+Xadd-self.cropx)/ratio
             show_approx[:,0,1] = (show_approx[:,0,1] +Yadd- self.cropy) / ratio
@@ -1179,12 +1173,7 @@ class Details_explo(Frame):
         self.parent.grab_set()
 
         # Import messages
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        f.close()
-        self.Messages = UserMessages.Mess[self.Language.get()]
+        self.Messages = UserMessages.get_dict()
         self.winfo_toplevel().title(self.Messages["Analyses_details_sp_T"])
 
         #Add an optionmenu to select the target of interest
@@ -1250,7 +1239,7 @@ class Details_explo(Frame):
             Do_heat_mp_B_comb=Button(self.param_p_heatmap, text=self.Messages["Analyses_details_exp5"],command=partial(self.draw_heatmap_mod, multi=True), **Color_settings.My_colors.Button_Base)
             Do_heat_mp_B_comb.grid(row=0, column=1, sticky="nsew")
 
-        Do_heat_mp_B_comb_vids = Button(self.param_p_heatmap, text="Combined heatmap",#CTXT
+        Do_heat_mp_B_comb_vids = Button(self.param_p_heatmap, text=self.Messages["Analyses_details_exp6"],
                                    command=self.draw_heatmap_multi,
                                    **Color_settings.My_colors.Button_Base)
         Do_heat_mp_B_comb_vids.grid(row=0, column=2, sticky="nsew")
@@ -1576,12 +1565,7 @@ class Details_inter(Frame):
         self.parent.attributes('-toolwindow', True)
 
         #Import messages
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        f.close()
-        self.Messages = UserMessages.Mess[self.Language.get()]
+        self.Messages = UserMessages.get_dict()
         self.winfo_toplevel().title(self.Messages["Analyses_details_T"])
 
         self.final_width = 250

@@ -20,12 +20,7 @@ class Scale(Frame):
         self.first=True
 
         #Import messages
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path(os.path.join("AnimalTA","Files","Language")), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        f.close()
-        self.Messages = UserMessages.Mess[self.Language.get()]
+        self.Messages = UserMessages.get_dict()
 
         #Open video and take the first frame (after cropping)
         Which_part = 0
@@ -59,12 +54,18 @@ class Scale(Frame):
 
         #Help user and parameters
         self.HW= User_help.Help_win(self.parent, default_message=self.Messages["Scale2"],  width=250,
-                                    shortcuts = {self.Messages["Short_Space"]: self.Messages["Short_Space_G"],
-                                                 self.Messages["Short_Ctrl_click"]: self.Messages["Short_Ctrl_click_G"],
-                                                 self.Messages["Short_Ctrl_Rclick"]: self.Messages["Short_Ctrl_Rclick_G"],
-                                                 self.Messages["Short_Ctrl_click_drag"]: self.Messages["Short_Ctrl_click_drag_G"],
-                                                 self.Messages["Short_RArrow"]: self.Messages["Short_RArrow_G"],
-                                                 self.Messages["Short_LArrow"]: self.Messages["Short_LArrow_G"]})
+                                    shortcuts = {self.Messages["Short_Space"]:
+                                                     self.Messages["Short_Space_G"],
+                                                 self.Messages["Short_Ctrl_click"]:
+                                                     self.Messages["Short_Ctrl_click_G"],
+                                                 self.Messages["Short_Ctrl_Rclick"]:
+                                                     self.Messages["Short_Ctrl_Rclick_G"],
+                                                 self.Messages["Short_Ctrl_click_drag"]:
+                                                     self.Messages["Short_Ctrl_click_drag_G"],
+                                                 self.Messages["Short_RArrow"]:
+                                                     self.Messages["Short_RArrow_G"],
+                                                 self.Messages["Short_LArrow"]:
+                                                     self.Messages["Short_LArrow_G"]})
 
         self.HW.grid(row=0, column=1,sticky="nsew")
 

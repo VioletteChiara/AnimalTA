@@ -29,6 +29,7 @@ import cv2
 import imghdr
 import sys
 import threading
+import traceback
 
 
 class Interface(Frame):
@@ -48,12 +49,7 @@ class Interface(Frame):
             self.show_infos(new_update)
 
         # Import language
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path(os.path.join("AnimalTA","Files","Language")), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        f.close()
-        self.Messages = UserMessages.Mess[self.Language.get()]
+        self.Messages = UserMessages.get_dict()
 
         # Window's management
         self.project_name = StringVar()
@@ -110,11 +106,21 @@ class Interface(Frame):
         Grid.columnconfigure(self, 0, weight=1)
 
         # User help:
-        self.HW = User_help.Help_win(self.canvas_main, default_message=self.Messages["Welcome"], legend={self.Messages["General23"]:self.list_colors["Button_ready"],self.Messages["General24"]:self.list_colors["Button_half"],self.Messages["General25"]:self.list_colors["Button_done"]},
-                                     shortcuts={self.Messages["Short_Mousewheel"]:self.Messages["Short_Mousewheel_G"],
-                                                self.Messages["Short_arrows"]:self.Messages["Short_arrows_G"],
-                                                self.Messages["Short_del"]:self.Messages["Short_del_G"],
-                                                self.Messages["Short_shift_del"]: self.Messages["Short_multi_del"], }, width=250)
+        self.HW = User_help.Help_win(self.canvas_main, default_message=self.Messages["Welcome"],
+                                     legend={self.Messages["General23"]:
+                                                 self.list_colors["Button_ready"],
+                                             self.Messages["General24"]:
+                                                 self.list_colors["Button_half"],
+                                             self.Messages["General25"]:
+                                                 self.list_colors["Button_done"]},
+                                     shortcuts={self.Messages["Short_Mousewheel"]:
+                                                    self.Messages["Short_Mousewheel_G"],
+                                                self.Messages["Short_arrows"]:
+                                                    self.Messages["Short_arrows_G"],
+                                                self.Messages["Short_del"]:
+                                                    self.Messages["Short_del_G"],
+                                                self.Messages["Short_shift_del"]:
+                                                    self.Messages["Short_multi_del"], }, width=250)
         self.HW.grid(row=0, column=1, sticky="nsew")
 
         self.canvas_show = Frame(self.canvas_main, bd=0, highlightthickness=0, relief='ridge', **Color_settings.My_colors.Frame_Base)
@@ -267,6 +273,11 @@ class Interface(Frame):
         self.bouton_Save.config(state="disable")#Only if there is a project open
         #Change the language
         OptionLan = list(UserMessages.Mess.keys())
+        self.Language = StringVar()
+        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
+        self.Language.set(f.read())
+        self.LanguageO = self.Language.get()
+        f.close()
         self.bouton_Lang = OptionMenu(self.canvas_title_bar, self.Language, *OptionLan, command=self.update_lan)
         self.bouton_Lang["menu"].config(**Color_settings.My_colors.OptnMenu_Base)
         self.bouton_Lang.config(**Color_settings.My_colors.Button_Base)
@@ -628,16 +639,21 @@ class Interface(Frame):
 
 
     def save_project_files(self):
-        shutil.copyfile(self.file_to_save, self.file_to_save + "old")
-        # This is a security to ensure that the old file will not be deleted before ensurong the new one can be proprly saved
+        try:
+            shutil.copyfile(self.file_to_save, self.file_to_save + "old")
+            # This is a security to ensure that the old file will not be deleted before ensurong the new one can be proprly saved
 
-        with open(self.file_to_save, 'wb') as fp:
-            data_to_save = dict(Project_name=self.project_name.get(), Folder=self.folder, Videos=self.liste_of_videos,
-                                ID_project=self.ID_project, Importation_values=self.import_values)
-            pickle.dump(data_to_save, fp)
+            with open(self.file_to_save, 'wb') as fp:
+                data_to_save = dict(Project_name=self.project_name.get(), Folder=self.folder, Videos=self.liste_of_videos,
+                                    ID_project=self.ID_project, Importation_values=self.import_values)
+                pickle.dump(data_to_save, fp)
 
-        # If there was no problem during the save, we delete the security copy
-        os.remove(self.file_to_save + "old")
+            # If there was no problem during the save, we delete the security copy
+            os.remove(self.file_to_save + "old")
+        except Exception as e:
+            question = MsgBox.Messagebox(parent=self, title=self.Messages["GWarnT3"],
+                                       message=self.Messages["GWarn3"]+": "+str(e) + "\nError details: "+str(traceback.format_exc()),
+                                         Possibilities=[self.Messages["Continue"]])
 
     ##Project management
     def save(self, *args):
@@ -664,7 +680,8 @@ class Interface(Frame):
                 os.rename(self.file_to_save+"old",self.file_to_save)
 
             question = MsgBox.Messagebox(parent=self, title=self.Messages["GWarnT3"],
-                                       message=self.Messages["GWarn3"], Possibilities=[self.Messages["Continue"]])
+                                       message=self.Messages["GWarn3"]+": "+str(e) + "\nDetails: "+str(traceback.format_exc()),
+                                         Possibilities=[self.Messages["Continue"]])
             self.wait_window(question)
 
     def close_file(self, ask=True):
@@ -947,6 +964,11 @@ class Interface(Frame):
                     except:
                         Diverse_functions.prepare_stops_moves_option(self.liste_of_videos[V])
 
+                    try:
+                        self.liste_of_videos[V].Group_data
+                    except:
+                        Diverse_functions.prepare_group_option(self.liste_of_videos[V])
+
                 try:
                     self.liste_of_videos[V].Morphometrics
                 except:
@@ -993,7 +1015,6 @@ class Interface(Frame):
                 for F in range(len(self.liste_of_videos[V].Fusion)):
                     self.liste_of_videos[V].Fusion[F][1] = vid_to_copy
 
-                
                 if self.liste_of_videos[V].Tracked:
                     to_copy_file="I:/AnimalTA/AnimalTA_developpement/Fake_projects/Fake_project_Tristan/coordinates/Fake_Corrected.csv"
                     file_name = self.liste_of_videos[V].User_Name
@@ -1023,7 +1044,9 @@ class Interface(Frame):
                         else:
                             question = MsgBox.Messagebox(parent=self, title=self.Messages["GWarnT5"],
                                                          message=self.Messages["GWarn5"].format(self.liste_of_videos[V].File_name),
-                                                         Possibilities=[self.Messages["GWarn5A"], self.Messages["GWarn5B"], self.Messages["Cancel"]])
+                                                         Possibilities=[self.Messages["GWarn5A"],
+                                                                        self.Messages["GWarn5B"],
+                                                                        self.Messages["Cancel"]])
                             self.wait_window(question)
                             answer = question.result
 
@@ -1610,7 +1633,6 @@ class Interface(Frame):
             second_Vid.Scale=[1,"px",[[],[]]]
             self.selected_vid.Scale = [1, "px", [[],[]]]
 
-
         else:
             self.combine_3D_video()
 
@@ -1627,11 +1649,14 @@ class Interface(Frame):
             if self.selected_vid.type==second_Vid.type and self.selected_vid.or_shape[0] == second_Vid.or_shape[0] and self.selected_vid.or_shape[1] == second_Vid.or_shape[1] and abs(self.selected_vid.Frame_rate[0] - second_Vid.Frame_rate[0])<0.05:#And that they share the same characteristics
                 if self.selected_vid.Frame_rate[0] != second_Vid.Frame_rate[0]:
                     new_frame_rate=(self.selected_vid.Frame_rate[0] + second_Vid.Frame_rate[0]) / 2
-                    question = MsgBox.Messagebox(parent=self, title="",
-                                                 message=self.Messages["GWarn8"].format(self.selected_vid.Frame_rate[0], second_Vid.Frame_rate[0], new_frame_rate),
-                                                 Possibilities=[self.Messages["Yes"], self.Messages["Cancel"]])
-                    self.wait_window(question)
-                    answer = question.result
+                    if round(self.selected_vid.Frame_rate[0],2) != round(second_Vid.Frame_rate[0],2) or self.selected_vid.Frame_rate[0]<2:#If we have a high frame rate, we do not ask if the difference is really small
+                        question = MsgBox.Messagebox(parent=self, title="",
+                                                     message=self.Messages["GWarn8"].format(self.selected_vid.Frame_rate[0], second_Vid.Frame_rate[0], new_frame_rate),
+                                                     Possibilities=[self.Messages["Yes"], self.Messages["Cancel"]])
+                        self.wait_window(question)
+                        answer = question.result
+                    else:
+                        answer=0
 
                 else:
                     new_frame_rate=self.selected_vid.Frame_rate[0]

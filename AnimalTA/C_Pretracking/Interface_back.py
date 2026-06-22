@@ -29,12 +29,7 @@ class Background(Frame):
             self.parent.geometry("1200x750")
 
         # Messages importation
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path(os.path.join("AnimalTA","Files","Language")), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        f.close()
-        self.Messages = UserMessages.Mess[self.Language.get()]
+        self.Messages = UserMessages.get_dict()
 
         self.Vid = Video_file
         if len(self.Vid.Back[1].shape)==2:
@@ -71,12 +66,18 @@ class Background(Frame):
 
         #Help user and parameters
         self.HW= User_help.Help_win(self.parent, default_message=self.Messages["Back2"], width=250,
-                                    shortcuts={self.Messages["Short_left_click"]:self.Messages["Short_left_click_En"],
-                                               self.Messages["Short_right_click"]: self.Messages["Short_right_click_Ba"],
-                                               self.Messages["Short_Mousewheel"]: self.Messages[ "Short_Mousewheel_T"],
-                                               self.Messages["Short_Ctrl_click"]:self.Messages["Short_Ctrl_click_G"],
-                                               self.Messages["Short_Ctrl_Rclick"]: self.Messages["Short_Ctrl_Rclick_G"],
-                                               self.Messages["Short_Ctrl_click_drag"]: self.Messages[ "Short_Ctrl_click_drag_G"]})
+                                    shortcuts={self.Messages["Short_left_click"]:
+                                                   self.Messages["Short_left_click_En"],
+                                               self.Messages["Short_right_click"]:
+                                                   self.Messages["Short_right_click_Ba"],
+                                               self.Messages["Short_Mousewheel"]:
+                                                   self.Messages["Short_Mousewheel_T"],
+                                               self.Messages["Short_Ctrl_click"]:
+                                                   self.Messages["Short_Ctrl_click_G"],
+                                               self.Messages["Short_Ctrl_Rclick"]:
+                                                   self.Messages["Short_Ctrl_Rclick_G"],
+                                               self.Messages["Short_Ctrl_click_drag"]:
+                                                   self.Messages["Short_Ctrl_click_drag_G"]})
 
         self.HW.grid(row=0, column=1,sticky="nsew")
 

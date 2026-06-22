@@ -19,12 +19,7 @@ class Modify(Frame):
             self.max_windows-=1
 
         #Importation of the messages
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        f.close()
-        self.Messages = UserMessages.Mess[self.Language.get()]
+        self.Messages = UserMessages.get_dict()
 
         #The two parameters we are interested in
         or_val_wl=self.boss.window_length

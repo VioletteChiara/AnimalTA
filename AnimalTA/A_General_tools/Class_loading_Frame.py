@@ -11,13 +11,7 @@ class Loading(Frame):
         self.parent=parent
 
         #Import messsages
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path(os.path.join("AnimalTA","Files","Language")), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        f.close()
-
-        self.Messages = UserMessages.Mess[self.Language.get()]
+        self.Messages = UserMessages.get_dict()
 
         self.loading_canvas = Frame(self,**Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.loading_canvas.grid(row=4, columnspan=2)

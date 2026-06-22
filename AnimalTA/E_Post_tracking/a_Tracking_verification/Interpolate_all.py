@@ -3,12 +3,38 @@ from AnimalTA.E_Post_tracking import Coos_loader_saver as CoosLS
 
 
 def interpolate_all(Vid):
-    Coos, who_is_here = CoosLS.load_coos(Vid)
+    Coos = CoosLS.load_coos(Vid)
     Blancs = []
+    try:  # Old versions of AnimalTA did not had the possibility to have a variable number of targets, this is to avoid compatibility problems
+        if Vid.Track[1][8]:
+            fixed = True
+        else:
+            fixed = False
+    except:
+        Vid.Track[1].append(False)
+        fixed = True
+
+
     for col in range(len(Coos)):
         Blancs.append([])
         pdt_blanc = False
-        for raw in range(len(Coos[col])):
+
+        if not fixed:
+            mask = Coos[col,:,0] < -1  # only this part is loaded
+            if mask.any():
+                first = mask.argmin()
+                last = len(mask) - 1 - mask[::-1].argmin()
+            else:
+                first = last = None
+
+            if first is None:
+                first=0
+                last=len(Coos[col])-1
+        else:
+            first = 0
+            last = len(Coos[col]) - 1
+
+        for raw in range(first, last+1):
             if Coos[col][raw][0] == -1000:
                 if pdt_blanc == False:
                     Deb = raw

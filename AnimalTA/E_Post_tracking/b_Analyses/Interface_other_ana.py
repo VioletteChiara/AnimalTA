@@ -1,26 +1,10 @@
 from tkinter import *
-from tkinter import ttk
-from AnimalTA.A_General_tools import Function_draw_arenas, UserMessages, User_help, Class_loading_Frame, Color_settings, Interface_extend, Small_info, Diverse_functions
-from AnimalTA.E_Post_tracking.b_Analyses import Body_part_functions
-import numpy as np
-import PIL
-import math
-import cv2
-from operator import itemgetter
-from skimage import draw
-from functools import partial
-import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-from tkinter import filedialog
+
+from AnimalTA.A_General_tools import UserMessages, Color_settings, Interface_extend, Small_info, Diverse_functions
 from tkinter import ttk
 
 
-"""This script codes four classes inherited from Frame, each one associated with one kind of data analyses. 
-The objective of these frame is to allow the user to determine the parameters associated with each of these analyses.
-1. Basic: analyses of individual trajectories: distance traveled, time moving, etc
-2. Spatial: analyses of the relationship between the trajectories and some elements of interest defined by user
-3. Exploration: analyses of the proportion of the arenas explored by the targets
-4. Interindividual: analyses of between-targets interactions (if N>1 for the arena)"""
+"""This script allow to add some more precise and punctually used kind of analysis."""
 
 class Details_other(Frame):
     #This Frame display a graph and associated results.
@@ -39,16 +23,9 @@ class Details_other(Frame):
         Grid.columnconfigure(self.parent, 0, weight=1)
         Grid.rowconfigure(self.parent, 0, weight=1)
 
-
-
         #Import messages
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        f.close()
-        self.Messages = UserMessages.Mess[self.Language.get()]
-        self.winfo_toplevel().title("Personalised analysis")
+        self.Messages = UserMessages.get_dict()
+        self.winfo_toplevel().title(self.Messages["Other_Ana1"])
 
         self.stay_on_top()
 
@@ -85,11 +62,10 @@ class Details_other(Frame):
         #ttk.Separator(self, orient=HORIZONTAL).grid(row=row, columnspan=2, sticky="new")
         row += 1
 
-        #CTXT
-        self.segment_corsses=Checkbutton(self, text="Save detailed data regarding segments crosses", var=self.crosses, **Color_settings.My_colors.Checkbutton_Base)
+        self.segment_corsses=Checkbutton(self, text=self.Messages["Other_Ana2"], var=self.crosses, **Color_settings.My_colors.Checkbutton_Base)
         self.segment_corsses.grid(row=row, column=0, sticky="new")
         Small_info.small_info(elem=self.segment_corsses, parent=self,
-                              message="Count number...")
+                              message=self.Messages["Other_Ana2_expl"])
         Segment_apply=Button(self, text=self.Messages["Analyses_B1"],command= self.apply_segments, **Color_settings.My_colors.Button_Base)
         Segment_apply.grid(row=row, column=1, sticky="new")
         row+=1
@@ -109,8 +85,8 @@ class Details_other(Frame):
         #ttk.Separator(self, orient=HORIZONTAL).grid(row=row, columnspan=2, sticky="ew")
         row += 1
 
-
-        Label(self,text="Durations of movements and stops", bg=Color_settings.My_colors.list_colors["Title1"], fg=Color_settings.My_colors.list_colors["Fg_Title1"]).grid(sticky="nsew",row=row, column=0, columnspan=2)
+        #Stops and moves durations
+        Label(self,text=self.Messages["Other_Ana6"], bg=Color_settings.My_colors.list_colors["Title1"], fg=Color_settings.My_colors.list_colors["Fg_Title1"]).grid(sticky="nsew",row=row, column=0, columnspan=2)
         row += 1
         durations_sm=Frame(self, **Color_settings.My_colors.Frame_Base)
         durations_sm.grid(row=row, column=0)
@@ -136,13 +112,13 @@ class Details_other(Frame):
                 col+=1
 
 
-        Label(durations_sm, **Color_settings.My_colors.Label_Base, text="Ignoring breaks of duration lower than ").grid(row=0,column=col+1, rowspan=2, sticky="nse")#CTXT
+        Label(durations_sm, **Color_settings.My_colors.Label_Base, text=self.Messages["Other_Ana4"]).grid(row=0,column=col+1, rowspan=2, sticky="nse")
         regLab = (self.register(self.change_sm_hole_dur), '%P', '%V')
 
         entry=Entry(durations_sm, text=str(self.sm_hole_dur), **Color_settings.My_colors.Entry_Base, validate="all", validatecommand=regLab)
-        entry.grid(row=0,column=col+2, rowspan=2)#CTXT
+        entry.grid(row=0,column=col+2, rowspan=2)
         entry.insert(0, str(self.sm_hole_dur))
-        Label(durations_sm, **Color_settings.My_colors.Label_Base, text="sec").grid( row=0, column=col + 3, rowspan=2)  # CTXT
+        Label(durations_sm, **Color_settings.My_colors.Label_Base, text=self.Messages["Crop9"]).grid( row=0, column=col + 3, rowspan=2)
 
         Details_apply=Button(self, text=self.Messages["Analyses_B1"],command= self.apply_sm, **Color_settings.My_colors.Button_Base)
         Details_apply.grid(row=row, column=1, sticky="new")
@@ -152,9 +128,8 @@ class Details_other(Frame):
         row += 1
 
 
-        #CTXT
         #Change details_data options
-        Label(self,text="Detailed data columns", bg=Color_settings.My_colors.list_colors["Title1"], fg=Color_settings.My_colors.list_colors["Fg_Title1"]).grid(sticky="nsew",row=row, column=0, columnspan=2)
+        Label(self,text=self.Messages["Other_Ana5"], bg=Color_settings.My_colors.list_colors["Title1"], fg=Color_settings.My_colors.list_colors["Fg_Title1"]).grid(sticky="nsew",row=row, column=0, columnspan=2)
         row += 1
 
         frame_all_details=Frame(self, **Color_settings.My_colors.Frame_Base)
@@ -172,7 +147,9 @@ class Details_other(Frame):
         sub_row=0
         col=0
         for elem in self.list_details_options:
-            Checkbutton(frame_all_details, text=elem, var=self.details_data_options[elem],**Color_settings.My_colors.Checkbutton_Base).grid(row=sub_row, column=col, sticky="nsw")
+            c=Checkbutton(frame_all_details, text=elem, var=self.details_data_options[elem],**Color_settings.My_colors.Checkbutton_Base)
+            c.grid(row=sub_row, column=col, sticky="nsw")
+            Small_info.small_info(elem=c,parent=self,message=self.Messages[elem+"_Details_exple"])
             sub_row+=1
             if sub_row>nb_row:
                 sub_row=0
@@ -184,6 +161,39 @@ class Details_other(Frame):
 
         ttk.Separator(self, orient=HORIZONTAL).grid(row=row, columnspan=2, sticky="new")
         row += 1
+
+        #Group level data:
+        Label(self,text=self.Messages["Other_Ana7"], bg=Color_settings.My_colors.list_colors["Title1"], fg=Color_settings.My_colors.list_colors["Fg_Title1"]).grid(sticky="nsew",row=row, column=0, columnspan=2)
+        row += 1
+        group_data=Frame(self, **Color_settings.My_colors.Frame_Base)
+        group_data.grid(row=row, column=0)
+
+        self.list_group_options=Diverse_functions.list_group_options
+
+        for elem in self.list_group_options:
+            if elem not in self.Vid.Group_data:
+                self.Vid.Group_data[elem] = False
+
+        self.list_group_options={elem:BooleanVar(value=self.Vid.Group_data[elem]) for elem in self.list_group_options}
+
+        nb_row=len(self.list_group_options)//3
+        sub_row=0
+        col=0
+        for elem in self.list_group_options:
+            Checkbutton(group_data, text=elem, var=self.list_group_options[elem],**Color_settings.My_colors.Checkbutton_Base).grid(row=sub_row, column=col, sticky="nsw")
+            sub_row+=1
+            if sub_row>nb_row:
+                sub_row=0
+                col+=1
+
+        Details_apply=Button(self, text=self.Messages["Analyses_B1"],command= self.apply_gr, **Color_settings.My_colors.Button_Base)
+        Details_apply.grid(row=row, column=1, sticky="new")
+        row +=1
+
+        ttk.Separator(self, orient=HORIZONTAL).grid(row=row, columnspan=2, sticky="ew")
+        row += 1
+
+
 
         Grid.columnconfigure(self, 0, weight=1)
         for r in range(row+1):
@@ -234,6 +244,11 @@ class Details_other(Frame):
         interface = Interface_extend.Extend(parent=newWindow, value=[{elem:self.list_stops_moves_options[elem].get() for elem in self.list_stops_moves_options},self.sm_hole_dur],
                                             boss=self.main,
                                             Video_file=self.Vid, type="analyses_sm")
+    def apply_gr(self):
+        newWindow = Toplevel(self.parent.master)
+        interface = Interface_extend.Extend(parent=newWindow, value={elem:self.list_group_options[elem].get() for elem in self.list_group_options},
+                                            boss=self.main,
+                                            Video_file=self.Vid, type="analyses_gr")
 
     def apply_details(self):
         newWindow = Toplevel(self.parent.master)
@@ -253,6 +268,7 @@ class Details_other(Frame):
         self.Vid.More_ana_Crosses=self.crosses.get()
         self.Vid.Details_options = {elem:self.details_data_options[elem].get() for elem in self.details_data_options}
         self.Vid.Stops_Moves_options=[{elem:self.list_stops_moves_options[elem].get() for elem in self.list_stops_moves_options}, self.sm_hole_dur]
+        self.Vid.Group_data = {elem:self.list_group_options[elem].get() for elem in self.list_group_options}
         self.Vid.Explored_complex=self.explored.get()
         self.parent.destroy()
 

@@ -33,12 +33,7 @@ class Draw_ent(Frame):
         Grid.columnconfigure(self.parent, 0, weight=1)
 
         #Import messages
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        f.close()
-        self.Messages = UserMessages.Mess[self.Language.get()]
+        self.Messages = UserMessages.get_dict()
 
         #Relative to size of the image
         self.zoom_sq=[0,0,self.img.shape[1],self.img.shape[0]]
@@ -67,7 +62,15 @@ class Draw_ent(Frame):
         self.final_width = 750
         self.Size = [self.img.shape[0],self.img.shape[1]]
 
-        self.HW = User_help.Help_win(self, default_message=self.Messages["Mask10"], width=300, shortcuts={self.Messages["Short_left_click"]:self.Messages["Short_left_click_En"],self.Messages["Short_Mousewheel"]:self.Messages["Short_Mousewheel_T"], self.Messages["Short_Ctrl_click"]:self.Messages["Short_Ctrl_click_G"],self.Messages["Short_Ctrl_Rclick"]:self.Messages["Short_Ctrl_Rclick_G"]})
+        self.HW = User_help.Help_win(self, default_message=self.Messages["Mask10"], width=300, shortcuts={
+                                                                                                          self.Messages["Short_left_click"]:
+                                                                                                              self.Messages["Short_left_click_En"],
+                                                                                                          self.Messages["Short_Mousewheel"]:
+                                                                                                              self.Messages["Short_Mousewheel_T"],
+                                                                                                          self.Messages["Short_Ctrl_click"]:
+                                                                                                              self.Messages["Short_Ctrl_click_G"],
+                                                                                                          self.Messages["Short_Ctrl_Rclick"]:
+                                                                                                              self.Messages["Short_Ctrl_Rclick_G"]})
         self.HW.grid(row=0, column=1, sticky="nsew")
 
         User_Fr=Frame(self)

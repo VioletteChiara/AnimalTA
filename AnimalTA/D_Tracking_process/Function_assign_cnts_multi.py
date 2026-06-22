@@ -52,7 +52,6 @@ def Treat_cnts_fixed(Queue, Nb_images_processed, Vid, Arenas, start, end, prev_r
 
         all_frames = np.arange(start, end + one_every, one_every)
         for frame in all_frames:
-            print(frame)
             frame = round(frame)#While we are still loading images or there are some extracted images that have not been associated yet
             found=False
             while not found:
@@ -68,7 +67,7 @@ def Treat_cnts_fixed(Queue, Nb_images_processed, Vid, Arenas, start, end, prev_r
          # We go frame by frame respecting the frame rate defined by user
 
             nb_img_done+=1
-            if nb_img_done>=100:
+            if nb_img_done>=25:
                 with Nb_images_processed.get_lock():  # Acquire lock to safely modify the shared value
                     Nb_images_processed.value += nb_img_done
                 nb_img_done=0
@@ -345,7 +344,6 @@ def Treat_cnts_fixed(Queue, Nb_images_processed, Vid, Arenas, start, end, prev_r
             writer.writerow(row)
 
 def Treat_cnts_variable(Queue, Nb_images_processed, Vid, Arenas, Main_Arenas_image, Main_Arenas_Bimage, start, end, ID_kepts, prev_row, To_save, portion, one_every, specify_entrance, use_Kalman=False, head_tail=False):
-    print("Treat")
     delay_lost=5 #How much frames do we wait before considering a target left the entrance area if it is lost
     delay_found=3#How much time of existance do we consider for a target to be real (inside entrance area)
     all_NA = [True] * len(Arenas)  # Value = True if there is only "NA" in the first frame

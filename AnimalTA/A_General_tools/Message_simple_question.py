@@ -19,16 +19,21 @@ class Messagebox(Toplevel):
         self.entry=entry
 
         if len(Possibilities)==0:
-            Possibilities=[self.Messages["Yes"],self.Messages["No"]]
+            Possibilities=[self.Messages["Yes"],
+                           self.Messages["No"]]
+
+
 
 
 
         Grid.rowconfigure(self, 0, weight=1)
         Grid.rowconfigure(self, 1, weight=1)
         Grid.rowconfigure(self, 2, weight=1, minsize=2)
+        Grid.columnconfigure(self, 0, weight=1)
 
         row=0
-        Label(self,text=message, height=5, **Color_settings.My_colors.Label_Base, wraplength=300).grid(row=row, column=0, columnspan=len(Possibilities), sticky="nsew")
+        self.label=Label(self,text=message, height=5, **Color_settings.My_colors.Label_Base, wraplength=300)
+        self.label.grid(row=row, column=0, columnspan=len(Possibilities), sticky="nsew")
         row += 1
 
         if self.entry:
@@ -59,6 +64,14 @@ class Messagebox(Toplevel):
             count+=1
 
         row += 1
+
+        self.bind('<Configure>', self.resize)
+
+    def resize(self,event):
+        self.label.config(wraplength=event.width)
+
+
+
 
     def return_val(self, val):
         if self.entry:

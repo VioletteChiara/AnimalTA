@@ -36,12 +36,7 @@ class Analyse_track(Frame):
         self.speed=speed
 
         # Messages importation
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        self.Messages = UserMessages.Mess[self.Language.get()]
-        f.close()
+        self.Messages = UserMessages.get_dict()
 
         self.Infos_explo = [0, 1, 2]  # Characteristics of the exploration parameters
         self.Infos_inter = 0  # Threshold under which two targets are considered as neighbors
@@ -66,12 +61,18 @@ class Analyse_track(Frame):
 
         #Help panel
         self.HW = User_help.Help_win(self.parent, default_message=self.Messages["Analyses0"],
-                                     shortcuts={self.Messages["Short_Space"]: self.Messages["Short_Space_G"],
-                                               self.Messages["Short_Ctrl_click"]:self.Messages["Short_Ctrl_click_G"],
-                                               self.Messages["Short_Ctrl_Rclick"]: self.Messages["Short_Ctrl_Rclick_G"],
-                                               self.Messages["Short_Ctrl_click_drag"]: self.Messages["Short_Ctrl_click_drag_G"],
-                                               self.Messages["Short_RArrow"]: self.Messages["Short_RArrow_G"],
-                                               self.Messages["Short_LArrow"]: self.Messages[ "Short_LArrow_G"]})
+                                     shortcuts={self.Messages["Short_Space"]:
+                                                    self.Messages["Short_Space_G"],
+                                               self.Messages["Short_Ctrl_click"]:
+                                                   self.Messages["Short_Ctrl_click_G"],
+                                               self.Messages["Short_Ctrl_Rclick"]:
+                                                    self.Messages["Short_Ctrl_Rclick_G"],
+                                               self.Messages["Short_Ctrl_click_drag"]:
+                                                    self.Messages["Short_Ctrl_click_drag_G"],
+                                               self.Messages["Short_RArrow"]:
+                                                    self.Messages["Short_RArrow_G"],
+                                               self.Messages["Short_LArrow"]:
+                                                    self.Messages["Short_LArrow_G"]})
 
         self.HW.grid(row=0, column=1, sticky="nsew")
 
@@ -220,7 +221,7 @@ class Analyse_track(Frame):
         self.liste_ana[len(self.liste_ana) - 1].bind("<Leave>", self.HW.remove_tmp_message)
 
 
-        bouton_more_ana = Button(Liste_analyses, text="More Analysis", command=self.more_ana, **Color_settings.My_colors.Button_Base)
+        bouton_more_ana = Button(Liste_analyses, text=self.Messages["Analyses15"], command=self.more_ana, **Color_settings.My_colors.Button_Base)
         bouton_more_ana.grid(row=len(self.liste_ana)*2, columnspan=3,column=0, sticky="nswe")
         bouton_more_ana.bind("<Enter>", lambda a: self.HW.change_tmp_message("Add more personalised analyses"))
         bouton_more_ana.bind("<Leave>", self.HW.remove_tmp_message)
@@ -461,7 +462,7 @@ class Analyse_track(Frame):
         else:
             self.to_sub = 0
 
-        self.Coos_brutes, _ = CoosLS.load_coos(self.Vid, location=self)
+        self.Coos_brutes = CoosLS.load_coos(self.Vid, location=self)
         self.Coos=self.Coos_brutes.copy()
         self.NB_ind = len(self.Vid.Identities)
 

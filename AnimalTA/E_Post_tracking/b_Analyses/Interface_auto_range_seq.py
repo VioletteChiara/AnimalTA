@@ -24,33 +24,27 @@ class Lists(Frame):
         self.one_every = self.Current_Vid.Frame_rate[0] / self.Current_Vid.Frame_rate[1]
         
         #Import messages
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        f.close()
+        self.Messages = UserMessages.get_dict()
 
-        Grid.columnconfigure(self.parent, 0, weight=1)  ########NEW
-        Grid.rowconfigure(self.parent, 0, weight=1)  ########NEW
+        Grid.columnconfigure(self.parent, 0, weight=1)
+        Grid.rowconfigure(self.parent, 0, weight=1)
 
-        Grid.columnconfigure(self, 0, weight=1)  ########NEW
-        Grid.columnconfigure(self, 1, weight=100)  ########NEW
-        Grid.rowconfigure(self, 0, weight=1)  ########NEW
-        Grid.rowconfigure(self, 1, weight=10)  ########NEW
-        Grid.rowconfigure(self, 2, weight=1)  ########NEW
+        Grid.columnconfigure(self, 0, weight=1)
+        Grid.columnconfigure(self, 1, weight=100)
+        Grid.rowconfigure(self, 0, weight=1)
+        Grid.rowconfigure(self, 1, weight=10)
+        Grid.rowconfigure(self, 2, weight=1)
 
-        self.Messages = UserMessages.Mess[self.Language.get()]
-        self.winfo_toplevel().title("Create sequences by range")#CTXT
+        self.winfo_toplevel().title(self.Messages["Auto_range1"])
 
 
         #User help
-        #CTXT
-        User_help=Label(self,text="Fill in the information and the program will create associated sequences", wraplength=800, justify=LEFT, **Color_settings.My_colors.Label_Base)
+        User_help=Label(self,text=self.Messages["Auto_range2"], wraplength=800, justify=LEFT, **Color_settings.My_colors.Label_Base)
         User_help.grid(row=0, column=0, columnspan=5)
 
 
         self.Seq_type = StringVar(self)
-        self.Seq_type.set("Time")  # default value
+        self.Seq_type.set(self.Messages["Sequences_Time"])  # default value
 
         all_values_shapes = []
         for shape in range(len(self.Current_Vid.Analyses[1][self.Area])):
@@ -59,9 +53,9 @@ class Lists(Frame):
 
 
         if len(all_values_shapes)>0:
-            all_types=["Time", "Exploration","Element of interest"]
+            all_types=[self.Messages["Sequences_Time"], self.Messages["Sequences_Explo"],self.Messages["Sequences_Spatial_event"]]
         else:
-            all_types = ["Time", "Exploration"]
+            all_types = [self.Messages["Sequences_Time"], self.Messages["Sequences_Explo"]]
 
         dropdown_Menu = OptionMenu(self, self.Seq_type, *all_types ,command=self.change_type)
         dropdown_Menu["menu"].config(**Color_settings.My_colors.OptnMenu_Base)
@@ -131,19 +125,19 @@ class Lists(Frame):
 
 
     def change_type(self, event):
-        if self.Seq_type.get()=="Time":
+        if self.Seq_type.get()==self.Messages["Sequences_Time"]:
             self.begin.set("0")
             self.end.set("600")
             self.each.set("300")
             self.Frame_range.grid(row=1, column=1, columnspan=3, sticky="nsew")
             self.Frame_elems.grid_forget()
-        elif self.Seq_type.get()=="Exploration":
+        elif self.Seq_type.get()==self.Messages["Sequences_Explo"]:
             self.begin.set("0")
             self.end.set("100")
             self.each.set("10")
             self.Frame_range.grid(row=1, column=1, columnspan=3, sticky="nsew")
             self.Frame_elems.grid_forget()
-        elif self.Seq_type.get()=="Element of interest":
+        elif self.Seq_type.get()==self.Messages["Sequences_Spatial_event"]:
             self.Frame_elems.grid(row=1, column=1, columnspan=3, sticky="nsew")
             self.Frame_range.grid_forget()
 
@@ -156,9 +150,14 @@ class Lists(Frame):
         self.boss.ready=True
 
     def validate(self):
-        if self.Seq_type.get()!="Element of interest":
+        if self.Seq_type.get()!=self.Messages["Sequences_Spatial_event"]:
             #Extend the elements to other arenas
-            new_seq = ["Auto_" +self.Seq_type.get()+ "_" +str(round(float(self.begin.get()),2)) + "_to_" + str(round(float(self.end.get()),2)) + "_each_"+str(round(float(self.each.get()),2)), ["Auto", str(self.begin.get()), self.Seq_type.get(), "End", str(self.begin.get()),str(self.each.get())],
+            if self.Seq_type.get()==self.Messages["Sequences_Time"]:
+                name_seq_type="Time"
+            elif self.Seq_type.get()==self.Messages["Sequences_Explo"]:
+                name_seq_type = "Exploration"
+
+            new_seq = ["Auto_" +name_seq_type+ "_" +str(round(float(self.begin.get()),2)) + "_to_" + str(round(float(self.end.get()),2)) + "_each_"+str(round(float(self.each.get()),2)), ["Auto", str(self.begin.get()), self.Seq_type.get(), "End", str(self.begin.get()),str(self.each.get())],
                        ["", str(self.end.get()), "", "", "", "-1"]]
             self.Current_Vid.Sequences[self.Current_Ind].append(new_seq)
 

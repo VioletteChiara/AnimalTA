@@ -1,3 +1,4 @@
+import pickle
 from tkinter import *
 import webbrowser
 from AnimalTA.A_General_tools import Color_settings, Diverse_functions,UserMessages, Interface_settings
@@ -20,6 +21,10 @@ class Information_panel(Frame):
         self.config(**Color_settings.My_colors.Frame_Base, bd=0, highlightthickness=0)
         self.new_update=new_update
 
+        #Impotrt the language settings
+        self.Messages = UserMessages.get_dict()
+
+
         Grid.columnconfigure(parent, 0, weight=1)
         Grid.rowconfigure(parent, 0, weight=1)
 
@@ -36,28 +41,26 @@ class Information_panel(Frame):
         #Short summary about current version, how to cite and how to find guidelines.
         Crow=0
         if new_update!=None:
-            Lab_update=Label(self, text="New update available: " + new_update, font=("Arial", "20", "bold"), **Color_settings.My_colors.Label_Base)
+            Lab_update=Label(self, text=self.Messages["Interface_Info_L2"] + new_update, font=("Arial", "20", "bold"), **Color_settings.My_colors.Label_Base)
             Lab_update.config(fg=Color_settings.My_colors.list_colors["Fg_not_valide"])
             Lab_update.grid(row=Crow, column=0,columnspan=2, sticky="nsew")
             Crow+=1
 
-            #CTXT
-            link = Label(self, text="Download at: http://vchiara.eu/index.php/animalta", font=("Arial", "14", "bold"), cursor="hand2", **Color_settings.My_colors.Label_Base)
+            link = Label(self, text=self.Messages["Interface_Info_L3"]+ "http://vchiara.eu/index.php/animalta", font=("Arial", "14", "bold"), cursor="hand2", **Color_settings.My_colors.Label_Base)
             link.config(fg="#b448cd")
             link.grid(row=Crow, column=0, columnspan=2, sticky="nsew")
             link.bind("<Button-1>", self.send_link)
             Crow += 1
 
-            #CTXT
-            Lab11 = Label(self, text="Or\nAllow AnimalTA to download and install the new update(s):", font=("Arial", "16", "bold"), **Color_settings.My_colors.Label_Base)
+            Lab11 = Label(self, text=self.Messages["Interface_Info_L1"], font=("Arial", "16", "bold"), **Color_settings.My_colors.Label_Base)
             Lab11.grid(row=Crow, column=0, columnspan=2, sticky="nsew")
             Crow += 1
 
-            ponctB=Button(self, text="Do the update (only this time)", command=self.do_update, **Color_settings.My_colors.Button_Base)
+            ponctB=Button(self, text=self.Messages["Interface_Info_L4"], command=self.do_update, **Color_settings.My_colors.Button_Base)
             ponctB.config(background=Color_settings.My_colors.list_colors["Validate"], fg=Color_settings.My_colors.list_colors["Fg_Validate"])
             ponctB.grid(row=Crow, column=0,columnspan=1, sticky="nsew")
 
-            auto_upB = Button(self, text="Do the update and activate\nAuto-update (for future updates)", command=self.activate_auto, **Color_settings.My_colors.Button_Base)
+            auto_upB = Button(self, text=self.Messages["Interface_Info_L5"], command=self.activate_auto, **Color_settings.My_colors.Button_Base)
             auto_upB.config(background=Color_settings.My_colors.list_colors["Validate"], fg=Color_settings.My_colors.list_colors["Fg_Validate"])
             auto_upB.grid(row=Crow, column=1, columnspan=1, sticky="nsew")
 
@@ -66,19 +69,18 @@ class Information_panel(Frame):
             #Space
             Crow += 1
 
-
             #CTXT
-            Lab_version=Label(self, text="AnimalTA. Pre release version 4.0.0", font=("Arial", "14", "bold"), justify=LEFT, **Color_settings.My_colors.Label_Base)
+            Lab_version=Label(self, text="AnimalTA. Release version 4.2.0", font=("Arial", "14", "bold"), justify=LEFT, **Color_settings.My_colors.Label_Base)
             Lab_version.grid(row=Crow, column=0,columnspan=2, sticky="nsw")
             Crow += 1
 
         else:
             # CTXT
-            Lab_version=Label(self, text="AnimalTA. Dev version" , font=("Arial", "14", "bold"), **Color_settings.My_colors.Label_Base)
+            Lab_version=Label(self, text="AnimalTA. Release version 4.2.0" , font=("Arial", "14", "bold"), **Color_settings.My_colors.Label_Base)
             Lab_version.grid(row=Crow, column=0,columnspan=2, sticky="nsw")
             Crow += 1
 
-        Lab_cite=Label(self, text="How to cite:", **Color_settings.My_colors.Label_Base)
+        Lab_cite=Label(self, text=self.Messages["Interface_Info_L6"], **Color_settings.My_colors.Label_Base)
         Lab_cite.grid(row=Crow, column=0,columnspan=2, sticky="nsw")
         Crow += 1
 
@@ -91,9 +93,8 @@ class Information_panel(Frame):
         #Space
         Crow += 1
 
-        Lab_contact=Label(self, text="Contact:", **Color_settings.My_colors.Label_Base)
-        Lab_contact.grid(row=Crow, column=0, sticky="nsw")
-        Crow += 1
+        Lab_contact=Label(self, text=self.Messages["Interface_Info_L7"], **Color_settings.My_colors.Label_Base)
+        Lab_contact.grid(row=Crow, column=0, sticky="nse")
 
         mail= Text(self, height=1, width=30, **Color_settings.My_colors.Label_Base)
         mail.insert("1.0", "contact.AnimalTA@vchiara.eu")
@@ -104,7 +105,7 @@ class Information_panel(Frame):
         #Space
         Crow += 1
 
-        Lab_Help=Label(self, text="Need help? Go check the guidelines or the video tutorials:", **Color_settings.My_colors.Label_Base)
+        Lab_Help=Label(self, text=self.Messages["Interface_Info_L8"], **Color_settings.My_colors.Label_Base)
         Lab_Help.grid(row=Crow, column=0,columnspan=2, sticky="nsew")
         Crow += 1
 
@@ -166,8 +167,8 @@ class Information_panel(Frame):
 
             else:
                 Interface_pretracking.CustomDialog(self.master,
-                                                   text="The update was not successful, ensure the computer is connected to internet.",
-                                                   title="Update failed")
+                                                   text=self.Messages["Interface_Warn_2"],
+                                                   title=self.Messages["Interface_Warn_1"])
         except:
             pass
 

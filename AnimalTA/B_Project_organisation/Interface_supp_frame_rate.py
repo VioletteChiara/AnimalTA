@@ -25,12 +25,7 @@ class Details_fps(Frame):
 
 
         #Message importation
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        self.Messages = UserMessages.Mess[self.Language.get()]
-        f.close()
+        self.Messages = UserMessages.get_dict()
 
 
         warning=Label(self,text=self.Messages["Change_Fps1"],**Color_settings.My_colors.Label_Base)
@@ -47,7 +42,6 @@ class Details_fps(Frame):
         self.Entry_spf.grid(row=1, column=2)
         Label(self, text=self.Messages["Crop9"],**Color_settings.My_colors.Label_Base).grid(row=1, column=3)
 
-        self.Messages = UserMessages.Mess[self.Language.get()]
         self.winfo_toplevel().title("")
 
         #Validation button

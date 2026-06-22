@@ -35,12 +35,7 @@ class Mask(Frame):
 
         #Import messages
         self.Vid = Video_file
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path(os.path.join("AnimalTA","Files","Language")), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        f.close()
-        self.Messages = UserMessages.Mess[self.Language.get()]
+        self.Messages = UserMessages.get_dict()
 
         #Relative to size of the image
         self.zoom_sq=[0,0,self.Vid.shape[1],self.Vid.shape[0]]
@@ -104,30 +99,42 @@ class Mask(Frame):
         #Ton add more complex and less commonly used options
         if not self.portion:
             self.holder_opt = StringVar()
-            self.holder_opt.set("More options")#CTXT
-            Opt1 = OptionMenu(self, self.holder_opt,*["Adapt cropping"], command=self.do_more_options)#CTXT
+            self.holder_opt.set(self.Messages["More_options"])
+            Opt1 = OptionMenu(self, self.holder_opt,*[self.Messages["More_adapt_cropping"]], command=self.do_more_options)
             Opt1.config(**Color_settings.My_colors.OptnMenu_Base)
             Opt1.grid(row=3, column=0, sticky="ns")
             Opt1["menu"].config(**Color_settings.My_colors.OptnMenu_Base)
-            Grid.rowconfigure(self, 3, weight=1)  ########NEW
+            Grid.rowconfigure(self, 3, weight=1)
 
 
 
 
         #Help user and parameters
         self.HW= User_help.Help_win(self.parent, default_message=self.Messages["Mask10"],
-                                    shortcuts={self.Messages["Short_left_click"]:self.Messages["Short_left_click_Ar"],
-                                               self.Messages["Short_Return"]:self.Messages["Short_Return_Ar"],
-                                               self.Messages["Short_right_click"]:self.Messages["Short_right_click_Ar"],
-                                               self.Messages["Short_del"]:self.Messages["Short_del_Ar"],
-                                               self.Messages["Short_left_drag"]:self.Messages["Short_left_drag_Ar"],
-                                               self.Messages["Short_Shift_left_drag"]:self.Messages["Short_Shift_left_drag_Ar"],
-                                               self.Messages["Short_Shift_right_drag"]:self.Messages["Short_Shift_right_drag_Ar"],
-                                               self.Messages["Short_Shift_right_drag"]: self.Messages["Short_Shift_right_drag_Ar"],
-                                               self.Messages["Short_R_right_drag"]: self.Messages["Short_R_right_drag_Ar"],
-                                               self.Messages["Short_Ctrl_click"]: self.Messages["Short_Ctrl_click_G"],
-                                               self.Messages["Short_Ctrl_Rclick"]: self.Messages["Short_Ctrl_Rclick_G"],})
+                                    shortcuts={self.Messages["Short_left_click"]:
+                                                   self.Messages["Short_left_click_Ar"],
+                                               self.Messages["Short_Return"]:
+                                                   self.Messages["Short_Return_Ar"],
+                                               self.Messages["Short_right_click"]:
+                                                   self.Messages["Short_right_click_Ar"],
+                                               self.Messages["Short_del"]:
+                                                   self.Messages["Short_del_Ar"],
+                                               self.Messages["Short_left_drag"]:
+                                                   self.Messages["Short_left_drag_Ar"],
+                                               self.Messages["Short_Shift_left_drag"]:
+                                                   self.Messages["Short_Shift_left_drag_Ar"],
+                                               self.Messages["Short_Shift_right_drag"]:
+                                                   self.Messages["Short_Shift_right_drag_Ar"],
+                                               self.Messages["Short_Shift_right_drag"]:
+                                                   self.Messages["Short_Shift_right_drag_Ar"],
+                                               self.Messages["Short_R_right_drag"]:
+                                                   self.Messages["Short_R_right_drag_Ar"],
+                                               self.Messages["Short_Ctrl_click"]:
+                                                   self.Messages["Short_Ctrl_click_G"],
+                                               self.Messages["Short_Ctrl_Rclick"]:
+                                                   self.Messages["Short_Ctrl_Rclick_G"],})
         self.HW.grid(row=0, column=1,sticky="nsew")
+
 
         ##Parameters
         self.canvas_User_params = Canvas(self.parent, width=200, height=0, bd=0, highlightthickness=0, **Color_settings.My_colors.Frame_Base)
@@ -215,10 +222,12 @@ class Mask(Frame):
 
     def do_more_options(self, choice):
         '''To avoid having too much options displayed propose some supplementary options. This function is called by the "More options OptionMenu"'''
-        if choice=="Adapt cropping":
-            question = MsgBox.Messagebox(parent=self.parent, title="Automatic spatial cropping",
-                                         message="Be aware that automatique cropping will also apply to the background.",
-                                         Possibilities=["Only this video", "All untracked videos of the project", "Cancel"])#CTXT
+        if choice==self.Messages["More_adapt_cropping"]:
+            question = MsgBox.Messagebox(parent=self.parent, title=self.Messages["Adapt_cropping_T"],
+                                         message=self.Messages["Adapt_cropping_warn"],
+                                         Possibilities=[self.Messages["Sequences11"],
+                                                        self.Messages["Adapt_cropping_warn1"],
+                                                        self.Messages["Cancel"]])
             self.parent.wait_window(question)
             answer = question.result
 
@@ -279,7 +288,7 @@ class Mask(Frame):
 
             else:
                 print("Cancel")
-                self.holder_opt.set("More options")  # CTXT
+                self.holder_opt.set(self.Messages["More_options"])
 
 
     def update_ratio(self, *args):
@@ -381,6 +390,7 @@ class Mask(Frame):
                     break
         else:
             self.End_of_window()
+
 
         self.main_frame.mask_shape=self.Shape_ar.get()
 

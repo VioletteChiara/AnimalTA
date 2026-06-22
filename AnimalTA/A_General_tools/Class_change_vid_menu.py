@@ -5,12 +5,19 @@ from AnimalTA.A_General_tools import Color_settings
 
 "This Frame is used to propose the OptionMenu with all available videos, so the user can jump from one video to another without going back to the main menu"
 class Change_Vid_Menu(Frame):
-    def __init__(self, parent, main_frame, Vid, func):
+    def __init__(self, parent, main_frame, Vid, func, other_parent=None):
         Frame.__init__(self, parent, bd=2, highlightthickness=1, relief='flat', **Color_settings.My_colors.Frame_Base)
         self.main_frame=main_frame
         self.Vid=Vid
         self.parent=parent
         self.func=func
+
+        if not other_parent is None:
+            self.parent_info=other_parent
+        else:
+            self.parent_info = parent
+
+
 
         #All videos are available for pretracking processes, but only tracked videos are available for post-tracking processes
         if self.func!="analysis" and self.func!="check" and self.func!="event" and self.func!="back":
@@ -31,12 +38,12 @@ class Change_Vid_Menu(Frame):
         #Change the current video for another one (vid)
         #The speed info indicates at which speed the Video-Reader should be opened (to avoid that the user needs to change each time when changing the vidéo)
         if self.func != "mask" and self.func != "back":
-            speed=self.parent.Vid_Lecteur.speed.get()
+            speed=self.parent_info.Vid_Lecteur.speed.get()
         if self.func =="analysis":
-            CheckVar=self.parent.CheckVar.get()
+            CheckVar=self.parent_info.CheckVar.get()
         for V in self.main_frame.liste_of_videos:
             if V==self.dict_Names[vid] and V!=self.Vid:
-                self.parent.End_of_window()
+                self.parent_info.End_of_window()
                 self.main_frame.list_projects.append(Class_Row_Videos.Row_Can(parent=self.main_frame.canvas_rows, main_boss=self.main_frame, Video_file=V, proj_pos=len(self.main_frame.list_projects)))
                 if self.func=="crop":
                     self.main_frame.list_projects[-1].crop_vid(speed)

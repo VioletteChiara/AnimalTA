@@ -14,11 +14,7 @@ class Help_win(Frame):
         self.config(height=100, highlightthickness=4, relief='flat', highlightcolor=self.list_colors["Title1"], highlightbackground=self.list_colors["Title1"], background=self.list_colors["Base"])
 
         #Messages importation
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path(os.path.join("AnimalTA","Files","Language")), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        f.close()
-        self.Messages = UserMessages.Mess[self.Language.get()]
+        self.Messages = UserMessages.get_dict()
         self.default_message=default_message
 
         self.logo = cv2.imread(UserMessages.resource_path(os.path.join("AnimalTA", "Files", "Logo_fond.png")))

@@ -20,12 +20,7 @@ class Cropping(Frame):
         self.CSp=self.Vid.Cropped_sp[1].copy()#Where to draw the cropping lines
         self.CSp=[int(val) for val in self.CSp]
         #Importation of the messages
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path(UserMessages.resource_path(os.path.join("AnimalTA","Files","Language"))), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        f.close()
-        self.Messages = UserMessages.Mess[self.Language.get()]
+        self.Messages = UserMessages.get_dict()
 
         self.fr_rate=self.Vid.Frame_rate[1]
         self.one_every=self.Vid.Frame_rate[0]/self.Vid.Frame_rate[1]
@@ -120,12 +115,18 @@ class Cropping(Frame):
         self.canvas_fix.grid_columnconfigure((0,2,4), weight=1, uniform="column")
 
         self.HW= User_help.Help_win(self.parent, default_message=self.Messages["Crop2"],
-                                    shortcuts={self.Messages["Short_Space"]: self.Messages["Short_Space_G"],
-                                               self.Messages["Short_Ctrl_click"]:self.Messages["Short_Ctrl_click_G"],
-                                               self.Messages["Short_Ctrl_Rclick"]: self.Messages["Short_Ctrl_Rclick_G"],
-                                               self.Messages["Short_Ctrl_click_drag"]: self.Messages["Short_Ctrl_click_drag_G"],
-                                               self.Messages["Short_RArrow"]: self.Messages["Short_RArrow_G"],
-                                               self.Messages["Short_LArrow"]: self.Messages[ "Short_LArrow_G"]}, width=250)
+                                    shortcuts={self.Messages["Short_Space"]:
+                                                   self.Messages["Short_Space_G"],
+                                               self.Messages["Short_Ctrl_click"]:
+                                                   self.Messages["Short_Ctrl_click_G"],
+                                               self.Messages["Short_Ctrl_Rclick"]:
+                                                   self.Messages["Short_Ctrl_Rclick_G"],
+                                               self.Messages["Short_Ctrl_click_drag"]:
+                                                   self.Messages["Short_Ctrl_click_drag_G"],
+                                               self.Messages["Short_RArrow"]:
+                                                   self.Messages["Short_RArrow_G"],
+                                               self.Messages["Short_LArrow"]:
+                                                   self.Messages["Short_LArrow_G"]}, width=250)
 
         self.HW.grid(row=0, column=1,sticky="nsew")
 

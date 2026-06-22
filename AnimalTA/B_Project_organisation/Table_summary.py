@@ -23,12 +23,7 @@ class table(Frame):
 
 
         #Messages importation
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        self.Messages = UserMessages.Mess[self.Language.get()]
-        f.close()
+        self.Messages = UserMessages.get_dict()
 
         table=[]
         to_highlight = []
@@ -94,7 +89,7 @@ class table(Frame):
 
                 if ids_changed:
                     to_highlight.append([ID, 14])
-            # CTXT  (BEgin/End vid)
+
             table.append([V.User_Name,#1
                           V.Rotation*90,#2
                           V.Frame_rate[1],#3
@@ -116,7 +111,25 @@ class table(Frame):
                           ids_changed])#19
             ID+=1
 
-        self.sheet = Sheet(self, data = table, headers=[self.Messages["Summary_Table_headers1"],self.Messages["Summary_Table_headers2"],self.Messages["Summary_Table_headers3"],self.Messages["Summary_Table_headers4"],"Begin Vid","End Vid",self.Messages["Summary_Table_headers5"],self.Messages["Summary_Table_headers6"],"X Origin","Y Origin",self.Messages["Summary_Table_headers7"],self.Messages["Summary_Table_headers8"],self.Messages["Names7"],self.Messages["Names8"],self.Messages["Summary_Table_headers9"],self.Messages["Summary_Table_headers10"],self.Messages["Summary_Table_headers11"],self.Messages["Summary_Table_headers12"],"IDs modified"])#CTXT
+        self.sheet = Sheet(self, data = table, headers=[self.Messages["Summary_Table_headers1"],
+                                                        self.Messages["Summary_Table_headers2"],
+                                                        self.Messages["Summary_Table_headers3"],
+                                                        self.Messages["Summary_Table_headers4"],
+                                                        self.Messages["Summary_Table_headers4b"],
+                                                        self.Messages["Summary_Table_headers4c"],
+                                                        self.Messages["Summary_Table_headers5"],
+                                                        self.Messages["Summary_Table_headers6"],
+                                                        self.Messages["Summary_Table_headers6b"],
+                                                        self.Messages["Summary_Table_headers6c"],
+                                                        self.Messages["Summary_Table_headers7"],
+                                                        self.Messages["Summary_Table_headers8"],
+                                                        self.Messages["Names7"],
+                                                        self.Messages["Names8"],
+                                                        self.Messages["Summary_Table_headers9"],
+                                                        self.Messages["Summary_Table_headers10"],
+                                                        self.Messages["Summary_Table_headers11"],
+                                                        self.Messages["Summary_Table_headers12"],
+                                                        self.Messages["Summary_Table_headers13"]])
         self.sheet.set_options(top_left_bg=Color_settings.My_colors.list_colors["Table1"],
                                top_left_fg=Color_settings.My_colors.list_colors["Table1"],
                                top_left_fg_highlight=Color_settings.My_colors.list_colors["Table_grid"],
@@ -169,8 +182,7 @@ class table(Frame):
         self.grid(row = 0, column = 0, sticky = "nswe")
         self.sheet.grid(row = 0, column = 0, sticky = "nswe")
 
-        #CTXT
-        Button_save=Button(self,text="Save summary", command=self.save, **Color_settings.My_colors.Button_Base).grid(row = 1, column = 0, sticky = "nswe")
+        Button(self,text=self.Messages["GButton3"], command=self.save, **Color_settings.My_colors.Button_Base).grid(row = 1, column = 0, sticky = "nswe")
 
     def save(self):
         file = filedialog.asksaveasfilename(defaultextension=".csv",

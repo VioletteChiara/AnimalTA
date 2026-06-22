@@ -17,14 +17,7 @@ class Details_back(Frame):
 
 
         #Message importation
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        f.close()
-
-
-        self.Messages = UserMessages.Mess[self.Language.get()]
+        self.Messages = UserMessages.get_dict()
         self.winfo_toplevel().title("")
 
         #Choose relative/absolute background
@@ -83,7 +76,7 @@ class Details_back(Frame):
         self.dyn_hist=DoubleVar()
         self.dyn_hist.set(self.boss.dynamical_hist)
         if self.boss.Dynamical_back.get()==1:
-            scale=Scale(self,orient=HORIZONTAL,**Color_settings.My_colors.Scale_Base,label="Window length for background construction (sec)", var=self.dyn_hist,from_=round(1/(self.boss.Vid.Frame_rate[1])*5,3), to=1720, resolution=round(1/(self.boss.Vid.Frame_rate[1])*5,3))#CTXT
+            scale=Scale(self,orient=HORIZONTAL,**Color_settings.My_colors.Scale_Base,label=self.Messages["Supp_Param6"], var=self.dyn_hist,from_=round(1/(self.boss.Vid.Frame_rate[1])*5,3), to=1720, resolution=round(1/(self.boss.Vid.Frame_rate[1])*5,3))
             scale.grid(row=2, column=0, columnspan=2, sticky="nsew")
 
 

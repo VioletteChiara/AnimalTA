@@ -38,12 +38,7 @@ class Extend(Frame):
         self.type=type
 
         #Import messages
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path(os.path.join("AnimalTA","Files","Language")), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        f.close()
-        self.Messages = UserMessages.Mess[self.Language.get()]
+        self.Messages = UserMessages.get_dict()
         self.urgent_close = False
 
         #We load the parameters
@@ -85,8 +80,7 @@ class Extend(Frame):
             self.Manual_ch.grid(row=0,column=0)
         Small_info.small_info(elem=self.Manual_ch, parent=self ,message=self.Messages["Small_info1"])
 
-        #CTXT
-        self.Body_part_ch=Checkbutton(under_opts, text="Separate head from tail",variable=self.track_body_parts, onvalue=1, offvalue=0, command=partial(self.update_list, type), **Color_settings.My_colors.Checkbutton_Base)
+        self.Body_part_ch=Checkbutton(under_opts, text=self.Messages["Do_track5"],variable=self.track_body_parts, onvalue=1, offvalue=0, command=partial(self.update_list, type), **Color_settings.My_colors.Checkbutton_Base)
         if type!="Analyses":#If we are using the tracking option, we propose the user to make a manual tracking
             self.Body_part_ch.grid(row=0,column=1)
 
@@ -191,9 +185,12 @@ class Extend(Frame):
         self.bouton_cancel.config(state="disable", **Color_settings.My_colors.Button_Base)
         self.bouton_hide.grid(row=6)
 
+        #all_times_dict=dict()
+
         if self.type=="Tracking":
             cur_vid=0
             for V in list_item:
+                deb_unique=time.time()#Debugging!!!!
                 try:
                     self.curr_vid=V
                     cleared=self.list_vid_minus[V].clear_files()
@@ -317,6 +314,10 @@ class Extend(Frame):
                                  text="The video couldn't be loaded:" + str(type(e).__name__) + " – " + str(e),
                                  title="Debugging")
 
+                #all_times_dict[self.list_vid_minus[V].User_Name]=round(float(time.time() - deb_unique), 2)#Debuggind
+
+
+
             #Once the tracking is finished, we display a pop-up
             if not self.manual_track.get() and not self.urgent_close:
                 try:
@@ -327,8 +328,14 @@ class Extend(Frame):
                     pass
 
                 try:
+                    #For debugging!
+                    #if self.Params["Pop_alert_track"]:
+                    #    pymsgbox.alert(str(all_times_dict))
+
+
                     if self.Params["Pop_alert_track"]:
-                        pymsgbox.alert(self.Messages["Do_track3"].format(round(float(time.time()-deb),2)), self.Messages["Do_track4"])
+                        pymsgbox.alert(self.Messages["Do_track3"].format(round(float(time.time()-deb),2)),
+                                       self.Messages["Do_track4"])
                 except:
                     pass
 
@@ -350,7 +357,8 @@ class Extend(Frame):
                     except PermissionError as e:
                         question = MsgBox.Messagebox(parent=self, title=self.Messages["TError"],
                                                      message=self.Messages["Error_Permission"].format(e.filename),
-                                                     Possibilities=[self.Messages["Retry"],self.Messages["Cancel"]])
+                                                     Possibilities=[self.Messages["Retry"],
+                                                                    self.Messages["Cancel"]])
                         self.wait_window(question)
                         answer = question.result
 
@@ -367,7 +375,8 @@ class Extend(Frame):
                     except PermissionError as e:
                         question = MsgBox.Messagebox(parent=self, title=self.Messages["TError"],
                                                      message=self.Messages["Error_Permission"].format(e.filename),
-                                                     Possibilities=[self.Messages["Retry"],self.Messages["Cancel"]])
+                                                     Possibilities=[self.Messages["Retry"],
+                                                                    self.Messages["Cancel"]])
                         self.wait_window(question)
                         answer = question.result
 
@@ -465,7 +474,7 @@ class Extend(Frame):
 
                             #We first check if sequences were defined, if not, we create them
                             #We create the calculation class:
-                            self.Coos,_=CoosLS.load_coos(self.Vid, location=self)
+                            self.Coos=CoosLS.load_coos(self.Vid, location=self)
                             self.NB_ind = len(self.Vid.Identities)
 
                             self.Arenas = Function_draw_arenas.get_arenas(self.Vid)
@@ -479,7 +488,8 @@ class Extend(Frame):
                             if self.Vid.Smoothed[0] != 0:
                                 self.Coos = Diverse_functions.smooth_coos(Coos=self.Coos, window_length=self.Vid.Smoothed[0], polyorder=self.Vid.Smoothed[1])
                             for Area in range(len(self.Vid.Analyses[1])):#For each arena
-                                self.loading_state.config( text=self.Messages["Video"] + " {act}/{tot} - ".format(act=cur_vid+1, tot=len(list_item)) + self.Messages["Arena"]+ " {are}/{nb_are}".format(are=Area+1,nb_are=len(self.Vid.Analyses[1])))
+                                self.loading_state.config( text=self.Messages["Video"] + " {act}/{tot} - ".format(act=cur_vid+1, tot=len(list_item)) +
+                                                                self.Messages["Arena"]+ " {are}/{nb_are}".format(are=Area+1,nb_are=len(self.Vid.Analyses[1])))
                                 self.timer=(0)
                                 list_inds = np.array([[idx,Ind[1]] for idx,Ind in enumerate(self.Vid.Identities) if Ind[0] == Area])
                                 self.show_load()
@@ -494,19 +504,17 @@ class Extend(Frame):
                                         self.timer = (0.025)
                                         self.show_load()
 
-                                        Mean, Min, Max = Functions_Analyses_Speed.calculate_all_inter_dists(Pts_coos=Pts_coos,Scale=float(self.Vid.Scale[0]))
-                                        rows_inter_dists.append([self.Vid.User_Name, Area, Mean, Min, Max])
                                         if len(self.Vid.Analyses)<4:
                                             self.Vid.Analyses.append(0)
+
+                                        self.timer = (0.05)
+                                        self.show_load()
 
                                         _, _, _, _, _, _, _, _, All_inter_dists = \
                                             Functions_Analyses_Speed.calculate_nei(Pts_coos=Pts_coos, ind=0,
                                                                      dist=self.Vid.Analyses[3],
                                                                      Scale=float(self.Vid.Scale[0]),
                                                                      Fr_rate=self.Vid.Frame_rate[1], to_save=True)
-
-                                        self.timer = (0.05)
-                                        self.show_load()
 
                                         # Inter-ind_dists by sequences:
                                         #We first identify the sequences that are similar for all the individuals of the same arena:
@@ -551,6 +559,107 @@ class Extend(Frame):
                                                     for ind in list_inds[:, 0]:
                                                         ind = int(ind)
                                                         Pts_coos.append(self.Coos[ind, deb:end + 1])
+
+
+                                                    if self.Vid.Group_data["Exploration"] or self.Vid.Group_data["Interind_data"]:
+                                                        row_for_inter_dists=[self.Vid.User_Name, str(Sequence[0]), Area]
+
+                                                        if self.Vid.Group_data["Interind_data"]:
+                                                            Mean, Min, Max = Functions_Analyses_Speed.calculate_all_inter_dists(
+                                                                Pts_coos=Pts_coos, Scale=float(self.Vid.Scale[0]))
+                                                            row_for_inter_dists=row_for_inter_dists+[Mean, Min, Max]
+
+
+
+
+                                                        #Create a group exploration value
+                                                        if self.Vid.Group_data["Exploration"]:
+                                                            firstmap=True
+                                                            load_frame = Class_loading_Frame.Loading(self, text="Group exploration")  # Progression bar
+                                                            load_frame.grid()
+                                                            if self.Vid.Analyses[2][0]==0:
+                                                                for I in range(len(list_inds)):  # Individual's caracteristics
+                                                                    info_load = [load_frame, I, len(list_inds)]
+                                                                    ID = int(list_inds[:, 0][I])
+                                                                    if not self.Vid.Track[1][8]:
+                                                                        save_pos = np.where(self.Coos[ID][:, 0] != -1000)
+                                                                        if len(save_pos[0]) > 0:
+                                                                            first = save_pos[0][0]
+                                                                            last = save_pos[0][-1]
+                                                                            This_coos = self.Coos[ID][first:(last + 1)].copy()
+                                                                        else:
+                                                                            This_coos = self.Coos[ID][0:1].copy()
+
+                                                                    else:
+                                                                        first = 0
+                                                                        This_coos = self.Coos[ID].copy()
+
+                                                                    new_val, map =Functions_Analyses_Speed.calculate_exploration(self.Vid.Analyses[2],
+                                                                                                                   self.Vid, This_coos,
+                                                                                                                   deb, end,
+                                                                                                                   self.Arenas[Area],show=True, only_vals=False, load_frame=info_load)
+
+                                                                    if firstmap:
+                                                                        combined_map=map
+                                                                        firstmap=False
+                                                                    else:
+                                                                        combined_map=cv2.bitwise_or(combined_map,map)
+
+                                                                mask_glob = Function_draw_arenas.draw_mask(self.Vid)
+                                                                mask = np.zeros([self.Vid.shape[0], self.Vid.shape[1], 1], np.uint8)
+                                                                mask = cv2.drawContours(mask, [self.Arenas[Area]], -1, (255), -1)
+                                                                mask = cv2.bitwise_and(mask, mask_glob)
+
+                                                                absolute=np.sum(combined_map > [0]) * (1 / float(self.Vid.Scale[0]) ** 2)  # We want to save the total surface explored (independantly of the size of the arena)
+                                                                relative=len(np.where(combined_map > [0])[0]) / len(np.where(mask == [255])[0])  # Now relative to the arena area
+
+                                                            else:
+                                                                for I in range(len(list_inds)):  # Individual's caracteristics
+                                                                    info_load = [load_frame, I, len(list_inds)]
+                                                                    ID = int(list_inds[:, 0][I])
+                                                                    if not self.Vid.Track[1][8]:
+                                                                        save_pos = np.where(
+                                                                            self.Coos[ID][:, 0] != -1000)
+                                                                        if len(save_pos[0]) > 0:
+                                                                            first = save_pos[0][0]
+                                                                            last = save_pos[0][-1]
+                                                                            This_coos = self.Coos[ID][
+                                                                                        first:(last + 1)].copy()
+                                                                        else:
+                                                                            This_coos = self.Coos[ID][0:1].copy()
+
+                                                                    else:
+                                                                        first = 0
+                                                                        This_coos = self.Coos[ID].copy()
+
+                                                                    cells = Functions_Analyses_Speed.calculate_exploration(
+                                                                        self.Vid.Analyses[2],
+                                                                        self.Vid, This_coos,
+                                                                        deb, end,
+                                                                        self.Arenas[Area], show=False, only_vals=False,
+                                                                        load_frame=info_load, return_cell=True)[1]
+
+                                                                    cells_in=cells[0]
+
+                                                                    XYs = cells_in[~np.isnan(cells_in).any(axis=1)]
+                                                                    XYs = np.int32(XYs)
+                                                                    unique = np.unique(XYs, axis=0, return_counts=False)
+
+                                                                    if firstmap:
+                                                                        combined_cells=unique
+                                                                        firstmap=False
+                                                                    else:
+                                                                        combined_cells= np.vstack((combined_cells, unique))
+                                                                        combined_cells=np.unique(combined_cells, axis=0, return_counts=False)
+
+                                                                absolute=len(combined_cells)
+                                                                relative=len(combined_cells)/cells[1]
+
+
+                                                            row_for_inter_dists = row_for_inter_dists + [absolute, relative]
+                                                            load_frame.destroy()
+
+                                                        rows_inter_dists.append(row_for_inter_dists)
 
                                                     liste_nb_nei, liste_is_close, liste_min_dist_nei, sum_dists, table_all_dists, table_is_close, table_nb_contacts, all_events_contacts, All_inter_dists_t = \
                                                         Functions_Analyses_Speed.calculate_nei(Pts_coos=Pts_coos, ind=0, dist=self.Vid.Analyses[3], Scale=float(self.Vid.Scale[0]), Fr_rate=self.Vid.Frame_rate[1], to_save=True)
@@ -627,8 +736,6 @@ class Extend(Frame):
                                             first=0
                                             This_coos=self.Coos[ID].copy()
 
-
-                                        #CTXT
                                         #A supprimer!!!
                                         '''                                        
                                         all_vals = Interface_sequences.compute_details_explo(self.Vid.Analyses[2],
@@ -645,8 +752,7 @@ class Extend(Frame):
                                         Copy_Coos = np.array(This_coos)
                                         Copy_Coos[np.where(Copy_Coos == -1000)] = np.nan
 
-                                        sub_load = Class_loading_Frame.Loading(self,
-                                                                               text="Calculating explored area encounters")  # CTXT
+                                        sub_load = Class_loading_Frame.Loading(self, text=self.Messages["Do_track6"])
                                         sub_load.grid()
                                         Details, State, Dists, Speeds, Meanders, All_explored_values_cum, All_explored_values_bin = Functions_trajectory_summarise.prepare_details(Copy_Coos, Area, self.Vid, first, self.Arenas, loading_frame=sub_load)
                                         sub_load.grid_forget()
@@ -1170,11 +1276,19 @@ class Extend(Frame):
                     self.show_load()
 
                     #Inter-ind_dists:
-                    with open(os.path.join(self.list_vid_minus[0].Folder, "Results","Results_InterInd.csv"), 'w', newline='', encoding="utf-8") as file:
-                        writer = csv.writer(file, delimiter=";")
-                        writer.writerow(["Video", "Arena", "Mean_dist", "Min_dist", "Max_dist"])
-                        for row in rows_inter_dists:
-                            writer.writerow(row)
+                    if self.Vid.Group_data["Exploration"] or self.Vid.Group_data["Interind_data"]:
+                        first_row =["Video", "Sequence","Arena"]
+                        with open(os.path.join(self.list_vid_minus[0].Folder, "Results","Results_InterInd.csv"), 'w', newline='', encoding="utf-8") as file:
+                            writer = csv.writer(file, delimiter=";")
+                            if self.Vid.Group_data["Interind_data"]:
+                                first_row=first_row+["Mean_dist", "Min_dist", "Max_dist"]
+                            if self.Vid.Group_data["Exploration"]:
+                                first_row = first_row + ["Absolute_exploration","Relative_exploration"]
+
+
+                            writer.writerow(first_row)
+                            for row in rows_inter_dists:
+                                writer.writerow(row)
 
                     self.timer = 1
                     self.show_load()
@@ -1327,7 +1441,6 @@ class CustomDialog(simpledialog.Dialog):
         simpledialog.Dialog.__init__(self, parent, title=title)
 
     def body(self, parent):
-
         self.text = Text(self, width=40, height=4)
         self.text.pack(fill="both", expand=True)
 

@@ -44,12 +44,7 @@ class Change_path(Frame):
         self.list_colors = Color_settings.My_colors.list_colors
 
         #Import messages
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path(os.path.join("AnimalTA","Files","Language")), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        f.close()
-        self.Messages = UserMessages.Mess[self.Language.get()]
+        self.Messages = UserMessages.get_dict()
 
         #The message displayed varies according to whether the user wants to track or analyse videos
         self.sel_state = StringVar()

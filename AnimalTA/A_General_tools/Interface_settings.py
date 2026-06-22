@@ -35,12 +35,7 @@ class Settings_panel(Frame):
 
         self.grid(sticky="nsew")
 
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path(os.path.join("AnimalTA","Files","Language")), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        f.close()
-        self.Messages = UserMessages.Mess[self.Language.get()]
+        self.Messages = UserMessages.get_dict()
 
         self.Param_file = UserMessages.resource_path(os.path.join("AnimalTA", "Files", "Settings"))
         with open(self.Param_file, 'rb') as fp:
@@ -174,8 +169,7 @@ class Settings_panel(Frame):
         Grid.columnconfigure(Frame_other, 1, weight=10)
 
         pos=0
-        #CTXT
-        Label(Frame_other, text="Other", font=("Helvetica",15,"bold"), justify=CENTER, bg=list_colors["Title1"], fg=list_colors["Fg_Title1"]).grid(row=pos, columnspan=2, sticky="enw")
+        Label(Frame_other, text=self.Messages["Other"], font=("Helvetica",15,"bold"), justify=CENTER, bg=list_colors["Title1"], fg=list_colors["Fg_Title1"]).grid(row=pos, columnspan=2, sticky="enw")
         Grid.rowconfigure(Frame_other, pos, weight=0)
         pos+=1
 

@@ -41,6 +41,10 @@ def draw_mask(Vid, thick=-1, color=255):
                     elif liste_points[i][3] == 3 and len(liste_points[i][0]) > 1:
                         image_to_save, _ = Draw_Poly(image_to_save, liste_points[i][0],
                                                                liste_points[i][1], new_color, thick)
+
+            #if not image_to_save.any():
+            #    image_to_save.fill(color)
+
     else:
         #If the user did not define any arena, the whole image will be used.
         image_to_save.fill(color)
@@ -309,7 +313,7 @@ def draw_line(img, pt1, pt2, color, thickness):
 
 def get_arenas(Vid):
     mask = draw_mask(Vid)  # A mask for the arenas
-    if Vid.Mask[0]:
+    if Vid.Mask[0] and np.any(mask>0):
         Arenas_with_holes, Arenas = exclude_inside(mask)
         Arenas = Organise_Ars(Arenas)
     else:

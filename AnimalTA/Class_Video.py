@@ -70,6 +70,7 @@ class Video:
         #We prepare a default details opptions:
         Diverse_functions.prepare_details(self)
         Diverse_functions.prepare_stops_moves_option(self)
+        Diverse_functions.prepare_group_option(self)
         self.More_ana_Crosses=False
         self.Morphometrics=False
         self.Explored_complex=False

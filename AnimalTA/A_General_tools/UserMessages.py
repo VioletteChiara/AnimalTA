@@ -1,5 +1,8 @@
 import sys
 import os
+from tkinter import *
+import pickle
+import re
 
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
@@ -11,6 +14,32 @@ def resource_path(relative_path):
 
 
     return os.path.join(base_path, relative_path)
+
+
+def get_dict():
+    Language = StringVar()
+    f = open(resource_path(resource_path(os.path.join("AnimalTA", "Files", "Language"))), "r",
+             encoding="utf-8")
+    Language.set(f.read())
+    LanguageO = Language.get()
+    f.close()
+
+    filehandler = resource_path(resource_path(os.path.join("AnimalTA", "Files", "Translations", "Dictionary_" + LanguageO + ".pkl")))
+    Messages = pickle.load(open(filehandler, 'rb'))
+
+    def replace_key(match):
+        key = match.group(1)
+        return Messages.get(key, match.group(0))
+
+    for key, mess in Messages.items():
+        Messages[key] = re.sub(r"&<&\s*(.*?)\s*%>%", replace_key, Messages[key])
+
+    return(Messages)
+
+
+
+
+
 
 ###General comments for translators:
 #Please only translate sentences in green (between "")
@@ -874,7 +903,7 @@ Mess_FR=dict(
     Control14="Change la longueur des trajectoires affichées.",
     Control15="L'arène de la cible sélectionnée.",
     Control16="L'identité de la cible sélectionnée. Écrivez directement dans ce champ de texte et appuyez sur le bouton <{}> en dessous pour changer le nom de la cible.",
-    Control17="Aller à la prochaine valeur manquante",
+    Control17="Aller à la prochaine valeur manquante ({}/{})",
     Control18="Aucune valeur manquante",
     Control19="Si les cibles ont été perdues pendant le suivi, une valeur NA a été attribuée à leur position à l'image correspondante. Ce bouton permet de passer directement à la prochaine image avec des valeurs NA.",
     Control20="Effacer les coordonnées",
@@ -904,7 +933,7 @@ Mess_FR=dict(
     Analyses12="Correction de la perspective",
     Analyses13="Permet de corriger les coordonnées pour compenser la déformation de la caméra ou l'effet de perspective.",
     Analyses10="Cochez cette option pour voir les mesures d'exploration.",
-    Analyses_B1="Appliquer le lissage à d'autres vidéos",
+    Analyses_B1="Appliquer à d'autres vidéos",
     Analyses_B2="Appliquer le seuil à d'autres vidéos",
     Analyses_B3="Appliquer les mesures d'exploration à d'autres vidéos",
     Analyses_B4="Appliquer ces paramètres à d'autres vidéos",
@@ -1478,7 +1507,7 @@ Mess_ES=dict(
     Control14="Cambiar la longitud de las  trayectorias mostradas.",
     Control15="Zona experimental del individuo seleccionado.",
     Control16="Identidad del individuo seleccionado. Escriba directamente sobre el campo de texto y pulse el botón <Validar> de debajo para cambiar el nombre del individuo.",
-    Control17="Ir al siguiente valor que falta",
+    Control17="Ir al siguiente valor que falta ({}/{})",
     Control18="Sin valores perdidos",
     Control19="Si los individuos se perdieron durante el rastreo, se ha asignado un valor NA a su posición en el fotograma correspondiente. Este botón permite saltar directamente al siguiente fotograma con valores NA",
     Control20="Borrar las coordenadas",
@@ -1509,7 +1538,7 @@ Mess_ES=dict(
     Analyses11="Aplicar los mismos parámetros de las medidas interindividuales a múltiples videos.",
     Analyses12="Corrección de la perspectiva",
     Analyses13="Corrija las coordenadas para compensar la deformación de la cámara o el efecto de perspectiva.",
-    Analyses_B1="Aplicar el suavizado a otro(s) video(s)",
+    Analyses_B1="Aplicar a otro(s) video(s)",
     Analyses_B2="Aplicar el umbral a otro(s) video(s)",
     Analyses_B3="Aplicar los parámetros de exploración a otro(s) video(s)",
     Analyses_B4="Aplicar estos parámetros a otro(s) video(s)",
@@ -2083,7 +2112,7 @@ Mess_GL=dict(
     Control14="Cambiar a lonxitude das traxectorias mostradas.",
     Control15="Zona experimental do individuo seleccionado.",
     Control16="Identidade do individuo seleccionado. Escriba directamente sobre o campo de texto e orema o botón <{}> de debaixo para cambiar o nome do individuo.",
-    Control17="Ir ao siguinte valor que falta",
+    Control17="Ir ao siguinte valor que falta ({}/{})",
     Control18="Sen valores perdidos",
     Control19="Se se perderon os inndividuos durante o rastreo, asígnase un valor NA a súa posición no fotograma correspondente. Este botón permite chimpar directamente ao siguinte fotograma con valores NA",
     Control20="Borrar as coordenadas",
@@ -2114,7 +2143,7 @@ Mess_GL=dict(
     Analyses11="Aplicar os mesmos parámetros das medidas interindividuais a múltiples vídeos.",
     Analyses12="Corrección da perspectiva",
     Analyses13="Corrixe as coordenadas para compensar a deformación da cámara ou o efecto de perspectiva.",
-    Analyses_B1="Aplicar o suavizado a outro(s) vídeo(s)",
+    Analyses_B1="Aplicar a outro(s) vídeo(s)",
     Analyses_B2="Aplicar o limiar a outro(s) vídeo(s)",
     Analyses_B3="Aplicar os parámetros de exploración a outro(s) vídeo(s)",
     Analyses_B4="Aplicar estes parámetros a outro(s) vídeo(s)",
@@ -2690,7 +2719,7 @@ Control13="更改选定帧的跟踪参数。",
 Control14="更改显示轨迹的长度。",
 Control15="选定目标的场景",
 Control16="选定目标的标识。直接写入此文本字段，然后按下面的<{}>按钮更改目标名称。",
-Control17="转到下一个缺少的值",
+Control17="转到下一个缺少的值 ({}/{})",
 Control18="无缺失值",
 Control19="如果目标在跟踪过程中丢失,则已为其在相应帧的位置分配NA值。此按钮允许直接跳转到具有NA值的下一帧。",
 Control20="删除联系信息",
@@ -3051,8 +3080,7 @@ Back2="最后的背景应该是没有物体可追踪的场景."
 Mess=dict(English=Mess_EN,
           Français=Mess_FR,
           Español=Mess_ES,
-          Galego=Mess_GL,
-          普通话=Mess_MA)
+          Galego=Mess_GL)
 
 #This loop is for debug only, ensure that no translation has been forgotten
 '''
@@ -3063,9 +3091,10 @@ for val in Mess_EN:
         print(val)
     if val not in Mess_GL:
         print(val)
-    if val not in Mess_MA:
-        print(val)
 '''
+
+
+
 
 
 for Dic in [Mess_EN, Mess_FR, Mess_GL, Mess_ES]:#for Dic in Mess.values():
@@ -3083,3 +3112,6 @@ for Dic in [Mess_EN, Mess_FR, Mess_GL, Mess_ES]:#for Dic in Mess.values():
     Dic["Analyses_details_sp0"] = Dic["Analyses_details_sp0"].format(Dic["Analyses_details_sp_Menu0"])
     Dic["Analyses_details_sp2"] = Dic["Analyses_details_sp2"].format(Dic["Analyses_details_sp8"])
     Dic["Analyses_details_exp0"] = Dic["Analyses_details_exp0"].format(Dic["Analyses_details_exp1"])
+
+
+

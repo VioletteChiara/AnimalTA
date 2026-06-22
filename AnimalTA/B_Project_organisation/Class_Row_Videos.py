@@ -45,14 +45,7 @@ class Row_Can(Canvas):
 
             self.width_show = self.Params["Size_img_display"]  # How big are the displayed frames
 
-
-            self.Language = StringVar()
-            f = open(UserMessages.resource_path(os.path.join("AnimalTA","Files","Language")), "r", encoding="utf-8")
-            self.Language.set(f.read())
-            self.LanguageO = self.Language.get()
-            f.close()
-
-            self.Messages = UserMessages.Mess[self.Language.get()]
+            self.Messages = UserMessages.get_dict()
 
             #Draw preparation:
             self.oeuil = cv2.imread(UserMessages.resource_path(os.path.join("AnimalTA","Files","Oeuil.png")))
@@ -419,8 +412,10 @@ class Row_Can(Canvas):
         if not self.Video.Tracked:
             self.File_name_var.set(self.Video.Name)
         else:
-            question = MsgBox.Messagebox(parent=self,title="Change the video name",message="This video has already been tracked, if you change it's name all data file will be actualised accordingly and the project will be saved. If analysis were already done, they must be rerun for actualised data. \n Choose a new name:",
-                                         Possibilities=["Validate", "Cancel"], entry=True)#CTXT
+            question = MsgBox.Messagebox(parent=self,title=self.Messages["Change_Vid_Name"],
+                                         message=self.Messages["Change_Vid_Name_expl"],
+                                         Possibilities=[self.Messages["Validate"],
+                                                        self.Messages["Cancel"]], entry=True)
             self.wait_window(question)
             answer, value = question.result
 
@@ -431,9 +426,9 @@ class Row_Can(Canvas):
                         self.Video.User_Name = value
                         self.File_name_var.set(value)
                 else:
-                    question = MsgBox.Messagebox(parent=self, title="Name invalid",
-                                                 message="This name has already been attributed to another video.",
-                                                 Possibilities=["Continue"], entry=False)#CTXT
+                    question = MsgBox.Messagebox(parent=self, title=self.Messages["Vid_Invalid_Name"],
+                                                 message=self.Messages["Vid_Invalid_Name_expl"],
+                                                 Possibilities=[self.Messages["Continue"]], entry=False)
                     self.wait_window(question)
 
         self.main_frame.save()
@@ -795,7 +790,7 @@ class Row_Can(Canvas):
     def update_name(self):
         if self.Video.Tracked:
             self.File_name_ent.config(state="disable")
-            self.BReset_name.bind("<Enter>", partial(self.main_frame.HW.change_tmp_message, "Change the video name"))#CTXT
+            self.BReset_name.bind("<Enter>", partial(self.main_frame.HW.change_tmp_message, self.Messages["Change_Vid_Name"]))
             self.BReset_name.bind("<Leave>", self.main_frame.HW.remove_tmp_message)
         else:
             self.File_name_ent.config(state="normal")

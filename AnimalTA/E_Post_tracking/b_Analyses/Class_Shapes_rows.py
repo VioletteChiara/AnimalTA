@@ -32,12 +32,7 @@ class Row_Point(Frame):
         self.update_infos()#(Re)calculate the three values above
 
         # Import the language settings
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        f.close()
-        self.Messages = UserMessages.Mess[self.Language.get()]
+        self.Messages = UserMessages.get_dict()
 
         #Display the name of the element of interest as an Entry (so it can be modified) along with a button to supress it.
         regLab = (self.register(self.change_area_name), '%P', '%V')
@@ -227,12 +222,7 @@ class Row_Line(Frame):
         self.update_infos()
 
         # Import the language settings
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        f.close()
-        self.Messages = UserMessages.Mess[self.Language.get()]
+        self.Messages = UserMessages.get_dict()
 
         # Display the name of the element of interest as an Entry (so it can be modified) along with a button to supress it.
         regLab = (self.register(self.change_area_name), '%P', '%V')
@@ -334,12 +324,7 @@ class Row_All_Border(Frame):
         self.update_infos()
 
         #Import language
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        f.close()
-        self.Messages = UserMessages.Mess[self.Language.get()]
+        self.Messages = UserMessages.get_dict()
 
         #Display the name of the element of interest as an Entry (so it can be modified) along with a button to supress it.
         regLab = (self.register(self.change_area_name), '%P', '%V')
@@ -508,12 +493,7 @@ class Row_Border(Frame):
         self.update_infos()
 
         #Import language
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        f.close()
-        self.Messages = UserMessages.Mess[self.Language.get()]
+        self.Messages = UserMessages.get_dict()
 
         #Display the name of the element of interest as an Entry (so it can be modified) along with a button to supress it.
         regLab = (self.register(self.change_area_name), '%P', '%V')
@@ -708,12 +688,7 @@ class Row_Shape(Frame):
         self.update_infos()
 
         #Import the language
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        f.close()
-        self.Messages = UserMessages.Mess[self.Language.get()]
+        self.Messages = UserMessages.get_dict()
 
         # Display the name of the element of interest as an Entry (so it can be modified) along with a button to supress it.
         regLab = (self.register(self.change_area_name), '%P', '%V')

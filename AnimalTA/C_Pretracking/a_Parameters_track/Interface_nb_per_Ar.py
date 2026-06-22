@@ -18,14 +18,7 @@ class Assign(Frame):
         Grid.rowconfigure(self.parent, 0, weight=1)
 
         #Message importation
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        f.close()
-
-
-        self.Messages = UserMessages.Mess[self.Language.get()]
+        self.Messages = UserMessages.get_dict()
         self.winfo_toplevel().title(self.Messages["Param9"])
 
         #We look for the arenas and their names

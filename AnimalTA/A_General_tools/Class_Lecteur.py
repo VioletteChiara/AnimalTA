@@ -22,6 +22,7 @@ class Lecteur(Frame):
     def __init__(self, parent, Vid, ecart=0, show_cropped=True, show_whole_frame=False, First_frame=None, **kwargs):
         Frame.__init__(self, parent, bd=5, **kwargs)
         self.parent=parent #The container of the Video Reader
+        self.parent.busy=False
         self.Vid=Vid #The Video to be displayed
         self.ecart=ecart #How much visible frame we add before and after the beginning/end of the cropped video
         self.show_cropped=show_cropped#Should we present the time after cropping from 0 or from the real time
@@ -29,16 +30,13 @@ class Lecteur(Frame):
         self.config(borderwidth=0, highlightthickness=0,**Color_settings.My_colors.Frame_Base)
         self.show_whole_frame=show_whole_frame
 
+        self.pending=None#to avoid max recusion depth error, we store the last command, until the child finishes the work and is ready to do it
+
         self.point_of_interest=[-1000,-1000]
         self.moving_pt_interest=False
 
         #Impotrt the language settings
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path(UserMessages.resource_path(os.path.join("AnimalTA","Files","Language"))), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        self.Messages = UserMessages.Mess[self.Language.get()]
-        f.close()
+        self.Messages = UserMessages.get_dict()
 
         self.no_zoom=False
 
@@ -56,12 +54,10 @@ class Lecteur(Frame):
         self.wait = (1 / (self.fr_rate))
         self.to_sub = round(self.Vid.Cropped[1][0] / self.one_every)
 
-
         if First_frame is None:
             self.First_frame = self.Vid.Cropped[1][0]
         else:
             self.First_frame = First_frame
-
 
         self.update_image(round(self.First_frame / self.one_every), first=True)
 
@@ -129,8 +125,6 @@ class Lecteur(Frame):
         self.ratio = 1#How much do we zoom in
         self.ZinSQ = [-1, ["NA", "NA"]]#used to zoom in a particular area
 
-
-
     def update_ratio(self, *args):
         '''Calculate the ratio between the original size of the video and the displayed image'''
         self.ratio=max((self.zoom_sq[2]-self.zoom_sq[0])/self.canvas_video.winfo_width(),(self.zoom_sq[3]-self.zoom_sq[1])/self.canvas_video.winfo_height())
@@ -142,9 +136,9 @@ class Lecteur(Frame):
             self.parent.End_of_window()
 
             question = MsgBox.Messagebox(parent=self, title=self.Messages["TError_memory"],
-                                       message=self.Messages["Error_memory"], Possibilities=[self.Messages["Continue"]])
+                                       message=self.Messages["Error_memory"],
+                                       Possibilities=[self.Messages["Continue"]])
             self.wait_window(question)
-
 
     def change_speed(self, *args):
         '''Modify the playback speed by changing the time to wait between two frames. It also reinitiate the self.jump_image variable to 1 (all images are displayed by default)'''
@@ -155,7 +149,6 @@ class Lecteur(Frame):
         elif self.speed.get()>0:
             self.wait = (1 / (self.fr_rate))/(abs(self.speed.get())+1)
         self.jump_image=1
-
 
     def GotoBeg(self):
         '''Go to the beginning of the video'''
@@ -176,6 +169,11 @@ class Lecteur(Frame):
         self.Scrollbar.refresh()
         self.update_image(new_frame)
 
+    def Check_and_modify(self, new_img, actual_pos=None, affi=True):
+        if self.parent.busy:
+            self.pending=(new_img, actual_pos, affi)
+        else:
+            return(self.parent.modif_image(new_img, actual_pos=actual_pos, affi=affi))
 
     def playbacks(self, *arg):
         '''Change from play to stop or reverse'''
@@ -197,7 +195,7 @@ class Lecteur(Frame):
                     self.capture = VL.Video_Loader(self.Vid, self.Vid.Fusion[self.current_part][1], not self.show_whole_frame)
 
                 TMP_image_to_show = self.capture[int(self.Scrollbar.active_pos*self.one_every)-self.Vid.Fusion[self.current_part][0]]
-                self.parent.modif_image(TMP_image_to_show)
+                self.Check_and_modify(TMP_image_to_show)
 
 
     def move1(self, event=None, nb_fr=1, aff=True, begin=0, select=False, *arg):
@@ -224,7 +222,7 @@ class Lecteur(Frame):
                 except:
                     pass
 
-                return(self.parent.modif_image(TMP_image_to_show, aff=aff))
+                return(self.Check_and_modify(TMP_image_to_show, affi=aff))
 
     def play(self, select=False, begin=0):
         # Within check that we are not outside of the video
@@ -311,22 +309,19 @@ class Lecteur(Frame):
                 TMP_image_to_show = np.copy(self.Prem_image_to_show)
                 self.last_img=TMP_image_to_show
 
-
         else:
             if Which_part!=self.current_part:#If we are changing from one video segment to another (concatenated videos)
                 del self.capture
                 self.capture = VL.Video_Loader(self.Vid, self.Vid.Fusion[Which_part][1], not self.show_whole_frame)
 
             TMP_image_to_show = self.capture[round(frame * self.one_every) - self.Vid.Fusion[Which_part][0]]
-
+            self.current_part = Which_part
             if not return_img:
-                self.parent.modif_image(TMP_image_to_show, actual_pos=actual_pos)
+                self.Check_and_modify(TMP_image_to_show, actual_pos=actual_pos)
 
-        self.current_part = Which_part
+
 
         #print("Video:"+str(self.Vid.Fusion[Which_part][1])+" Frame:"+str(round(frame * self.one_every) - self.Vid.Fusion[Which_part][0]))
-
-
         if return_img:
             return(TMP_image_to_show)
 
@@ -364,7 +359,7 @@ class Lecteur(Frame):
                 if self.new_zoom_sq[3]-self.new_zoom_sq[1] > 50 and self.new_zoom_sq[2]-self.new_zoom_sq[0]>50:
                     self.zoom_sq = self.new_zoom_sq
                     self.update_ratio()
-                    self.parent.modif_image(self.parent.last_empty)
+                    self.Check_and_modify(self.parent.last_empty)
 
             elif event.x>=0 and event.x<=self.Size[1] and event.y>=0 and event.y<=self.Size[0] and self.ZinSQ[1][0]>=0 and self.ZinSQ[1][0]<=self.Size[1] and self.ZinSQ[1][1]>=0 and self.ZinSQ[1][1]<=self.Size[0]:
                 zoom_sq = [min(self.ZinSQ[1][0], event.x), min(self.ZinSQ[1][1], event.y) , max(self.ZinSQ[1][0], event.x), max(self.ZinSQ[1][1], event.y)]
@@ -372,7 +367,7 @@ class Lecteur(Frame):
                     if (zoom_sq[2] - zoom_sq[0]) > 50 and (zoom_sq[3] - zoom_sq[1])>50:
                         self.zoom_sq=zoom_sq
                         self.update_ratio()
-                        self.parent.modif_image(self.parent.last_empty)
+                        self.Check_and_modify(self.parent.last_empty)
                 else:
                     try:
                         self.parent.select_no_zoom(zoom_sq)
@@ -382,6 +377,13 @@ class Lecteur(Frame):
                 self.ZinSQ = [-1, ["NA", "NA"]]
 
             self.canvas_video.delete("Rect")
+
+    def Zoom_out(self):
+        '''Reset the view to showing the full video'''
+        self.zoom_sq=[0, 0, self.Size[1], self.Size[0]]
+        self.update_ratio()
+        self.Check_and_modify(self.parent.last_empty)
+
 
 
 
@@ -436,8 +438,6 @@ class Lecteur(Frame):
 
         if self.ZinSQ[0]>=0:
             self.ZinSQ[0]+=1
-
-
 
     def bindings(self):
         '''Make all the bindings'''
@@ -513,7 +513,6 @@ class Lecteur(Frame):
             if dist < 30*self.ratio:
                 self.moving_pt_interest = True
 
-
     def callback_move(self, event=None, Shift=False, *args):
         '''The info about where the frame was clicked is sent to the Video Reader container'''
         self.last_event_move=copy.copy(event)
@@ -574,7 +573,6 @@ class Lecteur(Frame):
         self.parent.released_can((event.x,event.y))
         self.moving_pt_interest=False
 
-
     def afficher_img(self, img, locked=False, return_img=False, Trans=False):
         '''Once the image is adapted by the video container, it is here resized and displayed'''
         self.update_ratio()
@@ -595,7 +593,10 @@ class Lecteur(Frame):
         width=int((self.zoom_sq[2]-self.zoom_sq[0])/self.ratio)
         height=int((self.zoom_sq[3]-self.zoom_sq[1])/self.ratio)
 
-        TMP_image_to_show2 = cv2.resize(image_to_show2,(width, height))
+        try:
+            TMP_image_to_show2 = cv2.resize(image_to_show2,(width, height))
+        except:
+            TMP_image_to_show2=image_to_show2
         self.shape= TMP_image_to_show2.shape
 
         if self.Scrollbar.active_pos<self.Scrollbar.crop_beg or self.Scrollbar.active_pos>self.Scrollbar.crop_end:
@@ -639,7 +640,6 @@ class Lecteur(Frame):
             self.canvas_video.config(height=self.shape[1],width=self.shape[0])
             self.canvas_video.itemconfig(self.can_import, image=self.image_to_show3)
             self.update_idletasks()
-
 
     def proper_close(self):
         '''Destruction of the Video Reader'''

@@ -26,16 +26,11 @@ class Convert(Frame):
 
 
         #Import messsages
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path(os.path.join("AnimalTA","Files","Language")), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        f.close()
+        self.Messages = UserMessages.get_dict()
 
         #We import colors
         list_colors=Color_settings.My_colors.list_colors
 
-        self.Messages = UserMessages.Mess[self.Language.get()]
         self.winfo_toplevel().title(self.Messages["Conversion"])
 
         self.sel_state=StringVar()
@@ -76,16 +71,14 @@ class Convert(Frame):
 
         self.Vid_qual=IntVar()
         self.Vid_qual.set(5)
-        #CTXT
+
         Scale_with_txt=Frame(Fr_other_options, **Color_settings.My_colors.Frame_Base)
         Scale_with_txt.grid(row=0, column=1)
-        Label(Scale_with_txt, text="High", **Color_settings.My_colors.Label_Base).grid(row=0, column=0, sticky="se")
-        self.Scale_qual=Scale(Scale_with_txt, variable=self.Vid_qual, label="Video quality", from_=1, to=31, relief="flat", **Color_settings.My_colors.Scale_Base, orient=HORIZONTAL)
+        Label(Scale_with_txt, text=self.Messages["Convert_H"], **Color_settings.My_colors.Label_Base).grid(row=0, column=0, sticky="se")
+        self.Scale_qual=Scale(Scale_with_txt, variable=self.Vid_qual, label=self.Messages["Convert_quality"], from_=1, to=31, relief="flat", **Color_settings.My_colors.Scale_Base, orient=HORIZONTAL)
         self.Scale_qual.grid(row=0, column=1)
-        Small_info.small_info(elem=self.Scale_qual, parent=self, message="Higher quality conversion will improve the video quality for the tracking but will result in heavier video.")
-
-
-        Label(Scale_with_txt, text="Low", **Color_settings.My_colors.Label_Base).grid(row=0, column=2, sticky="sw")
+        Small_info.small_info(elem=self.Scale_qual, parent=self, message=self.Messages["Convert_quality_expl"])
+        Label(Scale_with_txt, text=self.Messages["Convert_L"], **Color_settings.My_colors.Label_Base).grid(row=0, column=2, sticky="sw")
 
         Grid.rowconfigure(Fr_other_options, 0, weight=1)
         Grid.rowconfigure(Fr_other_options, 1, weight=1)
@@ -195,12 +188,14 @@ class Convert(Frame):
                     os.makedirs(output_directory)
                 new_file = os.path.join(output_directory, file_name_cut + ".avi")
 
-                if os.path.exists(new_file) or os.path.exists(new_file.replace(".avi", f"_part_1.avi")):  # CTXT
+                if os.path.exists(new_file) or os.path.exists(new_file.replace(".avi", f"_part_1.avi")):
                     if self.first_time_rename:
-                        question = MsgBox.Messagebox(parent=self, title="File already existing",
-                                                     message="One or more files already exist in the AnimalTA converted video's folder. What do you want to do?".format(
+                        question = MsgBox.Messagebox(parent=self, title=self.Messages["Convert1"],
+                                                     message=self.Messages["Convert2"].format(
                                                          file_name_cut),
-                                                     Possibilities=["Replace old files", "Rename new files", "Cancel"])
+                                                     Possibilities=[self.Messages["Convert3"],
+                                                                    self.Messages["Convert4"],
+                                                                    self.Messages["Cancel"]])
                         self.wait_window(question)
                         answer = question.result
                         self.first_time_rename = False

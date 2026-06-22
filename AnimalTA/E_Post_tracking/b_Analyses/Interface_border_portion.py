@@ -25,12 +25,7 @@ class Ask(Frame):
         self.grab_set()
 
         #Importation of messages
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        f.close()
-        self.Messages = UserMessages.Mess[self.Language.get()]
+        self.Messages = UserMessages.get_dict()
 
         self.Pt1=Pt1
         self.Pt2=Pt2

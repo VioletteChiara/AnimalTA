@@ -22,16 +22,11 @@ class Extend(Frame):
         self.file=file
 
         #Import messages
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path(os.path.join("AnimalTA","Files","Language")), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        f.close()
+        self.Messages = UserMessages.get_dict()
 
         Grid.columnconfigure(self.parent, 0, weight=1)  ########NEW
         Grid.rowconfigure(self.parent, 0, weight=1)  ########NEW
 
-        self.Messages = UserMessages.Mess[self.Language.get()]
         self.winfo_toplevel().title("Select individual")
 
         self.yscrollbar = ttk.Scrollbar(self)

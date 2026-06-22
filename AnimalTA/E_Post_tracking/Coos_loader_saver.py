@@ -3,14 +3,17 @@ import csv
 import numpy as np
 from tkinter import *
 from AnimalTA.A_General_tools import Class_loading_Frame
-import time
+from collections import defaultdict
+import h5py
 
-def load_coos(Vid, TMP=False, location=None):
-    # Importation of the coordinates associated with the current video
+
+
+def get_video_path(Vid, TMP):
     if Vid.User_Name == Vid.Name:
         file_name = Vid.Name
         point_pos = file_name.rfind(".")
-        if file_name[point_pos:].lower()!=".avi":#Old versions of AnimalTA did not allow to rename or duplicate the videos, the name of the video was the file name without the ".avi" extension
+        if file_name[
+           point_pos:].lower() != ".avi":  # Old versions of AnimalTA did not allow to rename or duplicate the videos, the name of the video was the file name without the ".avi" extension
             file_name = Vid.User_Name
         else:
             file_name = file_name[:point_pos]
@@ -27,16 +30,16 @@ def load_coos(Vid, TMP=False, location=None):
         path = file_tracked_corr
     else:
         path = file_tracked_not_corr
+    return(path)
 
 
-
+def load_coos(Vid, TMP=False, location=None):
+    # Importation of the coordinates associated with the current video
+    path=get_video_path(Vid,TMP)
     if Vid.Track[1][8]:
         return load_fixed(Vid, path, location)
     else:
         return load_variable(Vid, path)
-
-
-
 
 
 def save(Vid, Coos, TMP=False, location=None):
@@ -79,36 +82,42 @@ def load_variable(Vid, path):
         csv_reader = csv.reader(csv_file, delimiter=";")
         or_table = list(csv_reader)
 
-    who_is_here = [[] for x in range(int((Vid.Cropped[1][1] - Vid.Cropped[1][0]) / one_every) + 1)]
     if len(or_table)==1:
         Coos=np.full((1,(int((Vid.Cropped[1][1] - Vid.Cropped[1][0])/one_every) + 1),2),-1000, dtype=float)
 
     else:
-        Coos = np.full((len(Vid.Identities),(int((Vid.Cropped[1][1] - Vid.Cropped[1][0])/one_every) + 1),2),-1000, dtype=float)
+        Coos = np.full((len(Vid.Identities),(int((Vid.Cropped[1][1] - Vid.Cropped[1][0])/one_every) + 1),2),-1000, dtype=np.float32)
+
         or_table = np.asarray(or_table)
         or_table[or_table=="NA"]=-1000
-
-        count = 0
-        for Ind in Vid.Identities:
+        col2 = np.array(or_table[:, 2])
+        col3 = np.array(or_table[:, 3])
+        groups = defaultdict(list)
+        for row in or_table:
+            key = (str(row[2]), str(row[3]))
+            groups[key].append(row)
+        Vid_ids = [(str(i[0]), str(i[1])) for i in Vid.Identities]
+        for count, Ind in enumerate(Vid_ids):
             load_frame.show_load(count / len(Vid.Identities))
-            subset = or_table[np.where((np.array(or_table[:, 2]) == str(Ind[0])) & (np.array(or_table[:, 3]) == str(Ind[1])))]
+            key = (str(Ind[0]), str(Ind[1]))
+            subset = np.array(groups.get(key, []))
             if len(subset)<=0:
-                subset = or_table[np.where((np.array(or_table[:, 2]) == str(Ind[0])) & (np.array(or_table[:, 3]) == str(Ind[1][3:])))]
-
+                subset = or_table[(col2 == Ind[0]) & (col3 == Ind[1][3:])]
             if len(subset)>0:
-                time = subset[:, 0].astype('float')
+                time = subset[:, 0].astype('float32')
                 time = time.astype('int32')
                 time=time-round(Vid.Cropped[1][0]/one_every)
-                T_Coos = subset[:, 4:6]
-                Coos[count, time, :] = T_Coos
+                T_Coos = subset[:, 4:6].astype(np.float32)
 
-                for im in time:
-                    who_is_here[im] = who_is_here[im] + [count]
-            count += 1
+                time, unique_idx = np.unique(time, return_index=True)
+                T_Coos = T_Coos[unique_idx]
+
+                Coos[count, time, :] = T_Coos
 
     load_frame.destroy()
     newWindow.destroy()
-    return(Coos, who_is_here)
+    return(Coos)
+
 
 
 def load_fixed(Vid, path, location=None):
@@ -134,7 +143,7 @@ def load_fixed(Vid, path, location=None):
     or_table = np.array(or_table)
 
     try:
-        Coos = np.full((len(Vid.Identities), len(or_table)-1, 3), -1000,dtype=float)#CTXT keep only except
+        Coos = np.full((len(Vid.Identities), len(or_table)-1, 3), -1000,dtype=float)
         or_table = np.asarray(or_table)
         or_table[or_table == "NA"] = -1000
         count=0
@@ -157,7 +166,7 @@ def load_fixed(Vid, path, location=None):
         frame.destroy()
 
     load_frame.grab_release()
-    return (Coos, [list(range(len(Vid.Identities)))]*len(Coos[0,:,0]))
+    return (Coos)
 
 def save_fixed(Vid, Coos, path, location=None):
     if location == None:
@@ -175,7 +184,7 @@ def save_fixed(Vid, Coos, path, location=None):
     tmp=np.array(General_Coos[1:, 0]/Vid.Frame_rate[1], dtype="float")
     General_Coos[1:, 1]=np.around(tmp,2)
 
-    General_Coos[0,:]=["Frame","Time"]+[Col+"_Arena"+str(ind[0])+"_"+str(ind[1]) for ind in Vid.Identities for Col in ["X","Y"]]#CTXT,"Sleeping"
+    General_Coos[0,:]=["Frame","Time"]+[Col+"_Arena"+str(ind[0])+"_"+str(ind[1]) for ind in Vid.Identities for Col in ["X","Y"]]
     Coos = Coos.astype(dtype=object)
     Coos[Coos==-1000]="NA"
 

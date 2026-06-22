@@ -7,20 +7,16 @@ import numpy as np
 import os
 from tkinter import *
 import threading
-import queue
 import pickle
-import sys
 import time
-from  multiprocessing import Lock, shared_memory
+from multiprocessing import Lock
 
 '''
 To improve the speed of the tracking, we will separate the work in 2 threads.
 1. Image loading, and modifications (stabilization, light correction, greyscale...) until contours are get
 2. Target assignment and data recording
 '''
-def initialize_shared_memory(size):
-    shm = shared_memory.SharedMemory(create=True, size=size)
-    return shm
+
 
 def Do_tracking(parent, Vid, folder, type, portion=False, prev_row=None, arena_interest=None, head_tail=False, ref_frame=None):
     '''This is the main tracking function of the program.
@@ -106,20 +102,16 @@ def Do_tracking(parent, Vid, folder, type, portion=False, prev_row=None, arena_i
                                                                                                         portion=portion,
                                                                                                         arena_interest=arena_interest)
 
-    nb_cpu_extract_treat = (multiprocessing.cpu_count() -1)
+    nb_cpu_extract_treat=min(15,(multiprocessing.cpu_count() -1))
+
     Nb_images_processed=multiprocessing.Value("i",0)
-
-
-
-    image_size = Prem_image_to_show.shape[0]*Prem_image_to_show.shape[1]*Prem_image_to_show.shape[2]
-    shm = initialize_shared_memory(image_size)
 
     #Creation of the process to treat images
     Locks_cnts = [Lock() for i in range(nb_cpu_extract_treat)]
 
     Processes = []
     #A end process associate the contours
-    chunk_size=250
+    chunk_size=25
 
     all_frames=np.arange(start, end + one_every, one_every)
     Images_to_treat = [

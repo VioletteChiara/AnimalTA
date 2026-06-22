@@ -39,12 +39,7 @@ class Add_Behavior(Frame):
         self.All_scrolls=[]
 
         #Messages importation
-        self.Language = StringVar()
-        f = open(UserMessages.resource_path("AnimalTA/Files/Language"), "r", encoding="utf-8")
-        self.Language.set(f.read())
-        self.LanguageO = self.Language.get()
-        self.Messages = UserMessages.Mess[self.Language.get()]
-        f.close()
+        self.Messages = UserMessages.get_dict()
 
         self.selected_ind = 0 #Which is the selected target
 
@@ -291,7 +286,7 @@ class Add_Behavior(Frame):
             self.to_sub = 0
 
         #We import the coordinates
-        self.Coos, self.who_is_here = CoosLS.load_coos(self.Vid, location=self)
+        self.Coos = CoosLS.load_coos(self.Vid, location=self)
         if self.Vid.Smoothed[0] != 0:
             self.Coos=Diverse_functions.smooth_coos(self.Coos,window_length=self.Vid.Smoothed[0], polyorder=self.Vid.Smoothed[1])
 
@@ -337,7 +332,10 @@ class Add_Behavior(Frame):
             if not self.Vid.Track[1][8]:
                 cv2.drawContours(new_img, self.Arenas,-1,(150,0,200),max(1,int(2*self.Vid_Lecteur.ratio)))
 
-            for ind in self.who_is_here[self.Scrollbar.active_pos - self.to_sub]:
+            Present_now = np.where(self.Coos[:,self.Scrollbar.active_pos - self.to_sub,0]>=0)[0]
+            Present_now = list(np.unique(Present_now))
+
+            for ind in Present_now:
                 color=self.Vid.Identities[ind][2]
                 if not self.show_all:
                     for prev in range(min(int(self.tail_size.get()*self.Vid.Frame_rate[1]), int(self.Scrollbar.active_pos - self.to_sub))):

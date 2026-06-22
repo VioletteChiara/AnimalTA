@@ -164,7 +164,13 @@ def Image_modif(Vid, Timg, Prem_image_to_show, mask, or_bright, approx=True):
     elif Vid.Back[0]==0: #Adpative threshold
         if Vid.Track[1][10][1] == 2:
             img = cv2.bitwise_not(img)
-        img = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV,  Vid.Track[1][0] , Vid.Track[1][11])
+
+        if Vid.Track[1][0] % 2 == 0:
+            tresh = Vid.Track[1][0] + 1
+        else:
+            tresh = Vid.Track[1][0]
+
+        img = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV,  tresh , Vid.Track[1][11])
 
 
     # Mask
