@@ -40,7 +40,6 @@ class Mainframe(Tk):
         #Change here the last version
         current_version="v4.2.0"
 
-
         #We check the parameters
         Param_file = UserMessages.resource_path(os.path.join("AnimalTA", "Files", "Settings"))
 
