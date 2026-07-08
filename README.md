@@ -9,7 +9,7 @@ Chiara, V., & Kim, S.-Y. (2023). AnimalTA: A highly flexible and easy-to-use pro
 https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.14115
 
 # Support AnimalTA
-
+The software is freely available and will remain open source. Your support helps cover the necessary costs (such as the website domain and certificates) and allows me to dedicate time to future development, maintenance, documentation, and user support.
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/W4D222TCL5)
 
 # Request a language
