@@ -10,7 +10,7 @@ https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.14115
 
 # Support AnimalTA
 
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/W4D222TCL5)
+<script type='text/javascript' src='https://storage.ko-fi.com/cdn/widget/Widget_2.js'></script><script type='text/javascript'>kofiwidget2.init('Support us!', '#9b3ead', 'W4D222TCL5');kofiwidget2.draw();</script> 
 
 # Request a language
 If the language you want to translate is not present in AnimalTA yet, submit an issue so that we can provide you with the mandatory material.
