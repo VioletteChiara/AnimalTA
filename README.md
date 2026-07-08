@@ -4,10 +4,14 @@ This is the latest version of AnimalTA, an easy-to-use video tracking program.
 AnimalTA is associated with an installer under the Windows operating system (see the releases section), but can be used with Linux or Mac OS via virtualization programs.
 More information can be found in the user manual.
 
-
 If you are using AnimalTA for your research, please cite: 
 Chiara, V., & Kim, S.-Y. (2023). AnimalTA: A highly flexible and easy-to-use program for tracking and analyzing animal movement in different environments. Methods in Ecology and Evolution, 14, 1699– 1707.*
 https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.14115
 
+# Support AnimalTA
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/W4D222TCL5)
+
 # Request a language
 If the language you want to translate is not present in AnimalTA yet, submit an issue so that we can provide you with the mandatory material.
+
