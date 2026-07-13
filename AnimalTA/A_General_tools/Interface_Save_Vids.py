@@ -263,10 +263,10 @@ class Lecteur(Frame):
 
     def export_image(self):
         if self.CheckVar.get()>0:
-            back=self.modif_image(aff=False)
+            back=self.modif_image(affi=False)
             new_img = self.Vid_Lecteur.afficher_img(img=back, return_img=True)
         else:
-            back = self.modif_image(aff=False, Trans=True)
+            back = self.modif_image(affi=False, Trans=True)
             new_img = self.Vid_Lecteur.afficher_img(img=back, return_img=True, Trans=True)
 
         if self.CheckVar.get() > 0:
